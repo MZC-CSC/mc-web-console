@@ -1,0 +1,27 @@
+@startuml
+
+title "Iam Manager login"
+
+actor User as EndUser
+
+participant "App.go" as App
+participant "Auth.go" as Auth
+participant "IamManagerHandler.go" as IamHandler
+participant "UserSession" as Session
+
+box "Key Cloak"
+participant KeyCloak as KC
+end box
+
+database Database as DB
+
+EndUser -> App : POST: AuthCreate()
+App -> Auth : AuthCreate()
+Auth -> IamHandler : IamManagerLogin()
+IamHandler -> KC : Login()
+IamHandler <- KC : Response : AccessToken
+Auth -> DB : SaveUserToken()
+Auth -> Session : SetUserSession()
+EndUser <- Auth : return status
+
+@enduml

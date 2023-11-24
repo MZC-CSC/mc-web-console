@@ -1,0 +1,38 @@
+@startuml
+
+title "Set Current workspace"
+
+actor User as EndUser
+
+participant "App.go" as App
+participant "Auth.go" as Auth
+participant "UserSession" as Session
+database Database as DB
+participant "IamManagerHandler.go" as IamHandler
+
+
+box "Key Cloak"
+participant KeyCloak as KC
+end box
+
+
+EndUser     -> EndUser : mcpjs['util/common'].setCurrentWorkspace()
+EndUser     -> App : GET: SetCurrentWorkspace
+App         -> Auth ++: UserInfo()
+Auth        -> Auth : Bind MCIamWorkspace
+
+Auth        -> Session : GetUserInfoFromSession()
+Auth        -> DB : GetUserToken()
+    
+Auth        -> IamHandler : IamManagerProjectList()
+IamHandler  -> KC : /api/v1/mapping/ws/id/{workspaceId}/project/
+
+IamHandler  <- KC : Response : MCIamWsProjectMapping
+
+group  "userInfo.CurrentWorkspaceID, userInfo.CurrentWorkspaceName"
+Auth        -> Session : SetUserSession(userInfo)
+end
+
+EndUser     <- Auth --: return userInfo, workspaceUserRoleMappingList, namespaceList
+
+@enduml

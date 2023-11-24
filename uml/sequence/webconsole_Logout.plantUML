@@ -1,0 +1,24 @@
+@startuml
+
+title "Iam Manager logout"
+
+actor User as EndUser
+
+participant "App.go" as App
+participant "Auth.go" as Auth
+participant "IamManagerHandler.go" as IamHandler
+participant "UserSession" as Session
+
+box "Key Cloak"
+participant KeyCloak as KC
+end box
+
+database Database as DB
+
+EndUser -> App : GET: AuthDestroy()
+App -> Auth : AuthDestroy()
+Auth -> DB : ClearUserToken()
+Auth -> Session : ClearUserSession()
+EndUser <- Auth : return status
+
+@enduml

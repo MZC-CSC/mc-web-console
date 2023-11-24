@@ -1,0 +1,42 @@
+@startuml
+
+title "Iam Manager login"
+
+actor User as EndUser
+
+participant "App.go" as App
+participant "Auth.go" as Auth
+participant "UserSession" as Session
+database Database as DB
+participant "IamManagerHandler.go" as IamHandler
+
+
+box "Key Cloak"
+participant KeyCloak as KC
+end box
+
+
+
+EndUser     -> App : GET: /api/auth/user/
+App         -> Auth ++: UserInfo()
+
+Auth        -> Session : GetUserInfoFromSession()
+Auth        -> DB : GetUserToken()
+Auth        -> IamHandler : IamManagerWorkspaceUserRoleMappingListByUserId()
+IamHandler  -> KC : /api/v1/mapping/user/id/{userId}/workspace/
+IamHandler  <- KC : Response : []MCIamWsUserRoleMapping
+    group  "when currentWorksId is valid. get projectList of workspace"
+        loop "find currentWorkspace in MCIamWsUserRoleMapping"
+        end
+    
+        Auth        -> IamHandler : IamManagerProjectList()
+        IamHandler  -> KC : /api/v1/mapping/ws/id/{workspaceId}/project/
+
+        IamHandler  <- KC : Response : MCIamWsProjectMapping
+    end
+
+Auth        -> Session : SetUserSession()
+
+EndUser     <- Auth --: return userInfo, workspaceUserRoleMappingList, namespaceList
+
+@enduml
