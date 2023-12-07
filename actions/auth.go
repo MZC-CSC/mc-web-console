@@ -87,7 +87,7 @@ func (a actions) AuthNewMngForm(c buffalo.Context) error {
 //	@Produce		json
 //	@Param			Email		formData	string	true	"Email"
 //	@Param			Password	formData	string	true	"Password"
-//	@Success		200			{string}	string	"{'message': 'success', 'user': 'u'}"
+//	@Success		200			{string}	string	"{'message': 'success', 'status': 200}"
 //	@Failure		500			{string}	string	"{'error':'verrs','status':'http.StatusUnauthorized'}"
 //	@Router			/api/auth/signin/ [post]
 func (a actions) AuthCreate(c buffalo.Context) error {
@@ -244,6 +244,7 @@ func (a actions) AuthCreate(c buffalo.Context) error {
 
 		}
 
+		// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 		if err != nil {
 			if errors.Cause(err) == sql.ErrNoRows {
 				log.Println("sql.ErrNoRows ", err)
@@ -328,8 +329,8 @@ func (a actions) AuthDestroy(c buffalo.Context) error {
 //	@Tags			auth
 //	@Accept			json
 //	@Produce		json
-//	@Success		200			{string}	string	"{'message': 'success', 'user': 'u'}"
-//	@Failure		500			{string}	string	"{'error':'verrs','status':'http.StatusUnauthorized'}"
+//	@Success		200			{string}	string	"{'message': 'success', 'status': 200, 'userInfo': userInfo, 'workspaceUserRoleMappingList': workspaceUserRoleMappingList, 'namespaceList':namespaceList}"
+//	@Failure		500			{string}	string	"{'error':respStatus.Message,'status': respStatus.StatusCode}"
 //	@Router			/api/auth/user/ [get]
 func (a actions) UserInfo(c buffalo.Context) error {
 	// session에서 사용자 정보 꺼냄.
@@ -355,6 +356,7 @@ func (a actions) UserInfo(c buffalo.Context) error {
 
 		log.Println("Get Token from db")
 
+		// TODO: status 리턴 값 존재하지 않음
 		// DB에서 Token 조회
 		authSession := &models.AuthSession{}
 		tx := c.Value("tx").(*pop.Connection)

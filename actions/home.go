@@ -33,7 +33,12 @@ func (a actions) RouteList(c buffalo.Context) error {
 	}))
 }
 
-// 특정 help의 route정보 return
+// @Summary		특정 helper의 route정보 반환
+// @Description	[GetRoute] helper 의 경로 정보를 반환합니다.
+// @Tags			debug
+// @Produce		html
+// @Success		200	{string}	string	"{'message':'success','status':'200', 'route': route}"
+// @Router			/api/test/route/ [get]
 func (a actions) GetRoute(c buffalo.Context) error {
 	// Get the route name from the UI
 	helperName := c.Param("helper")
@@ -59,6 +64,14 @@ func (a actions) GetRoute(c buffalo.Context) error {
 	}))
 }
 
+// @Summary		User Session 정보 가져오기
+// @Description	[GetGet] User Session 정보를 확인합니다.
+// @Tags			debug
+// @Accept			json
+// @Produce		json
+// @Produce		json
+// @Success		200				{string}	string				"{'message':'GetGet', 'status': 200, 'userSession': userSession}"
+// @Router			
 func GetGet(c buffalo.Context) error {
 	log.Println("GetGet")
 	//log.Println(c.Data())
