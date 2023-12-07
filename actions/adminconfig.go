@@ -47,13 +47,13 @@ func (a actions) CategoryMngForm(c buffalo.Context) error {
 }
 
 // @Summary		RegionGroup 리스트 조회
-// @Description	[RegionGroupList] providerId 와 regionGroupName 을 받아 RegionGroupList를 반환합니다.
+// @Description	[RegionGroupList] provider 와 regionGroupName 을 받아 RegionGroupList를 반환합니다.
 // @Tags			adminconfig
 // @Produce		json
 // @Param			provider		query		string	true	"provider"
 // @Param			regionGroupName	query		string	true	"regionGroupName"
-// @Success		200				{string}	string	"{"message":"success","status":respStatus.StatusCode,"regionGroup":regionGroupList,}"
-// @Failure		400				{string}	string	"{'error':'respStatus.Message','error':'respStatus.Message'}"
+// @Success		200				{string}	string	"{"message":"success","status":respStatus.StatusCode,"regionGroupList":regionGroupList,}"
+// @Failure		400				{string}	string	"{'error':'respStatus.Message','status':'respStatus.StatusCode'}"
 // @Router			/api/adminconfig/regiongroup/ [get]
 func (a actions) RegionGroupList(c buffalo.Context) error {
 
@@ -79,12 +79,12 @@ func (a actions) RegionGroupList(c buffalo.Context) error {
 	}))
 }
 
-// @Summary		RegionGroup 단건 Vpc 조회
-// @Description	[GetRegionGroup] regionGroupId와  providerId, regionGroupName, regionId 중 한개를 받아 regionGroup을 반환합니다.
+// @Summary		RegionGroup 단건 regionGroup 조회
+// @Description	[GetRegionGroup] regionGroupId와  provider, regionGroupName, regionId 중 한개를 받아 regionGroup을 반환합니다.
 // @Tags			adminconfig
 // @Produce		json
 // @Param			regionGroupId	path		string	true	"regionGroupId"
-// @Param			providerId		query		string	false	"providerId"
+// @Param			provider		query		string	false	"provider"
 // @Param			regionGroupName	query		string	false	"regionGroupName"
 // @Param			regionId		query		string	false	"regionId"
 // @Success		200				{string}	string	"{"message":"success","status":respStatus.StatusCode,"regionGroup":regionGroup,}"
@@ -203,6 +203,7 @@ func (a actions) DelRegionGroup(c buffalo.Context) error {
 	}))
 }
 
+// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 // @Summary		Category 등록
 // @Description	[CategoryReg] 카테고리를 등록합니다.
 // @Tags			adminconfig
@@ -230,6 +231,7 @@ func (a actions) CategoryReg(c buffalo.Context) error {
 	}))
 }
 
+// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 // @Summary		Category 삭제
 // @Description	[CategoryDel] 카테고리를 삭제합니다.
 // @Tags			adminconfig
@@ -256,6 +258,7 @@ func (a actions) CategoryDel(c buffalo.Context) error {
 	}))
 }
 
+// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 // @Summary		Category 리스트 조회
 // @Description	[CategoryList] categoryName을 받아 categoryList를 반환합니다.
 // @Tags			adminconfig
@@ -287,6 +290,7 @@ func (a actions) CategoryList(c buffalo.Context) error {
 	}))
 }
 
+// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 // @Summary		Category 단건 조회
 // @Description	[CategoryGet] categoryName을 받아 category 단건을 반환합니다.
 // @Tags			adminconfig
@@ -317,6 +321,7 @@ func (a actions) CategoryGet(c buffalo.Context) error {
 	}))
 }
 
+// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 // @Summary		Menu 등록
 // @Description	[RegMenu] models.Menu를 받아 메뉴를 단건 등록합니다.
 // @Tags			adminconfig
@@ -344,6 +349,7 @@ func (a actions) RegMenu(c buffalo.Context) error {
 	}))
 }
 
+// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 // @Summary		Menu 업데이트
 // @Description	[UpdateMenu] models.Menu를 받아 메뉴를 단건 업데이트합니다.
 // @Tags			adminconfig
@@ -371,6 +377,7 @@ func (a actions) UpdateMenu(c buffalo.Context) error {
 	}))
 }
 
+// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 // @Summary		Menu 삭제
 // @Description	[DelMenu] models.Menu를 받아 메뉴를 단건 삭제합니다.
 // @Tags			adminconfig
@@ -398,6 +405,7 @@ func (a actions) DelMenu(c buffalo.Context) error {
 	}))
 }
 
+// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 // @Summary		Menu 리스트 조회
 // @Description	[MenuList] menuId, menuName, menuAlias, categoryId 중 순서로 마지막 한개를 받아 메뉴 리스트를 반환합니다.
 // @Tags			adminconfig
@@ -444,6 +452,7 @@ func (a actions) MenuList(c buffalo.Context) error {
 	}))
 }
 
+// TODO: 현재 에러 return format 이 swagger 와 일치하지 않기 때문에 return 형식 변경 필요
 // @Summary		Menu 조회
 // @Description	[GetMenu] menuId와 menuName, menuAlias, categoryId 중 순서로 마지막 한개를 받아 메뉴를 반환합니다.
 // @Tags			adminconfig
