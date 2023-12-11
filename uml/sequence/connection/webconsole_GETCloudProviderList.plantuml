@@ -1,0 +1,29 @@
+@startuml
+
+title "Get Cloud provider list"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/providers
+end
+
+app     -> route: CloudProviderList()
+route -> handler: GetCloudOSList()
+handler <-> spider : http request to get cloud provider list
+route <- handler: []string
+user <- route:  return cloudOsList
+
+
+
+
+@enduml

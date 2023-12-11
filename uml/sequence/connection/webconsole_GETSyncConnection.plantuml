@@ -1,0 +1,41 @@
+@startuml
+
+title "Sync cloud connection"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+database Database as DB
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/sync
+end
+
+app     -> route: SyncConnection()
+route -> handler: SyncConnection()
+handler -> handler: GetCloudConnectionConfigList()
+handler <-> spider : http request to get cloud connection list
+
+loop driverList
+    handler -> handler: CheckExistsCloudConnection(connectionView views.ViewCloudConnection)
+    handler -> handler: GetCredentialByName(providerId string, credentialName string, c buffalo.Context)
+    alt !exists 
+        handler <-> DB : validate and create
+    else exist
+        handler <-> DB : validate and update
+    end
+    handler -> DB : credential key value create
+end
+
+route <- handler: 
+user <- route:  return successMessage
+
+@enduml

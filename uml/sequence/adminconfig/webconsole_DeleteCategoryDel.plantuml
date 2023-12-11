@@ -1,0 +1,21 @@
+@startuml
+
+title "Delete Single Category"
+
+actor User as user
+
+participant "app.go" as app
+participant "adminconfig.go" as route
+database Database as DB
+
+group  "API Call"
+user    -> app : DELETE: /api/adminconfig/category
+user    -> app : body: models.Category
+end
+
+app     -> route: CategoryDel()
+route <-> DB: Delete
+user <- route:  return successMessage
+
+
+@enduml

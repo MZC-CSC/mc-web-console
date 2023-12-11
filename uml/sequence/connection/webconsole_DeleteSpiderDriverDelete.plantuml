@@ -1,0 +1,26 @@
+@startuml
+
+title "Delete sprider driver"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+database Database as DB
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : DELETE: /api/settings/connection/driver/spider/id/{driver}
+user    -> app : PATH: driver
+end
+app     -> route: DelDriver()
+route   -> handler: DelDriver(driverName string)
+handler <-> spider: http request to delete spider driver
+route <- handler: 
+user <- route:  return successMessage
+
+@enduml

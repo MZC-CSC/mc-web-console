@@ -1,0 +1,34 @@
+@startuml
+
+title "Create Region"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+database Database as DB
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group "API Call"
+    user    -> app : POST:/api/settings/connection/region
+    user    -> app : QUERY: is_cb, BODY: spider.RegionInfo
+end
+
+app     -> route: RegionCreate()
+route     -> handler: RegRegion(regionInfo *spider.RegionInfo)
+handler <-> spider: http request to create region
+route <- handler: *spider.RegionInfo
+
+alt is_cb == "N"
+    route     -> handler: MconRegionCreate(region *models.Region)
+    handler -> handler: validate
+    handler <-> DB: Create Region
+    route <- handler: 
+end
+
+user <- route : return successMessages
+@enduml

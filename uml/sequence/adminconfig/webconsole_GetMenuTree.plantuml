@@ -1,0 +1,22 @@
+@startuml
+
+title "Get Menu Tree"
+
+actor User as user
+
+participant "app.go" as app
+participant "adminconfig.go" as route
+participant "AdminHandler.go" as adminHandler
+database Database as DB
+
+group  "API Call"
+user    -> app : GET: /api/adminconfig/menu/tree
+end
+app     -> route: MenuTree()
+route   -> adminHandler: MenuTree()
+adminHandler <-> DB: Fetch menu tree
+route <- adminHandler:  models.MenuTree
+user <- route:  return menutree
+
+
+@enduml

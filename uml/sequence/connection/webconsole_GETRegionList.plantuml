@@ -1,0 +1,37 @@
+@startuml
+
+title "Get Region list"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+database Database as DB
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/region
+user    -> app : QUERY: is_cb, filterKey, filterVal
+end
+app     -> route: RegionList()
+alt is_cb == "N"
+    route     -> handler: MconRegionList(region *models.Region)
+    handler <-> DB: fetch driver
+    route <- handler: []models.Region
+    handler <- handler: []models.Region -> []spider.RegionInfo
+else is_cb == "Y"
+    route   -> handler: GetRegionList()
+    handler <-> spider: http request to fetch spider region list
+    route <- handler: []spider.RegionInfo
+end
+
+user <- route:  return returnRegionList
+
+
+
+
+@enduml

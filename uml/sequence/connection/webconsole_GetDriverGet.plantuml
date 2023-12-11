@@ -1,0 +1,35 @@
+@startuml
+
+title "Get quried driver"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+database Database as DB
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/driver/id/{driver}
+user    -> app : PATH: driver, PARAM: is_cb
+end
+app     -> route: DriverGet()
+alt is_cb == "N"
+    route     -> handler: MconDriverGet()
+    handler <-> DB: fetch driver
+else is_cb == "Y"
+    route   -> handler: SpiderDriverGet(driverlName string)
+    handler <-> spider: http request to fetch spider driver
+
+end
+route <- handler: spider.DriverInfo
+user <- route:  return driverInfo
+
+
+
+
+@enduml

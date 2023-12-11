@@ -1,0 +1,21 @@
+@startuml
+
+title "User log in with an existing account"
+
+actor User as user
+
+participant "app.go" as app
+participant "auth.go" as route
+database Database as DB
+participant "context session" as session
+
+group  "API Call"
+user    -> app : POST: /api/auth/signin
+user    -> app : PARAM: Email, Password
+end
+app     -> route: AuthCreate()
+route <-> DB: Fetch user data by email and pw
+route   -> session: set user session data
+user <- route:  return successMessage with User Session
+
+@enduml

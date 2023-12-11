@@ -1,0 +1,25 @@
+@startuml
+
+title "Get all sprider driver list"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/driver/spider
+end
+app     -> route: SpiderDriverList()
+route     -> handler: GetDriverList()
+handler <-> spider: http request to fetch spider driver list
+route <- handler: []spider.DriverInfo
+user <- route:  return driverList
+
+
+@enduml

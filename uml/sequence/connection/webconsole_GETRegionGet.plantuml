@@ -1,0 +1,35 @@
+@startuml
+
+title "Get Single region"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+database Database as DB
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/region/id/{paramRegion}
+user    -> app : PATH: region, QUERY: is_cb
+end
+
+app     -> route: RegionGet()
+
+alt is_cb == "N"
+    route     -> handler: MconRegionGet(region *models.Region)
+    handler <-> DB: fetch region
+    route <- handler: models.Region
+    user <- route: return region
+else is_cb == "Y"
+    route   -> handler: GetRegionData(regionName string)
+    handler <-> spider: http request to fetch spider region
+    route <- handler: *tbcommon.TbRegion
+    user <- route:  return resionInfo
+end
+
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+
+title "Create cloud connection and fetch connection list"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : POST: /api/settings/connection
+user    -> app : QUERY: is_cb, BODY: spider.CloudConnectionConfigInfo
+end
+app     -> route: CloudConnectionCreate()
+route     -> handler: RegCloudConnectionConfig(cloudConnectionConfigInfo *spider.CloudConnectionConfigInfo)
+handler <-> spider: http request to create connection
+route <- handler: *spider.CloudConnectionConfigInfo
+== Fetch connections ==
+route     -> handler: GetCloudConnectionConfigList()
+handler <-> spider: http request to fetch all connection list
+route <- handler: []spider.CloudConnectionConfigInfo
+user <- route:  return cloudConnectionList
+
+
+@enduml

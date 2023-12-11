@@ -1,0 +1,29 @@
+@startuml
+
+title "Get Available Cloud connection list"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/available
+end
+
+app     -> route: AvailableCloudConnectionList()
+route -> handler: GetMcisDynamicCheckList(mcisReq *tbmcis.McisConnectionConfigCandidatesReq)
+handler <-> spider : http request to get cloud connectioin list
+route <- handler: *tbmcis.CheckMcisDynamicReqInfo
+user <- route:  return checkMcisDynamicReqInfo
+
+
+
+
+@enduml

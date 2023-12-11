@@ -1,0 +1,20 @@
+@startuml
+
+title "Get all Region list"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+database Database as DB
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/driver
+user    -> app : BODY: models.Region
+end
+app     -> route: RegionAllList()
+route <-> DB: Fetch all Region list
+user <- route:  return regions
+
+
+@enduml

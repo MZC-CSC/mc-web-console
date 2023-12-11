@@ -1,0 +1,24 @@
+@startuml
+
+title "Get Single Region Group"
+
+actor User as user
+
+participant "app.go" as app
+participant "adminconfig.go" as route
+participant "AdminHandler.go" as adminHandler
+database Database as DB
+
+group  "API Call"
+user    -> app : GET: /api/adminconfig/regiongroup/{regionGroupId}
+user        -> app : queryParam: provider, regionGroupName, regionId
+end
+
+app     -> route: GetRegionGroup()
+route   -> adminHandler: GetRegionGroup(models.RegionGroup)
+adminHandler <-> DB: Interactions
+route <- adminHandler:  RegionGroup
+user <- route:  return regionGroup
+
+
+@enduml

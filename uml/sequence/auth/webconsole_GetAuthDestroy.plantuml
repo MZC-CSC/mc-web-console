@@ -1,0 +1,18 @@
+@startuml
+
+title "User log out with clear user session data"
+
+actor User as user
+
+participant "app.go" as app
+participant "auth.go" as route
+participant "context session" as session
+
+group  "API Call"
+user    -> app : GET: /api/auth/logout
+end
+app     -> route: AuthDestroy()
+route   -> session: clear user session
+user <- route:  return successMessage with User Session cleared
+
+@enduml

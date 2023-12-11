@@ -1,0 +1,26 @@
+@startuml
+
+title "Delete cloud connection "
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : DELETE: /api/settings/connection/id/{configName}
+user    -> app : PARAM: is_cb, PATH: configName
+end
+app     -> route: CloudConnectionDelete()
+route     -> handler: DelCloudConnectionConfig(configName string)
+handler <-> spider: http request to delete connection config
+route <- handler: 
+user <- route:  return successMessage
+
+
+@enduml

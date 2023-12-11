@@ -1,0 +1,25 @@
+@startuml
+
+title "Get all spider Connection list"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+
+box "External Module"
+participant "cb-spider" as spider
+end box
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/spider
+end
+app     -> route: SpiderConnectionList()
+route     -> handler: GetCloudConnectionConfigList()
+handler <-> spider: http request to spider module
+route <- handler: []spider.CloudConnectionConfigInfo
+user <- route:  return cloudConnectionConfigList
+
+
+@enduml

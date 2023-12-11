@@ -1,0 +1,23 @@
+@startuml
+
+title "Get Single Connection"
+
+actor User as user
+
+participant "app.go" as app
+participant "connection.go" as route
+participant "CloudConnectionHandler.go" as handler
+database Database as DB
+
+group  "API Call"
+user    -> app : GET: /api/settings/connection/id/{connectionId}
+user    -> app : PATH: connectionId
+end
+app     -> route: CloudConnectionGet()
+route     -> handler: GetViewConnection(viewCloudConnection views.ViewCloudConnection)
+handler <-> DB: Fetch queried connection
+route <- handler: views.ViewCloudConnection
+user <- route:  return cloudConnection
+
+
+@enduml

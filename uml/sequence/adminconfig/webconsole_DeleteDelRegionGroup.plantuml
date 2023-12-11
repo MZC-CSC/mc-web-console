@@ -1,0 +1,23 @@
+@startuml
+
+title "Delete Single Region"
+
+actor User as user
+
+participant "app.go" as app
+participant "adminconfig.go" as route
+participant "AdminHandler.go" as adminHandler
+database Database as DB
+
+group  "API Call"
+user    -> app : DELETE: /api/adminconfig/regiongroup
+user    -> app : body: models.RegionGroup
+end
+app     -> route: DeleteRegionGroup()
+route   -> adminHandler: DeleteRegionGroup(models.RegionGroup)
+adminHandler <-> DB: Delete
+route <- adminHandler:  regionGroup
+user <- route:  return successMessage
+
+
+@enduml
