@@ -1,0 +1,58 @@
+@startuml
+
+title "Create & Update & Delete Data Disk"
+
+actor User as user
+
+participant "app.go" as app
+participant "datadisk.go" as route
+participant "DataDiskHandler.go" as datadiskHandler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group  "API Call"
+user    -> app : POST: /api/settings/resources/datadisk/mngdata
+user    -> app : BODY: webtool.DataDiskMngReq, QUERY: mcisId, vmId
+end
+
+app     -> route: DataDiskMng()
+alt dataDiskRegInfo.CreateDataDiskList != nil
+    loop CreateDataDiskList
+        route -> datadiskHandler: AsyncRegDataDisk(nameSpaceID string, dataDiskReqInfo *webtool.DataDiskCreateReq)
+        datadiskHandler -> datadiskHandler: RegDataDisk(nameSpaceID string, dataDiskReqInfo *tbmcir.TbDataDiskReq)
+        datadiskHandler -> tumblebug: http request to register data disk
+        datadiskHandler -> datadiskHandler: AsyncAttachDetachDataDiskToVM(nameSpaceID string, mcisID string, vmID string, optionParam string, attachDetachDataDiskReq *tbmcir.TbAttachDetachDataDiskReq)
+        datadiskHandler -> datadiskHandler: AttachDetachDataDiskToVM(nameSpaceID string, mcisID string, vmID string, optionParam string, attachDetachDataDiskReq *tbmcir.TbAttachDetachDataDiskReq)
+        datadiskHandler -> tumblebug: http request to attach data disk to vm
+        route <- datadiskHandler: return nil
+    end
+end 
+alt dataDiskRegInfo.DetachDataDiskList != nil
+    loop DetachDataDiskList
+        route -> datadiskHandler: AsyncAttachDetachDataDiskToVM(nameSpaceID string, mcisID string, vmID string, optionParam string, attachDetachDataDiskReq *tbmcir.TbAttachDetachDataDiskReq)
+        datadiskHandler -> datadiskHandler: AttachDetachDataDiskToVM(nameSpaceID string, mcisID string, vmID string, optionParam string, attachDetachDataDiskReq *tbmcir.TbAttachDetachDataDiskReq)
+        datadiskHandler -> tumblebug: http request to detach data disk to vm
+        route <- datadiskHandler: return nil
+    end
+end
+alt dataDiskRegInfo.AttachDataDiskList != nil 
+    loop AttachDataDiskList
+        route -> datadiskHandler: AsyncAttachDetachDataDiskToVM(nameSpaceID string, mcisID string, vmID string, optionParam string, attachDetachDataDiskReq *tbmcir.TbAttachDetachDataDiskReq)
+        datadiskHandler -> datadiskHandler: AttachDetachDataDiskToVM(nameSpaceID string, mcisID string, vmID string, optionParam string, attachDetachDataDiskReq *tbmcir.TbAttachDetachDataDiskReq)
+        datadiskHandler -> tumblebug: http request to attach data disk to vm
+        route <- datadiskHandler: return nil
+    end
+end
+alt dataDiskRegInfo.DeleteDataDiskList != nil
+    loop DeleteDataDiskList
+        route -> datadiskHandler: AsyncDelDataDisk(nameSpaceID string, dataDiskID string)
+        datadiskHandler -> datadiskHandler: DelDataDisk(nameSpaceID string, dataDiskID string)
+        datadiskHandler -> tumblebug: http request to delete data disk to vm
+        route <- datadiskHandler: return nil
+    end
+end
+
+user <- route: return successMessage | json
+
+@enduml

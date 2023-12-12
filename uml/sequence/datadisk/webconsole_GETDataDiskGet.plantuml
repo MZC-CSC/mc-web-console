@@ -1,0 +1,29 @@
+@startuml
+
+title "Get single Data disk"
+
+actor User as user
+
+participant "app.go" as app
+participant "datadisk.go" as route
+participant "DataDiskHandler.go" as datadiskHandler
+participant "CloudConnectiionHandler.go" as connectionHandler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group  "API Call"
+    user    -> app : GET: /api/settings/resources/datadisk/id/{dataDiskId}
+    user    -> app : PATH: dataDiskId
+end
+
+app     -> route: DataDiskGet()
+route -> datadiskHandler: DataDiskGet(nameSpaceID string, dataDiskID string)
+datadiskHandler -> tumblebug: http request to get data disk
+route <- datadiskHandler: return *tbmcir.TbDataDiskInfo
+route -> connectionHandler: GetViewConnection(viewCloudConnection views.ViewCloudConnection)
+connectionHandler -> DB: Fetch View connection data
+route <- connectionHandler: views.ViewCloudConnection
+user <- route : return *tbmcir.TbDataDiskInfo | json
+
+@enduml

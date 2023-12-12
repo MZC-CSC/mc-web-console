@@ -1,0 +1,34 @@
+@startuml
+
+title "Get Data Disk List"
+
+actor User as user
+
+participant "app.go" as app
+participant "datadisk.go" as route
+participant "DataDiskHandler.go" as datadiskHandler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group  "API Call"
+    user    -> app : GET: /api/settings/resources/datadisk
+    user    -> app : QUERY: option, filterKey, filterVal
+end
+
+app     -> route: DataDiskList()
+alt option == "id"
+    route -> datadiskHandler: GetDataDiskListByID(nameSpaceID string, filterKeyParam string, filterValParam string)
+    datadiskHandler -> tumblebug: http request to get data disk list by Id
+    route <- datadiskHandler: return []string
+    user <- route : return []string | json
+====
+else  option != "id"
+    route -> datadiskHandler: GetDataDiskListByOption(nameSpaceID string, optionParam string, filterKeyParam string, filterValParam string)
+    datadiskHandler -> tumblebug: http request to get data disk list by Option
+    route <- datadiskHandler: return []tbmcir.TbDataDiskInfo
+    user <- route : return []tbmcir.TbDataDiskInfo | json
+end
+
+
+@enduml

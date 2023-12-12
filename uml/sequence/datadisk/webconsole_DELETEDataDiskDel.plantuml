@@ -1,0 +1,38 @@
+@startuml
+
+title "Delete Data Disk"
+
+actor User as user
+
+participant "app.go" as app
+participant "datadisk.go" as route
+participant "DataDiskHandler.go" as datadiskHandler
+participant "CloudConnectionHandler.go" as connectionHandler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+database Database as db
+
+group  "API Call"
+    user    -> app : DELETE: /api/settings/resources/datadisk/id/{dataDiskId}
+    user    -> app : PATH: dataDiskId, BODY: mcir.TbDataDiskUpsizeReq
+end
+
+app     -> route: DataDiskDel()
+route -> datadiskHandler: DelDataDisk(nameSpaceID string, dataDiskID string)
+datadiskHandler -> tumblebug: http request to delete data disk
+route <- datadiskHandler: return nil
+
+route -> connectionHandler: GetUsedConnection(paramConnectionMapping *models.CloudConnectionMapping)
+connectionHandler -> db : fetch used connection data
+route <- connectionHandler: return *models.CloudConnectionMapping
+
+alt err == nil 
+    route -> connectionHandler: SaveConnectionMapping(connectionMapping *models.CloudConnectionMapping)
+    connectionHandler -> db : save connection mapping data
+    route <- connectionHandler: return nil
+end 
+
+user <- route : return successMessage | json
+
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+
+title "Get available data type list
+
+actor User as user
+
+participant "app.go" as app
+participant "datadisk.go" as route
+participant "DataDiskHandler.go" as datadiskHandler
+
+
+group  "API Call"
+    user    -> app : GET: /api/settings/resources/datadisk/lookup
+    user    -> app : QUERY: providerId, regionName
+end
+
+app     -> route: AvailableDataDiskTypeList()
+route -> datadiskHandler: AvailableDiskTypeByProviderRegion(providerId string, regionName string)
+route <- datadiskHandler: return []webtool.AvailableDiskType
+user <- route : return []webtool.AvailableDiskType | json
+
+@enduml

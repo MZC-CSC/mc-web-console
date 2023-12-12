@@ -1,0 +1,36 @@
+@startuml
+
+title "Register Data Disk"
+
+actor User as user
+
+participant "app.go" as app
+participant "datadisk.go" as route
+participant "CloudConnectionHandler.go" as connectionHandler
+participant "DataDiskHandler.go" as datadiskHandler
+database Database as DB
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group  "API Call"
+user    -> app : POST: /api/settings/resources/datadisk
+user    -> app : BODY: tbmcir.TbDataDiskReq
+end
+
+app     -> route: DataDiskReg()
+route -> connectionHandler: GetAvailableConnection(viewCloudConnection views.ViewCloudConnection)
+connectionHandler -> DB: Fetch available connection
+route <- connectionHandler: return views.ViewCloudConnection
+
+route   -> datadiskHandler: RegDataDisk(nameSpaceID string, dataDiskReqInfo *tbmcir.TbDataDiskReq)
+datadiskHandler -> tumblebug: http request to register data disk
+route <- datadiskHandler: return *tbmcir.TbDataDiskInfo
+
+route -> connectionHandler: SaveConnectionMapping(connectionMapping *models.CloudConnectionMapping)
+connectionHandler -> DB: Create connection with validate
+route <- connectionHandler: 
+
+user <- route: return *tbmcir.TbDataDiskInfo | json
+
+@enduml

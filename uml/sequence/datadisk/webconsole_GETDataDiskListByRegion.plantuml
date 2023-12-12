@@ -1,0 +1,25 @@
+@startuml
+
+title "Get Data Disk List by region"
+
+actor User as user
+
+participant "app.go" as app
+participant "datadisk.go" as route
+participant "DataDiskHandler.go" as datadiskHandler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group  "API Call"
+    user    -> app : GET: /api/settings/resources/datadisk/region
+    user    -> app : QUERY: option, connectionName
+end
+
+app     -> route: DataDiskListByRegion()
+route -> datadiskHandler: GetDataDiskListByOption(nameSpaceID string, optionParam string, filterKeyParam string, filterValParam string)
+datadiskHandler -> tumblebug: http request to get data disk list by optioin
+route <- datadiskHandler: return []tbmcir.TbDataDiskInfo
+user <- route : return []tbmcir.TbDataDiskInfo | json
+
+@enduml

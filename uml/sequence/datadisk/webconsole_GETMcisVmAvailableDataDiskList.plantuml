@@ -1,0 +1,25 @@
+@startuml
+
+title Get Mcis vm's abailable data disk list
+
+actor User as user
+
+participant "app.go" as app
+participant "datadisk.go" as route
+participant "DataDiskHandler.go" as datadiskHandler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group  "API Call"
+    user    -> app : GET: /api/settings/resources/datadisk/availabledisk
+    user    -> app : QUERY: mcisId, vmId
+end
+
+app     -> route: McisVmAvailableDataDiskList()
+route -> datadiskHandler: GetAvailableDataDiskListForVM(nameSpaceID string, mcisID string, vmID string)
+datadiskHandler -> tumblebug: http request to get available data disk list for vm
+route <- datadiskHandler: return []mcir.TbDataDiskInfo
+user <- route : return []mcir.TbDataDiskInfo | json
+
+@enduml

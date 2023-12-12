@@ -1,0 +1,25 @@
+@startuml
+
+title "Update Data Disk"
+
+actor User as user
+
+participant "app.go" as app
+participant "datadisk.go" as route
+participant "DataDiskHandler.go" as datadiskHandler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group  "API Call"
+    user    -> app : PUT: /api/settings/resources/datadisk/id/{dataDiskId}
+    user    -> app : PATH: dataDiskId, BODY: mcir.TbDataDiskUpsizeReq
+end
+
+app     -> route: DataDiskPut()
+route -> datadiskHandler: DataDiskPut(nameSpaceID string, dataDiskID string, dataDiskUpsizeReq *tbmcir.TbDataDiskUpsizeReq)
+datadiskHandler -> tumblebug: http request to update data disk
+route <- datadiskHandler: return *tbmcir.TbDataDiskInfo
+user <- route : return d*tbmcir.TbDataDiskInfo | json
+
+@enduml
