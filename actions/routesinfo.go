@@ -14,7 +14,17 @@ import (
 // type actions struct{ buffalo.Context }
 type actions struct{}
 
-// 관리자 설정
+//
+
+// @Summary		RoutesManager
+// @Description	관리자 설정 및 라우터 설정
+// @Tags
+// @Accept json
+// @Param      routerList 	bady  models.RouteInfoes  true   "RouteInfoes.routerList"
+// @Produce json
+// @Success
+// @Failure
+// @Router
 func RoutesManager() {
 	//func RoutesManager(app *buffalo.App) *buffalo.App {
 
@@ -149,7 +159,15 @@ func RoutesManager() {
 	// return app
 }
 
-// Get the handler function by its name
+// @Summary		getHandlerFuncByName
+// @Description	이름으로 핸들러 함수를 가져온다
+// @Tags
+// @Accept
+// @Produce json
+// @Success
+// @Failure
+// @Router
+
 func getHandlerFuncByName(handlerName string) buffalo.Handler {
 	actions := &actions{}
 	actionsType := reflect.TypeOf(actions)
@@ -261,6 +279,14 @@ func (a actions) GetHome(c buffalo.Context) error {
 //	return c.Render(200, r.String("Hello from GetHome"))
 //}
 
+// @Summary		AboutHandler
+// @Description  사용안하는듯해 보임 호출하는곳이 주석처리되어있음
+// @Tags
+// @Accept 	 json
+// @Produce  json
+// @Success   200	{string}	string	"{'message':'success','status':'200' 'VnetInfo': 'aaa'}"
+// @Failure
+// @Router
 func (a actions) AboutHandler(c buffalo.Context) error {
 	//return c.Render(200, r.String("Hello from AboutHandler"))
 	return c.Render(http.StatusOK, r.JSON(map[string]interface{}{

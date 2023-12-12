@@ -18,6 +18,19 @@ func (a actions) SshKeyMngForm(c buffalo.Context) error {
 }
 
 // SshkeyList default implementation.
+
+// @Summary			SshKeyList 조회
+// @Description		SshKeyList 조회
+// @Tags			sshKey
+// @Accept			json
+// @Produce			json
+// @Param			optionParam			query		string	true	"option"
+// @Param			filterKeyParam		query		string	true	"filterKey"
+// @Param			filterValParam		query		string	true	"filterVal"
+// @Param			namespaceID			query		string	true	"current_namespace_id"
+// @Success		200			{json}		{'message':'success','status':'respStatus','DefaultNameSpaceID':'namespaceID','SshKeyList': sshKeyInfoList}
+// @Failure		500			{json}		{'error':  err.Error(),'status': '500',}
+// @Router			/api/settings/connection/region/id/{paramRegion}/[get]
 func (a actions) SshKeyList(c buffalo.Context) error {
 	log.Println("GetSshKeyList : ")
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -60,6 +73,23 @@ func (a actions) SshKeyList(c buffalo.Context) error {
 	}
 }
 
+// @Summary			SshKeyListByRegion
+// @Description		SshKeyListByRegion 리전정보 조회
+// @Tags			sshKey
+// @Accept			json
+// @Produce			json
+// @Param			namespaceID			query		string	true	"current_namespace_id"
+// @Param			optionParam			query		string	true	"option"
+// @Param			filterKeyParam		query		string	true	"filterKey"
+// @Param			filterValParam		query		string	true	"filterVal"
+// @Param			is_cb				query		string	true	"is_cb"
+// @Param			paramProviderID				query		string	true	"providerId"
+// @Param			paramRegionName				query		string	true	"regionName"
+// @Param			paramZoneName				query		string	true	"zoneName"
+// @Param			paramConnectionName				query		string	true	"connectionName"
+// @Success		200			{json}		{'message':'success','status':'respStatus','SshKeyList': sshKeyInfoList}
+// @Failure		500			{json}		{'error':  err.Error(),'status': '500',}
+// @Router			/api/settings/resources/sshkey/region/[get]
 func (a actions) SshKeyListByRegion(c buffalo.Context) error {
 	log.Println("SshKeyListByRegion : ")
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -154,6 +184,17 @@ func (a actions) SshKeyListByRegion(c buffalo.Context) error {
 		}))
 	}
 }
+
+// @Summary		SshKeyGet 단건 조회
+// @Description	[SshKeyGet] SshKeyGet 단건 조회합니다.
+// @Tags			sshKey
+// @Accept			json
+// @Produce			json
+// @Param			namespaceID			query		string	true	"current_namespace_id"
+// @Param			paramSshKeyId		query		string	true	"sshKeyId"
+// @Success		200			{json}		{'message':'success','status':'respStatus','SshKeyInfo':'resultSshKeyInfo'}
+// @Failure		500			{json}		{'error':  err.Error(),'status': '500',}
+// @Router			/api/settings/resources/sshkey/id/{sshKeyId}/ [get]
 func (a actions) SshKeyGet(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
 
@@ -179,6 +220,16 @@ func (a actions) SshKeyGet(c buffalo.Context) error {
 	}))
 }
 
+// @Summary		SshKeyGet 작성
+// @Description	[SshKeyGet] SshKeyGet 작성
+// @Tags			sshKey
+// @Accept			json
+// @Produce			json
+// @Param			namespaceID			query		string	true	"current_namespace_id"
+// @Param			namespaceName		query		string	true	"current_namespace"
+// @Success		200			{json}		{'message':'success','status':'respStatus','SshKeyInfo':'resultSshKeyInfo'}
+// @Failure		500			{json}		{'error':  err.Error(),'status': '500',}
+// @Router			/api/settings/resources/sshkey/ [post]
 func (a actions) SshKeyReg(c buffalo.Context) error {
 	// 현재 namespace 정보 가져오기
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -246,6 +297,17 @@ func (a actions) SshKeyReg(c buffalo.Context) error {
 	}))
 }
 
+// @Summary		SshKeyGet 작성
+// @Description	[SshKeyGet] SshKeyGet 작성
+// @Tags			sshKey
+// @Accept			json
+// @Produce			json
+// @Param			namespaceID			query		string	true	"current_namespace_id"
+// @Param			namespaceName		query		string	true	"current_namespace"
+// @Param			paramSshKeyId		query		string	true	"sshKeyId"
+// @Success		200			{json}		{'message':'success','status':'respStatus'}
+// @Failure		500			{json}		{'error':  err.Error(),'status': '500',}
+// @Router			/api/settings/resources/sshkey/id/{sshKeyId}/ [DELETE]
 func (a actions) SshKeyDel(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
 	namespaceName := c.Session().Get("current_namespace").(string)

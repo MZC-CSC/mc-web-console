@@ -24,6 +24,12 @@ import (
 	util "mc_web_console/util"
 )
 
+// @Summary			UsersNewForm  폼 렌더링
+// @Description		[UsersNewForm] UsersNewForm  폼을 렌더링합니다.
+// @Tags			user
+// @Produce			html
+// @Success			200	{html}	html	"settings/connection/mngform.html"
+// @Router			/users/new/ [get]
 func (a actions) UsersNewForm(c buffalo.Context) error {
 	u := models.MCUser{}
 	c.Set("user", u)
@@ -31,6 +37,12 @@ func (a actions) UsersNewForm(c buffalo.Context) error {
 	return c.Render(200, r.HTML("users/new.html", "application_login.html"))
 }
 
+// @Summary			MainForm  폼 렌더링
+// @Description		[MainForm] MainForm  폼을 렌더링합니다.
+// @Tags			main
+// @Produce			html
+// @Success			200	{html}	html	"settings/connection/mngform.html"
+// @Router			/main/[get]
 func (a actions) MainForm(c buffalo.Context) error {
 	u := models.MCUser{}
 	c.Set("user", u)
@@ -57,6 +69,14 @@ func (a actions) MainForm(c buffalo.Context) error {
 
 // UsersNew renders the users form
 
+// @Summary		UsersCreate 생성
+// @Description	[CloudConnectionCreate] UsersCreate 생성
+// @Tags			user
+// @Accept			json
+// @Produce			json
+// @Param			email	query		string	true	"Email"
+// @Failure			500		{json}		{'error': errors.WithStack}
+// @Router		/users/[post]
 func (a actions) UsersCreate(c buffalo.Context) error {
 	u := &models.MCUser{}
 	if err := c.Bind(u); err != nil {
@@ -90,6 +110,14 @@ func (a actions) UsersCreate(c buffalo.Context) error {
 
 // 현재 사용자의 workspace 설정
 // workspace 변경시에는 projectList반환
+
+// @Summary		SetCurrentWorkspace 설정
+// @Description	현재 사용자의 workspace 설정
+// @Tags			user
+// @Accept			json
+// @Produce			json
+// @Failure			500		{json}		{'error': respStatus.Message, 'status':respStatus.StatusCode}
+// @Router
 func (a actions) SetCurrentWorkspace(c buffalo.Context) error {
 	log.Println("SetCurrentWorkspace")
 
@@ -199,6 +227,14 @@ func (a actions) SetCurrentWorkspace(c buffalo.Context) error {
 // 기본 namespace 설정완료.
 // SetCurrentNamespace
 // TODO : 이름도 Namespace -> project로 바꿔야 하나??
+
+// @Summary		SetCurrentNamespace
+// @Description	 현재 사용자 정보 조회 namespace 확인
+// @Tags			ns
+// @Accept			json
+// @Produce			json
+// @Failure			500		{json}		{'error': respStatus.Message, 'status':respStatus.StatusCode}
+// @Router 			/api/namespace/{nsId}/[post]
 func (a actions) SetCurrentNamespace(c buffalo.Context) error {
 	log.Println("SetCurrentNamespace")
 
@@ -362,7 +398,13 @@ func (a actions) SetCurrentNamespace(c buffalo.Context) error {
 
 // GetUserByEmail
 //
-
+// @Summary		GetUserByEmail
+// @Description	 사용자의 이메일 조회
+// @Tags			user
+// @Accept			json
+// @Produce			json
+// @Failure			500		{json}		{'error': respStatus.Message, 'status':StatusCode}
+// @Router 			/find/user/[get]
 func (a actions) GetUserByEmail(c buffalo.Context) error {
 	tx := c.Value("tx").(*pop.Connection)
 	email := c.Param("email")
