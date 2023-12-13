@@ -220,8 +220,8 @@ func (a actions) SshKeyGet(c buffalo.Context) error {
 	}))
 }
 
-// @Summary		SshKeyGet 작성
-// @Description	[SshKeyGet] SshKeyGet 작성
+// @Summary		SshKeyReg 작성
+// @Description	[SshKeyReg] SshKeyReg 작성
 // @Tags			sshKey
 // @Accept			json
 // @Produce			json
