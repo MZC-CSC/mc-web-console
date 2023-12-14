@@ -35,8 +35,8 @@ func (a actions) DataDiskMngForm(c buffalo.Context) error {
 // @Accept			json
 // @Produce		json
 // @Param			dataDiskRegInfo	body		mcir.TbDataDiskReq	true	"tbmcir.TbDataDiskReq"
-// @Success		200				{string}	string				"{'message':'success','status':'200',}"
-// @Failure		500				{string}	string				"{'error':  err.Error(),'status': '500',}"
+// @Success		200				{string}	string				"{'message':'success', 'status': respStatus.StatusCode, 'DataDiskInfo': resultDataDiskInfo}"
+// @Failure		500				{string}	string				"{'error':  respStatus.Message,'status': respStatus.StatusCode,}"
 // @Router			/api/settings/resources/datadisk/ [post]
 func (a actions) DataDiskReg(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -112,7 +112,7 @@ func (a actions) DataDiskReg(c buffalo.Context) error {
 // @Produce		json
 // @Param			dataDiskRegInfo	body		webtool.DataDiskMngReq	true	"webtool.DataDiskMngReq"
 // @Success		200				{string}	string					"{'message':'success','status':'200',}"
-// @Failure		500				{string}	string					"{'error':  err.Error(),'status': '500',}"
+// @Failure		500				{string}	string					"{'error':  'failed. No data has been changed.','status': '500',}"
 // @Router			/api/settings/resources/datadisk/mngdata/ [post]
 func (a actions) DataDiskMng(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -197,8 +197,8 @@ func (a actions) DataDiskMng(c buffalo.Context) error {
 // @Param			option		query		string	true	"option"
 // @Param			filterKey	query		string	true	"filterKey"
 // @Param			filterVal	query		string	true	"filterVal"
-// @Success		200			{string}	string	"{'message':'success','status':'200','defaultNameSpaceID': namespaceID,'status': respStatus.StatusCode,}"
-// @Failure		500			{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Success		200			{string}	string	"{'message':'success','status':'200','defaultNameSpaceID': namespaceID,'dataDiskInfoList': dataDiskInfoList,}"
+// @Failure		500			{string}	string	"{'error':  respStatus.Message,'status': respStatus.StatusCode,}"
 // @Router			/api/settings/resources/datadisk/ [get]
 func (a actions) DataDiskList(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -239,7 +239,7 @@ func (a actions) DataDiskList(c buffalo.Context) error {
 	}
 }
 
-// @Summary		Data Disk List 조회 (connection)
+// @Summary		Region 에 따른 Data Disk List 조회 (connection)
 // @Description	[DataDiskListByRegion] Data Disk List를 connection으로 조회합니다.
 // @Description	해당리전에 등록 된 DataDisk 목록. connection 필요
 // @Description	UI 에서 용이하게 쓰기 위함 (콤보 선택용)
@@ -247,9 +247,9 @@ func (a actions) DataDiskList(c buffalo.Context) error {
 // @Accept			json
 // @Produce		json
 // @Param			option			query		string	true	"option"
-// @Param			filterValParam	query		string	true	"connectionName"
-// @Success		200				{string}	string	"{'message':'success','status':'200','defaultNameSpaceID': namespaceID,'dataDiskInfoList': dataDiskInfoList,}"
-// @Failure		500				{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Param			connectionName	query		string	true	"connectionName"
+// @Success		200				{string}	string	"{'message':'success','status': respStatus.StatusCode,'defaultNameSpaceID': namespaceID,'dataDiskInfoList': dataDiskInfoList,}"
+// @Failure		500				{string}	string	"{'error': respStatus.Message,'status': respStatus.StatusCode,}"
 // @Router			/api/settings/resources/datadisk/region/ [get]
 func (a actions) DataDiskListByRegion(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -279,7 +279,7 @@ func (a actions) DataDiskListByRegion(c buffalo.Context) error {
 // @Accept			json
 // @Produce		json
 // @Param			dataDiskId			path		string	true	"dataDiskId"
-// @Success		200				{string}	string	"{'message':'success','status':'200','dataDiskInfo': dataDiskInfo}"
+// @Success		200				{string}	string	"{'message':'success','status':respStatus,'dataDiskInfo': dataDiskInfo}"
 // @Failure		500				{string}	string	"{'error':  err.Error(),'status': '500',}"
 // @Router			/api/settings/resources/datadisk/id/{dataDiskId}/ [get]
 func (a actions) DataDiskGet(c buffalo.Context) error {
@@ -312,8 +312,8 @@ func (a actions) DataDiskGet(c buffalo.Context) error {
 // @Produce		json
 // @Param			dataDiskId			path		string	true	"dataDiskId"
 // @Param			dataDiskUpsizeReq	body		mcir.TbDataDiskUpsizeReq	true	"tbmcir.TbDataDiskUpsizeReq"
-// @Success		200				{string}	string	"{'message':'success','status':'200','DataDiskInfo': DataDiskInfo}"
-// @Failure		500				{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Success		200				{string}	string	"{'message':'success','status':respStatus.StatusCode,'DataDiskInfo': resultDataDiskInfo}"
+// @Failure		500				{string}	string	"{'error':  respStatus.Message,'status': respStatus.StatusCode,}"
 // @Router			/api/settings/resources/datadisk/id/{dataDiskId}/ [put]
 func (a actions) DataDiskPut(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -346,7 +346,7 @@ func (a actions) DataDiskPut(c buffalo.Context) error {
 // @Produce		json
 // @Param			dataDiskId			path		string	true	"dataDiskId"
 // @Success		200				{string}	string	"{'message':'success','status':'200'}"
-// @Failure		500				{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Failure		500				{string}	string	"{'error':  respStatus.Message,'status': respStatus.StatusCode,}"
 // @Router			/api/settings/resources/datadisk/id/{dataDiskId}/ [DELETE]
 func (a actions) DataDiskDel(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)

@@ -21,6 +21,11 @@ type Scheduler struct {
 
 var c *gocron.Scheduler
 
+// @Summary		 Cron 자동화
+// @Description  시간별로 spec 와일드 카드 생성
+// @Accept      time
+// @Produce    	time
+// @Router
 func GoCron(s Scheduler) {
 	//spec 와일드 카드로 생성(m h dom m dow)
 	//
@@ -62,6 +67,14 @@ func NextScheduleTimeByTag(t string) time.Time {
 	return nextTime
 }
 
+// @Summary		스케줄러 폼 렌더링
+// @Description  ID name 정보를 가지고 화면 호출 스케줄 폼으로 렌더링
+// @Produce   html
+// @Param	  mcisId mcisId
+// @Param	  mcisName
+// @Success 200	{html}	html	"operations/scheduler/mngform.html"
+// @Router operations/scheduler/mngform/ [get]
+
 func (a actions) schedulerMngForm(c buffalo.Context) error {
 	mcisId := c.Param("mcisId")
 	mcisName := c.Param("mcisName")
@@ -72,6 +85,14 @@ func (a actions) schedulerMngForm(c buffalo.Context) error {
 	return c.Render(http.StatusOK, r.HTML("operations/scheduler/mngform.html"))
 }
 
+// @Summary		SchedulingReg 등록
+// @Description	 작업 스케줄 등록
+// @Accept		json
+// @Produce		json
+// @Param  		scheduleSet.McisLifeCycle.NameSpaceID  query 	String  true "namespaceID"
+// @Param  		scheduleSet.VmLifeCycle.NameSpaceID  query 		String  true "namespaceID"
+// @Failure  500			{string}	string				"{'error':'respStatus.Message','status':respStatus.StatusCode}"
+// @Router
 func (a actions) SchedulingReg(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
 

@@ -18,7 +18,14 @@ func (a actions) SecurityGroupMngForm(c buffalo.Context) error {
 	return c.Render(http.StatusOK, r.HTML("settings/securitygroup/mngform.html"))
 }
 
-// SecuritygroupList
+// @Summary		SecurityGroupList
+// @Description   보안그룹리스트에서  옵션아이디 값을 전달 받아
+// @Tags 		securityGroup
+// @Accept      json
+// @Produce     json
+// @Success 200	{string}	string	"{'message':'success','status':'respStatus','DefaultNameSpaceID':'namespaceID','SecurityGroupList':'SecurityGroupList'}"
+// Failure   500	{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Router /api/settings/resources/securitygroup/ [get]
 func (a actions) SecurityGroupList(c buffalo.Context) error {
 	log.Println("GetSecirityGroupList : ")
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -58,6 +65,14 @@ func (a actions) SecurityGroupList(c buffalo.Context) error {
 	}
 }
 
+// @Summary		Security Group List By Region
+// @Description connection정보 등 하위내용이 필요하므로 tx로 호출
+// @Tags 		securityGroup
+// @Accept      json
+// @Produce     json
+// @Success 200	{string}	string	"{'message':'success','status':'respStatus',,'SecurityGroupList':'returnSecurityGroupIds'}"
+// @Failure		500	{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Router /api/settings/resources/securitygroup/region/ [get]
 func (a actions) SecurityGroupListByRegion(c buffalo.Context) error {
 	log.Println("SecuritygroupListByRegion : ")
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -196,7 +211,14 @@ func (a actions) SecurityGroupListByRegion(c buffalo.Context) error {
 	}
 }
 
-// 단건조회
+// @Summary		SecurityGroupGet
+// @Description 단건 조회
+// @Tags 		securityGroup
+// @Accept      json
+// @Produce     json
+// @Success 200	{string}	string	"{'message':'success','status':'respStatus',,'SecurityGroupInfo':'securityGroupInfo'}"
+// @Failure		500	{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Router /api/settings/resources/securitygroup/id/{securityGroupId}/ [get]
 func (a actions) SecurityGroupGet(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
 
@@ -227,6 +249,14 @@ func (a actions) SecurityGroupGet(c buffalo.Context) error {
 	}))
 }
 
+// @Summary		SecurityGroupReg
+// @Description  등록
+// @Tags 		securityGroup
+// @Accept      json
+// @Produce     json
+// @Success 200	{string}	string	"{'message':'success','status':'respStatus',,'SecurityGroupInfo':'SecurityGroupInfo'}"
+// @Failure		500	{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Router /api/settings/resources/securitygroup/[POST]
 func (a actions) SecurityGroupReg(c buffalo.Context) error {
 	// 현재 namespace 정보 가져오기
 
@@ -295,6 +325,14 @@ func (a actions) SecurityGroupReg(c buffalo.Context) error {
 	}))
 }
 
+// @Summary		SecurityGroupDel
+// @Description  삭제
+// @Tags 		securityGroup
+// @Accept      json
+// @Produce     json
+// @Success 200	{string}	string	"{'message':'Message','status':'StatusCode'}"
+// @Failure		500	{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Router /api/settings/resources/securitygroup/id/{securityGroupId}/[DELETE]
 func (a actions) SecurityGroupDel(c buffalo.Context) error {
 
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -344,8 +382,15 @@ func (a actions) SecurityGroupDel(c buffalo.Context) error {
 	}))
 }
 
-// security group rule 추가
-// firewall 은 connection과 상관없이 sg에 종속이므로 별도로 mapping table에서 관리하지 않음
+// @Summary		FirewallRuleReg
+// @Description  security group rule 추가 / firewall 은 connection과 상관없이 sg에 종속이므로 별도로 mapping table에서 관리하지 않음
+// @Tags
+// @Accept      json
+// @Produce     json
+// @Success     200	{string}	string	"{'message':'Message','status':'StatusCode', 'SecurityGroupInfo':'resultSecurityGroupInfo'}"
+// @Failure		500	{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Router
+
 func (a actions) FirewallRuleReg(c buffalo.Context) error {
 	// 현재 namespace 정보 가져오기
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -372,7 +417,15 @@ func (a actions) FirewallRuleReg(c buffalo.Context) error {
 	}))
 }
 
-// firewall rule 삭제 :
+// @Summary		FirewallRuleReg
+// @Description  firewall rule 삭제
+// @Tags
+// @Accept      json
+// @Produce     json
+// @Success     200	{string}	string	"{'message':'success','status':'StatusCode', 'securityGroupInfo':'resultSecurityGroupInfo'}"
+// @Failure		500	{string}	string	"{'error':  err.Error(),'status': '500',}"
+// @Router
+
 func (a actions) FirewallRuleDel(c buffalo.Context) error {
 
 	namespaceID := c.Session().Get("current_namespace_id").(string)

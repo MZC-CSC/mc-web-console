@@ -17,11 +17,27 @@ import (
 	"github.com/gofrs/uuid"
 )
 
+// @Summary 	VmSpecMngForm 폼 이동
+// @Description VmSpecMngForm 렌더링
+// @Tags		vmspec
+// @Produce		html
+// @Success		200	{html}	html	"settings/vmspec/mngform.html"
+// @Router      /settings/resources/vmspec/mngform/[get]
 func (a actions) VmSpecMngForm(c buffalo.Context) error {
 	return c.Render(http.StatusOK, r.HTML("settings/vmspec/mngform.html"))
 }
 
 // Get "/lookupvmspecs"
+//
+//	@Summary		VmSpecLookupList 리스트 조회
+//	@Description	[VmSpecLookupList]  VmSpecLookup 리스트를 조회합니다.
+//	@Tags			vmspec
+//	@Accept			json
+//	@Produce		json
+//	@Param			providerId	query		string	true	"providerId"
+//	@Param			regionName	query		string	true	"regionName"
+//	@Success		200			{json}	{'message': 'success', 'status': '200', 'ConnectionConfig': cloudConnections}
+//	@Router			/api/settings/resources/vmspec/lookupvmspecs/ [get]
 func (a actions) VmSpecLookupList(c buffalo.Context) error {
 	connectionName := &common.TbConnectionName{}
 
@@ -55,6 +71,17 @@ func (a actions) VmSpecLookupList(c buffalo.Context) error {
 }
 
 // VmspecList default implementation.
+//
+//	@Summary		VmSpecList 리스트 조회
+//	@Description	[VmSpecList]  VmSpecList 리스트를 조회합니다.
+//	@Tags			vmspec
+//	@Accept			json
+//	@Produce		json
+//	@Param			option	query		string	true	"option"
+//	@Param			filterKey	query		string	true	"filterKey"
+//	@Param			filterVal	query		string	true	"filterVal"
+//	@Success		200			{json}	{'message': 'success', 'status': '200', 'ConnectionConfig': cloudConnections}
+//	@Router			/api/settings/resources/vmspec/ [get]
 func (a actions) VmSpecList(c buffalo.Context) error {
 	log.Println("GetVmSpecList : ")
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -107,6 +134,14 @@ func (a actions) VmSpecList(c buffalo.Context) error {
 	}
 }
 
+// @Summary		VmSpecGet 단건 조회
+// @Description	[VmSpecGet] VmSpecGet 단건 조회합니다.
+// @Tags			vmspec
+// @Accept			json
+// @Produce		json
+// @Param			vmSpecId	path		string	true	"vmSpecId"
+// @Success		200			{json}	{'message': 'success', 'status': 'respStatus.StatusCode', 'DefaultNameSpaceID': 'namespaceID',  'VmSpec': vmSpecInfo}
+// @Router			/api/settings/resources/vmspec/id/{vmSpecId}/ [GET]
 func (a actions) VmSpecGet(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
 
@@ -131,6 +166,15 @@ func (a actions) VmSpecGet(c buffalo.Context) error {
 	}))
 }
 
+// @Summary		VmSpecReg 등록
+// @Description	[VmImageReg] VmSpecReg 등록
+// @Tags			vmspec
+// @Accept			json
+// @Produce			json
+// @Param			specregisteringMethod			query		string	true	"specregisteringMethod"
+// @Success		200			{json}		{'message':'success','status':'respStatus','VMSpec':'resultVmSpecInfo'}
+// @Failure		500			{json}		{'error': 'fail','status': 'fail',}
+// @Router			/api/settings/resources/vmspec/ [post]
 func (a actions) VmSpecReg(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
 	namespaceName := c.Session().Get("current_namespace").(string)
@@ -215,6 +259,15 @@ func (a actions) VmSpecReg(c buffalo.Context) error {
 	}))
 }
 
+// @Summary		VmSpecDel 삭제
+// @Description	[VmSpecDel] VmSpec 삭제합니다.
+// @Tags			vmspec
+// @Accept			json
+// @Produce		json
+// @Param			vmSpecId	query		string	true	"vmSpecId"
+// @Success		200		{string} 		string    	 'success'
+// @Failure		500			{json}		{'error': 'respStatus.Message','status': 'respStatus.StatusCode',}
+// @Router			/api/settings/resources/vmspec/id/{vmSpecId}/ [delete]
 func (a actions) VmSpecDel(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
 	namespaceName := c.Session().Get("current_namespace").(string)
@@ -265,6 +318,13 @@ func (a actions) VmSpecDel(c buffalo.Context) error {
 	}))
 }
 
+// @Summary		FetchVmSpecList 리스트 조회
+// @Description	[FetchVmSpecList] FetchVmSpec 리스트 조회합니다
+// @Tags			vmspec
+// @Accept			json
+// @Produce			json
+// @Success			200		{string} 		string    	 'message':'success,'status':  'http.StatusOK'
+// @Router			/api/settings/resources/vmspec/fetchvmspec/ [put]
 func (a actions) FetchVmSpecList(c buffalo.Context) error {
 	log.Println("FetchVMSpecList : ")
 
@@ -285,6 +345,14 @@ func (a actions) FetchVmSpecList(c buffalo.Context) error {
 	}))
 }
 
+// @Summary		 FilterVmSpecList 목록조회
+// @Description	[FilterVmSpecList]  FilterVmSpec 리스트를 조회합니다.
+// @Tags			vmspec
+// @Accept			json
+// @Produce			json
+// @Success		200		{json}		{'message':'success','status':respStatus,'VmSpecList': vmSpecInfoList,}
+// @Failure		500		{json}		{'error': respStatus.Message,'status':respStatus.StatusCode}
+// @Router			/api/settings/resources/vmspec/filterspecsbyrange/ [POST]
 func (a actions) FilterVmSpecList(c buffalo.Context) error {
 	log.Println("FilterVmspecList : ")
 
@@ -312,6 +380,15 @@ func (a actions) FilterVmSpecList(c buffalo.Context) error {
 }
 
 // 추천 VMSpec 목록 조회
+//
+//	@Summary		 RecommendVmSpecList 목록 조회
+//	@Description	[RecommendVmSpecList] VMSpecn 리스트를 조회합니다.
+//	@Tags			connection
+//	@Accept			json
+//	@Produce		json
+//	@Success		200		{json}		{'message':'success','status':respStatus,'VmSpecList': VmSpecList,}
+//	@Failure		500		{json}		{'message': fail,'status':fail}
+//	@Router			/api/settings/resources/vmspec/recommendvmspec/[post]
 func (a actions) RecommendVmSpecList(c buffalo.Context) error {
 	mcisDeploymentPlan := &tbmcis.DeploymentPlan{}
 	if err := c.Bind(mcisDeploymentPlan); err != nil {
