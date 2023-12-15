@@ -15,10 +15,25 @@ import (
 )
 
 // VnetForm default implementation.
+
+// @Summary		VpcMngForm 설정 폼 렌더링
+// @Description	[VpcMngForm] VpcMngForm VpcMng 설정 폼을 렌더링합니다.
+// @Tags			connection
+// @Produce		vpc
+// @Success		200	{html}	html	settings/vnet/mngform.html"
+// @Router			/settings/resources/vpc/mngform/ [get]
 func (a actions) VpcMngForm(c buffalo.Context) error {
 	return c.Render(http.StatusOK, r.HTML("settings/vnet/mngform.html"))
 }
 
+// @Summary		VpcReg
+// @Description	[VpcReg] VpcReg 등록
+// @Tags			vpc
+// @Accept			json
+// @Produce			JSON
+// @Success			200				{json}		{'message':'success','status':respStatus,'VNetInfo': 'resultVNetInfo',}
+// @Failure			500				{json}		{'error':err.Error(), 500}
+// @Router			/api/settings/resources/vpc/ [Post]
 func (a actions) VpcReg(c buffalo.Context) error {
 	// 현재 namespace 정보 가져오기
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -96,6 +111,17 @@ func (a actions) VpcReg(c buffalo.Context) error {
 	}))
 }
 
+// SpiderConnectionDelete -> CloudConnectionDel로 변경
+//
+//	@Summary		VpcDel 삭제
+//	@Description	[VpcDel] VpcDel 삭제합니다.
+//	@Tags			vpc
+//	@Accept			json
+//	@Produce		json
+//	@Param			vpcId	path		string	true	"vpcId"
+//	@Success		200		{json}		{'message': 'success', 'status': respStatus}
+//	@Failure		500		{json}		{'error': respStatus.Message, 'status':respStatus.StatusCode}
+//	@Router			/api/settings/resources/vpc/id/{vpcId}/ [delete]
 func (a actions) VpcDel(c buffalo.Context) error {
 	log.Println("VnetDel")
 	namespaceID := c.Session().Get("current_namespace_id").(string)
@@ -146,6 +172,15 @@ func (a actions) VpcDel(c buffalo.Context) error {
 }
 
 // 단건 조회 by id
+// @Summary		VpcGet 단건 조회
+// @Description	[VpcGet] Vpc 단건 조회합니다.
+// @Tags			vpc
+// @Accept			json
+// @Produce			json
+// @Param			vpcId	query		string	true	"vpcId"
+// @Success		200		{json}		{'message': 'success','status': '200','VNetInfo': vNetInfo,}
+// @Failure		500		{json}		{'error': respStatus.Message, 'status':respStatus.StatusCode}
+// @Router			/api/settings/resources/vpc/id/{vpcId}/ [get]
 func (a actions) VpcGet(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
 
@@ -180,6 +215,18 @@ func (a actions) VpcGet(c buffalo.Context) error {
 }
 
 // VnetList default implementation.
+
+//		@Summary		VpcList VpcList 리스트 조회
+//		@Description	[VpcList]  VpcList 리스트를 조회합니다.
+//		@Tags			vpc
+//		@Accept			json
+//		@Produce		json
+//	 	@Param			option	query			string	true	"option"
+//	 	@Param			filterKey	query		string	true	"filterKey"
+//	 	@Param			filterVal	query		string	true	"filterVal"
+//		@Success		200		{json}		{'message': 'success','status': respStatus,'DefaultNameSpaceID': namespaceID,'VNetList': vNetInfoList}
+//		@Failure		500		{json}		{'error': respStatus.Message, 'status':respStatus.StatusCode}
+//		@Router			/api/settings/resources/vpc/ [get]
 func (a actions) VpcList(c buffalo.Context) error {
 	namespaceID := c.Session().Get("current_namespace_id").(string)
 
@@ -220,6 +267,25 @@ func (a actions) VpcList(c buffalo.Context) error {
 }
 
 // 해당 namespace의 Region내 vnet 목록 조회
+//
+//		@Summary		VpcList VpcList 리스트 조회
+//		@Description	[VpcList]  VpcList 리스트를 조회합니다.
+//		@Tags			vpc
+//		@Accept			json
+//		@Produce		json
+//	 	@Param			option	query			string	true	"option"
+//	 	@Param			filterKey	query		string	true	"filterKey"
+//	 	@Param			filterVal	query		string	true	"filterVal"
+//	 	@Param			is_cb	query		string	true	"is_cb"
+//	 	@Param			providerId	query		string	true	"providerId"
+//	 	@Param			"regionName"	query		string	true	""regionName""
+//	 	@Param			zoneName	query		string	true	"zoneName"
+//	 	@Param			connectionName	query		string	true	"connectionName"
+//		@Success		200		{json}		{'message': 'success','status': respStatus,'DefaultNameSpaceID': namespaceID,'VNetList': vNetInfoList}
+//
+// @Failure		500		{json}		{'error': err.Error(), 'status':500}
+//
+//	@Router			/api/settings/resources/vpc/region/ [get]
 func (a actions) VpcListByRegion(c buffalo.Context) error {
 	log.Println("VnetListByRegion")
 	namespaceID := c.Session().Get("current_namespace_id").(string)
