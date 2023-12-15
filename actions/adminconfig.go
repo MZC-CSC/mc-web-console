@@ -209,7 +209,7 @@ func (a actions) DelRegionGroup(c buffalo.Context) error {
 // @Tags			adminconfig
 // @Accept			json
 // @Produce		json
-// @Param			Category	body		models.Category	true	"models.Category"
+// @Param			Category	body		models.MenuCategory	true	"models.MenuCategory"
 // @Success		200			{string}	string			"{'message': 'success', 'status': 200}"
 // @Router			/api/adminconfig/category/ [post]
 func (a actions) CategoryReg(c buffalo.Context) error {
@@ -237,7 +237,7 @@ func (a actions) CategoryReg(c buffalo.Context) error {
 // @Tags			adminconfig
 // @Accept			json
 // @Produce		json
-// @Param			Category	body		models.Category	true	"models.Category"
+// @Param			Category	body		models.MenuCategory	true	"models.MenuCategory"
 // @Success		200			{string}	string			"{'message': 'success', 'status': 200}"
 // @Router			/api/adminconfig/category/ [delete]
 func (a actions) CategoryDel(c buffalo.Context) error {
