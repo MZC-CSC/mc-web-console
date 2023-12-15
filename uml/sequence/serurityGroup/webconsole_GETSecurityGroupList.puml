@@ -1,0 +1,30 @@
+@startuml
+
+title "Get Security Grounp List"
+
+actor User as user
+participant "app.go" as app
+participant "SecurityGroup.go" as route
+participant "ResourceHandler.go" as handler
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+
+group "API Call"
+user -> app : GET : /api/settings/resources/securitygroup
+user -> app : Session : current_namespace_id
+user -> app : QUERY : option,filterKey,filterVal
+
+end
+
+app -> route : SecurityGroupList()
+alt if optionParam == "id"
+route -> handler: GetSecurityGroupListByOptionID
+handler <-> tumblebug: http request to create credential
+else
+route -> handler: GetSecurityGroupListByOption
+handler <-> tumblebug: http request to create credential
+end
+
+
+@enduml
