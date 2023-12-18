@@ -5,7 +5,7 @@ title "Get Security Grounp List"
 actor User as user
 participant "app.go" as app
 participant "SecurityGroup.go" as route
-participant "ResourceHandler.go" as handler
+participant "SecurityGroupHandler.go" as handler
 
 box "External Module"
 participant "cb-tumblebug" as tumblebug

@@ -1,0 +1,32 @@
+@startuml
+title "Security Groun List by Region"
+actor User as user
+participant "app.go" as app
+participant "SecurityGroup.go" as route
+participant "SecurityGroupHandler" as handler
+box "External Module"
+participant "cd-tumblebug" as tumblebug
+end box
+database Database as DB
+
+
+
+group "API Call"
+user -> app : GET : /api/settings/resources/securitygroup/region
+user -> app : Session : current_namespace_id
+user -> app : QUERY : option, filterKey, filterVal, is_cb, providerId, regionName, connectionName, vpcId
+end
+app -> route : SecurityGroupListByRegion()
+
+alt if paramVpcID != ""
+    route -> handler : GetUsedConnectionTx(region *models.CloudConnectionMapping)
+    handler <-> DB : fetch driver
+
+else  is_cb == "N"
+    route -> handler : ListResourceByType
+    handler -> DB
+else
+    route -> handler : GetSecurityGroupListByOptionID
+    handler <-> tumblebug: http request to create credential
+end
+@enduml
