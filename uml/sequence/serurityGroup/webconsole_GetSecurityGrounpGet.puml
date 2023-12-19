@@ -1,0 +1,22 @@
+@startuml
+
+title "Security Group Get"
+actor User as user
+participant "app.go" as app
+participant "SecurityGroup.go" as route
+participant "GetSecurityGroupData" as habdler
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+
+group "API call"
+user -> app : GET : /api/settings/resources/securitygroup/id/{securityGroupId}/
+user -> app : Session : current_namespace_id
+user -> app : QUERY : securityGroupId
+end
+app -> route : SecurityGroupGet()
+route -> tumblebug
+
+user <- route
+
+@enduml
