@@ -1,0 +1,36 @@
+@startuml
+
+title "Security Group Post"
+
+actor User as user
+
+participant "app.go" as app
+participant "SecurityGroup.go" as route
+participant "CloudConnectionHandler.go" as connectionHandler
+participant "RegSecurityGroup" as SecurityHandler
+database Database as DB
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group "API Call"
+user -> app : POST: /api/settings/resources/securitygroup/
+user -> app : BODY: tbmcir.TbSecurityGroupReq
+end
+
+app -> route : SecurityGroupReg()
+route -> connectionHandler: GetAvailableConnection(viewCloudConnection views.ViewCloudConnection)
+connectionHandler -> DB: Fetch available connection
+route <- connectionHandler: return views.ViewCloudConnection
+
+route -> SecurityHandler: RegSecurityGroup(namespaceID, securityGroupRegInfo)
+connectionHandler -> DB: Fetch available connection
+route <- connectionHandler: return views.ViewCloudConnection
+
+route -> connectionHandler :  SaveConnectionMapping(connectionMapping *models.CloudConnectionMapping)
+connectionHandler -> DB: Create connection with validate
+route <- connectionHandler:
+
+user <- route: return *tbmcir.TbDataDiskInfo | json
+@enduml
