@@ -1,0 +1,22 @@
+@startuml
+title "Security Group Del"
+
+actor User as user
+
+participant "app.go" as app
+participant "securitygroup.go" as route
+participant "ResourceHandler" as handler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group "API Call"
+user -> app : DELETE : /api/settings/resources/securitygroup/id/{securityGroupId}
+user -> app : QUERY : securityGroupId
+end
+route -> handler
+handler -> tumblebug
+tumblebug -> user
+
+
+@enduml
