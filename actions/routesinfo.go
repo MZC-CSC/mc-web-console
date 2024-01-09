@@ -160,7 +160,7 @@ func RoutesManager() {
 }
 
 // @Summary		getHandlerFuncByName
-// @Description	이름으로 핸들러 함수를 가져온다
+// @Description
 // @Tags
 // @Accept
 // @Produce json
