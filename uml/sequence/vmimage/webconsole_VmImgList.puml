@@ -1,0 +1,32 @@
+@startuml
+
+title "GetVmImageList"
+
+actor User as user
+
+participant "app.go" as app
+participant "vmimage.go" as route
+participant "ResourceHandler.go" as handler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+
+group  "API Call"
+    user    -> app : GET: /api/settings/resources/vmimage/
+    user    -> app : QUERY: option, filterKey, filterVal, connectionName
+end
+
+app     -> route: VmImageList()
+alt option == "id"
+    route -> handler: GetDataDiskListByID(nameSpaceID string, filterKeyParam string, filterValParam string)
+    handler -> tumblebug: http request to get data disk list by Id
+    route <- handler: return []string
+    user <- route : return []string | json
+else  option != "id"
+    route -> handler: GetDataDiskListByOption(nameSpaceID string, optionParam string, filterKeyParam string, filterValParam string)
+    handler -> tumblebug: http request to get data disk list by Option
+    route <- handler: return []tbmcir.TbDataDiskInfo
+    user <- route : return []tbmcir.TbDataDiskInfo | json
+end
+@enduml
