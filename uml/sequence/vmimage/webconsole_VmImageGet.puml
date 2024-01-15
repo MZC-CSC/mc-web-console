@@ -1,0 +1,29 @@
+@startuml
+
+title "Get VM Image"
+
+actor User as user
+
+participant "app.go" as app
+participant "vmimage.go" as route
+participant "GetVirtualMachineImageData.go" as handler
+participant  "GetViewConnection" as connection
+database Database as DB
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+
+group "API Call"
+    user ->  app : GET: api/settings/resources/vmimage/id/{vmImageId}/
+    user ->  app : QUERY: vmImageId
+end
+
+app -> route : VmImageGet()
+route -> handler
+handler <-> tumblebug: http request to fetch tumblebug VmImage
+connection <-> DB
+route <- handler
+user <- route: return vmimage
+
+
+@enduml
