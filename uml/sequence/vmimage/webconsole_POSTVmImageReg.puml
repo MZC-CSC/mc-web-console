@@ -1,0 +1,36 @@
+@startuml
+title "VMv Image reg"
+
+actor User as user
+
+participant "app.go" as app
+participant "vmimage.go" as route
+participant "GetAvailableConnection" as handler
+database database as DB
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group "API Call"
+user  -> app : POST : /api/settings/resources/vmimage/
+user  -> app : PATH : registeringMethod
+end
+
+app  -> route
+route -> handler
+handler -> DB
+DB -> route : Get account information
+
+alt string.EqualFold == "registerWithInfo"
+route -> tumblebug : handler.RegVirtualMachineImageWithInfo()
+tumblebug -> DB
+
+
+else
+route -> tumblebug : handler.RegVirtualMachineImage()
+tumblebug -> DB
+end
+route <- handler
+user <- route
+@enduml
