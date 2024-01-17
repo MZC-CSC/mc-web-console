@@ -1,0 +1,35 @@
+@startuml
+
+title "Delete VmImage"
+
+actor User as user
+
+participant "app.go" as app
+participant "vmimage.go" as route
+participant "DelVirtualMachineImage" as handler
+participant "CloudConnectionHandler.go" as connectionHandler
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+database Database as db
+
+group "API Call"
+user    -> app : DELETE: /api/settings/resources/vmimage/id/{vmImageId}/
+user    -> app : PATH: vmImageId
+end
+
+app -> route : VmImageDel()
+route -> handler : VmImageDel(namespaceID string, paramVmImageId, string)
+handler -> tumblebug :  http request to deleteVmImag
+route <- handler : return nil
+
+route -> connectionHandler: GetUsedConnection(paramConnectionMapping *models.CloudConnectionMapping)
+connectionHandler -> db : fetch used connection data
+route <- connectionHandler: return *models.CloudConnectionMapping
+
+route -> db
+
+
+user <- route :  return successMessage
+
+@enduml
