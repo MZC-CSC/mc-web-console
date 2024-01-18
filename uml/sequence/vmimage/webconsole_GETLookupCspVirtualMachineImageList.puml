@@ -1,0 +1,25 @@
+@startuml
+title "LookUp CSP Virtual Machine Image List"
+
+actor User as user
+participant "app.go" as app
+participant "vmimage.go" as route
+participant  "GetAvailableConnection.go" as Availablehandler
+participant "LookupVirtualMachineImageList.go" as handler
+database Database as DB
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group "API Call"
+    user    -> app : GET:/api/settings/resources/vmimage/lookupimages
+    user    -> QUERY : providerId, regionName
+end
+
+app     -> route : LookupCspVirtualMachineImageList()
+route   -> Availablehandler
+Availablehandler -> handler
+route <- handler
+
+
+@enduml
