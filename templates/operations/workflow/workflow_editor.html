@@ -1,0 +1,173 @@
+
+<!--
+	html, body {width: 100vw; height: 100vh; overflow: hidden;}
+	body {display: flex; flex-direction: column;}
+-->
+<style>
+	
+
+	body, input, button {font: 14px/1.3em 'Open Sans', Arial, Verdana, Serif;}
+	html, body {width: 100vw; height: 100vh; margin: 0; padding: 0; overflow: hidden;}
+	#designer {flex: 1;}
+
+	.sqd-editor {padding: 10px;}
+	.sqd-editor label {display: block; padding: 10px 0;}
+
+	#designer {position: absolute; left: 0; top: 0; width: 70vw; height: 100vh;}
+	.sqd-editor {padding: 10px;}
+	.sqd-editor p {margin: 0; padding: 0 0 10px;}
+	.sqd-editor label {display: block; padding: 0 0 10px;}
+	.sqd-editor input[type=text] {width: 100%; box-sizing: border-box; border: 1px solid silver; padding: 6px; border-radius: 5px;}
+	.sqd-editor input[type=text]:read-only {background: #f4f4f4; border-color: #ddd; color: #999;}
+
+	#result {position: absolute; right: 0; bottom: 0; width: 30vw; height: 100vh; padding: 10px; box-sizing: border-box; color: #FFF; background: #2C18DF;}
+	#result a.github {color: #FFF; display: inline-block; margin: 6px 8px;}
+	#result a.github:hover {text-decoration: none;}
+	#result button {padding: 10px; color: #000; background: #FFF; border: 0; border-radius: 5px; cursor: pointer;}
+	#result button:hover {opacity: 0.8;}
+</style>
+
+	</head>
+	<body>
+		<div id="designer">			
+		</div>
+
+		<div id="result">
+	
+	
+			<h5>Variables</h5>
+	
+			<pre id="variables"></pre>
+	
+			<h5>Console</h5>
+	
+			<pre id="console"></pre>
+		</div>
+	</body>
+
+<!-- export 시 사용할 filename, script
+< link href="https://cdn.jsdelivr.net/npm/sequential-workflow-designer@0.18.1/css/designer.css" rel="stylesheet" >
+< link href="https://cdn.jsdelivr.net/npm/sequential-workflow-designer@0.18.1/css/designer-light.css" rel="stylesheet" >
+< link href="https://cdn.jsdelivr.net/npm/sequential-workflow-designer@0.18.1/css/designer-dark.css" rel="stylesheet" >
+< script src="https://cdn.jsdelivr.net/npm/sequential-workflow-designer@0.18.1/dist/index.umd.js" >< /script >
+ -->
+
+ 
+<script type="module" src="/assets/extensions/sequential-workflow-model/lib/esm/index.js"></script>
+<script type="module" src="/assets/extensions/sequential-workflow-designer/lib/esm/index.js"></script>
+
+
+<%= javascriptTag("workflow/lib.js") %>
+<%= javascriptTag("workflow/simple-flow.js") %>
+<!-- %= javascriptTag("workflow/state-machine.js") % -->
+<!-- %= javascriptTag("workflow/live-testing.js") % -->
+<script>
+	
+// alert("designer");
+// console.log(Designer)
+// alert("StateMachineSteps");
+// console.log(StateMachineSteps)
+
+// const designer = Designer.create(placeholder, definition, configuration);
+//sequentialWorkflowDesigner.Designer.create(placeholder, definition, configuration);
+// alert("Designer");
+// console.log(Designer);
+// alert("2")
+// const placeholder = document.getElementById('placeholder');
+
+// const definition = {
+//   properties: {
+//     'myProperty': 'my-value',
+//     // root properties...
+//   },
+//   sequence: [
+//     // steps...
+//   ]
+// };
+
+// const configuration = {
+//   theme: 'light', // optional, default: 'light'
+//   isReadonly: false, // optional, default: false
+//   undoStackSize: 10, // optional, default: 0 - disabled, 1+ - enabled
+
+//   steps: {
+//     // all properties in this section are optional
+
+//     iconUrlProvider: (componentType, type) => {
+//       return `icon-${componentType}-${type}.svg`;
+//     },
+
+//     isDraggable: (step, parentSequence) => {
+//       return step.name !== 'y';
+//     },
+//     isDeletable: (step, parentSequence) => {
+//       return step.properties['isDeletable'];
+//     },
+//     isDuplicable: (step, parentSequence) => {
+//         return true;
+//     },
+//     canInsertStep: (step, targetSequence, targetIndex) => {
+//       return targetSequence.length < 5;
+//     },
+//     canMoveStep: (sourceSequence, step, targetSequence, targetIndex) => {
+//       return !step.properties['isLocked'];
+//     },
+//     canDeleteStep: (step, parentSequence) => {
+//       return step.name !== 'x';
+//     }
+//   },
+
+//   validator: {
+//     // all validators are optional
+
+//     step: (step, parentSequence, definition) => {
+//       return /^[a-z]+$/.test(step.name);
+//     },
+//     root: (definition) => {
+//       return definition.properties['memory'] > 256;
+//     }
+//   },
+
+//   toolbox: {
+//     isCollapsed: false,
+//     groups: [
+//       {
+//         name: 'Files',
+//         steps: [
+//           // steps for the toolbox's group
+//         ]
+//       },
+//       {
+//         name: 'Notification',
+//         steps: [
+//           // steps for the toolbox's group
+//         ]
+//       }
+//     ]
+//   },
+
+//   editors: {
+//     isCollapsed: false,
+//     rootEditorProvider: (definition, rootContext, isReadonly) => {
+//       const editor = document.createElement('div');
+//       // ...
+//       return editor;
+//     },
+//     stepEditorProvider: (step, stepContext, definition, isReadonly) => {
+//       const editor = document.createElement('div');
+//       // ...
+//       return editor;
+//     }
+//   },
+
+//   controlBar: true,
+//   contextMenu: true,
+// };
+
+// const designer = Designer.create(placeholder, definition, configuration);
+// designer.onDefinitionChanged.subscribe((newDefinition) => {
+//   // ...
+// });
+// alert("designer");
+// console.log(designer)
+</script>

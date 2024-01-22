@@ -21,6 +21,7 @@
     "jquery-ui": "^1.13.2",
     "jquery-ujs": "^1.2.2",
     "jquery.scrollbar": "^0.2.11",
+    "sequential-workflow-designer": "^0.18.1",
     "sumoselect": "^3.4.3",
     "tabulator-tables": "^5.4.4",
     "webpack-jquery-ui": "^2.0.1"

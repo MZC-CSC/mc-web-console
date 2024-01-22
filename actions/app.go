@@ -110,6 +110,9 @@ func App() *buffalo.App {
 		//app.Use(middleware.DynamicRoutes)
 		//RoutesManager(app)
 
+		app.GET("/test/workflow/", WorkflowEditorForm)
+		//app.GET("/workflow/workfloweditor", WorkflowEditorForm)
+
 		app.GET("/swagger/{*docs}", buffaloSwagger.WrapHandler(swaggerFiles.Handler))
 
 		app.ServeFiles("/", http.FS(public.FS())) // serve files from the public directory

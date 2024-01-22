@@ -54,7 +54,7 @@ const configurator = {
         bootstrap:'bootstrap',
         Popover: 'exports-loader?Popover!bootstrap/js/dist/popover',
         Alert: "exports-loader?Alert!bootstrap/js/dist/alert",
-        Tooltip: "exports-loader?Tooltip!bootstrap/js/dist/tooltip",
+        Tooltip: "exports-loader?Tooltip!bootstrap/js/dist/tooltip",   
        
       }),
       new MiniCssExtractPlugin({filename: "[name].[contenthash].css"}),
@@ -69,7 +69,10 @@ const configurator = {
               "**/assets/src/**",
             ]
           }
-        }],
+        },
+        {from: 'node_modules/sequential-workflow-designer',        to:'extensions/sequential-workflow-designer'},
+        {from: 'node_modules/sequential-workflow-model',        to:'extensions/sequential-workflow-model'},
+      ],
       }),
       new Webpack.LoaderOptionsPlugin({minimize: true,debug: false}),
       new WebpackManifestPlugin({fileName: "manifest.json",publicPath: ""})

@@ -35,7 +35,7 @@ func SkipMiddlewareByRoutePath(next buffalo.Handler) buffalo.Handler {
 			log.Println("this path is root ", c.Request().URL.Path)
 			return next(c)
 		}
-		if c.Request().URL.Path == "/getget/" || c.Request().URL.Path == "/getget2/" {
+		if c.Request().URL.Path == "/getget/" || c.Request().URL.Path == "/getget2/" || c.Request().URL.Path == "/test/workflow/" {
 			log.Println("this path is getget ", c.Request().URL.Path)
 			return next(c)
 		}
