@@ -1,0 +1,24 @@
+@startuml
+title "LookUp CSP Virtual Machine Image List"
+
+actor User as user
+participant "app.go" as app
+participant "vmimage.go" as route
+participant  "ResourceHandler.go" as handler
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group "API Call"
+user    -> app : POST:/api/settings/resources/vmimage/searchimage
+end
+app     -> route : SearchVirtualMachineImageList()
+route   -> handler : SearchVirtualMachineImageList(namespaceID, restSearchImageRequest)
+handler <-> tumblebug : http request to create tumblebug driver
+handler -> route
+user <-route:  return successMessage
+
+
+
+@enduml
