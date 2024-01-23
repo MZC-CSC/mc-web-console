@@ -1,0 +1,26 @@
+@startuml
+title "FetchVirtualMachineImageList"
+
+actor User as user
+
+participant "app.go" as app
+participant "vmimage.go" as route
+participant "ResourceHandler.go" as handler
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+
+group "API Call"
+user    -> app : POST : /api/settings/resources/vmimage/searchimage/
+end
+
+app     -> route : FetchVirtualMachineImageList()
+route   -> handler : FetchVirtualMachineImageList(namespaceID)
+handler <-> tumblebug : http request
+
+route <- handler
+user <- route : return successMessage
+
+@enduml
