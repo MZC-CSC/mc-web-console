@@ -1,0 +1,36 @@
+@startuml
+title "Get Vm Spec LookUp List"
+
+actor User as user
+
+participant "app.go" as app
+participant "vmspec.go" as route
+participant "CloudConnectionHandler.go"  as handler
+participant "ResourceHandler.go" as resourcehandler 
+database Database as DB
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group "API Call"
+user    -> app : /api/settings/resources/vmspec/lookupvmspecs
+user    -> app : query : providerId , query : regionName
+end 
+app     -> route : VmSpecLookupList()
+
+route   -> handler : GetAvailableConnection(views.ViewCloudConnection{},query)
+handler <-> DB : fetch viewConnection
+
+
+route -> resourcehandler
+resourcehandler <-> tumblebug : http request to fetch tumblebug cspVmSpecInfoList 
+
+
+route   <-  resourcehandler : []tumblebug.vmSpecList
+
+user    <-  route : return cspVmSpecInfoList
+
+
+
+@enduml
