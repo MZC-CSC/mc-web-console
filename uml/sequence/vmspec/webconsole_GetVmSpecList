@@ -1,0 +1,35 @@
+@startuml
+
+title "Get Vmspce List"
+
+actor User as user
+
+participant "app.go" as app
+participant "vmspec.go" as route
+participant "ResourceHandler" as handler 
+database Database as DB
+
+box "External Module"
+participant "cb-tumblebug.go" as tumblebug
+end box
+
+group "API Call"
+user    -> app : GET:/api/settings/resources/vmspec/ 
+user    -> app : PARAM : option,filterKey,filterVal
+end
+
+app     -> route : VmSpecList 
+
+
+alt optionParam == "id" 
+route    -> handler  :GetVmSpecInfoListByID(namespaceID, filterKey, filterVal)
+handler <-> tumblebug 
+route  <- handler 
+user <- route 
+end
+
+route -> handler :GetVmSpecInfoListByOption(namespaceID, optionParam, filterKeyParam,filterValParam)
+habdler <-> tumblebug 
+route <- handler
+user  <- route
+@enduml
