@@ -1,0 +1,29 @@
+@startuml
+
+title "Vm Spec Get"
+
+actor User as user
+
+participant "app.go" as app
+participant "vmspec.go" as route
+participant "ResourceHandler.go" as handler
+database Database as DB
+
+box "External Moudle"
+participant "cb-tumblebug." as tumblebug
+end box
+
+group "API Call"
+user -> app: GET: /api/settings/resources/vmspec/id/{vmSpecId}
+user -> app: PARAM: vmSpecId
+end
+app  -> route : VmSpecGet()
+
+route -> handler : GetViewConnection(paramViewConnection)
+handler <-> tumblebug : http requset to fetch tumblebug info 
+route <- handler
+route -> handler  : GetViewConnection(paramViewConnection)
+handler <-> DB : fetch
+route <- handler
+user <- route 
+@enduml 
