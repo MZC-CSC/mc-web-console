@@ -1,0 +1,35 @@
+@startuml
+actor User as user
+
+participant "app.go" as app
+participant "vmspec.go" as route
+participant "CloudConnectionHandler.go" as connectionhandler
+participant "ResourceHandler.go" as resourcehandler
+database  batabase as DB
+
+box "External Module" 
+participant "cb-tumblebug" as tumblebug
+end box
+
+
+group "API Call"
+user -> app : post:/api/settings/resources/vmspec/ [post]
+end
+
+route -> connectionhandler: GetAvailableConnection(paramViewConnection, c)
+connectionhandler -> DB : fetch  connection
+route <- connectionhandler : []module.Credential
+
+alt strings.EqualFold(paramVMSpecregisteringMethod, "registerWithInfo")
+route -> resourcehandler:RegVmSpecWithInfo(namespaceID, paramVMSpecregisteringMethod, vmSpecRegInfo)
+resourcehandler <-> tumblebug : http request to fetch tumblebug connection 
+route <- resourcehandler : []tumblebug.connectionInfo
+user <- route: return
+else !strings.EqualFold(paramVMSpecregisteringMethod, "registerWithInfo")
+route -> resourcehandler : RegVmSpec(namespaceID, paramVMSpecregisteringMethod, vmSpecReq)
+resourcehandler <-> tumblebug : http request to fetch tumblebug connection 
+route <- resourcehandler : []tumblebug.connectionInfo
+user <- route: return
+end
+
+@enduml
