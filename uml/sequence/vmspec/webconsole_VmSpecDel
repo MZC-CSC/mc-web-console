@@ -1,0 +1,38 @@
+@startuml
+
+title "Vm Spec Delete"
+
+actor User as user 
+
+participant "app.go" as app
+participant "vmspec.go" as route
+participant "ResourceHandler" as ResourceHandler
+participant "CloudConnectionHandler" as ConnectionHandler
+database Database as DB
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group "API Call"
+
+user -> app : DELETE :/api/settings/resources/vmspec/id/{vmSpecId}/
+user -> app : PARAM: paramVmSpecId
+
+end 
+app -> route : VmSpecDel()
+route -> ResourceHandler : DelVMSpec(namespaceID, paramVmSpecId)
+ResourceHandler <-> tumblebug : http request to fetch tumblebug VmSpce delete
+route <- ResourceHandler 
+
+route -> ConnectionHandler : GetUsedConnection(connectionMapping)
+ConnectionHandler <-> DB : fetch delete VmSpce
+route <- ConnectionHandler : []models.delete vmspec
+
+route -> ConnectionHandler : SaveConnectionMapping(usedConnectionMapping)
+ConnectionHandler <-> DB : fetch save delect data
+route <- ConnectionHandler :[]models.delect vmspec 
+user <- route : return delect vpspce 
+
+
+@enduml
