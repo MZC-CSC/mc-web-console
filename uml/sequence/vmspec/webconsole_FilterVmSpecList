@@ -1,0 +1,24 @@
+@startuml
+
+title "filter Vm Spec List"
+
+actor User as user
+
+participant "app.go" as app
+participant "vmspec.go" as route
+participant "ResourceHandler" as handler
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug 
+end box
+
+group "API Call"
+user -> app : POST : /api/settings/resources/vmspec/filterspecsbyrange/ 
+end
+
+app -> route : FilterVmSpecList()
+route -> handler : FilterVmSpecInfoListByRange(namespaceID, vmSpecRange)
+handler <-> tumblebug : http request to fetch all fliter list 
+route <- handler 
+user <- route
+@enduml
