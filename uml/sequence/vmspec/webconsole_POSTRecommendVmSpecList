@@ -1,0 +1,25 @@
+@startuml
+title "Recommend Vm Spec List"
+
+actor User as user
+
+participant "app.go" as app 
+participant "vmspec.go" as route
+participant "ResourceHandler" as handler
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group "API Call"
+user -> app : POST : /api/settings/resources/vmspec/recommendvmspec/
+end
+
+app -> route : RecommendVmSpecList()
+route -> handler : GetRecommendVmSpecList(mcisDeploymentPlan)
+handler <-> tumblebug : http request to create connection
+route <- handler
+user <- route : return RecommendVmSpecList
+@enduml
+
+
