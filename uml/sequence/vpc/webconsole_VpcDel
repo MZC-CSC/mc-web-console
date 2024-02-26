@@ -1,0 +1,34 @@
+@startuml
+title "Vpc Delete"
+
+actor "User" as user 
+
+participant "app.go" as app 
+participant "vpc.go" as route
+participant "ResourceHandler.go" as ResourceHandler 
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+participant "CloudConnectionHandler.go" as CloudConnectionHandler
+database Database as DB
+
+
+group "API Call"
+
+user ->  app : Delete : /api/settings/resources/vpc/id
+user ->  app : PARAM : paramVNetID
+
+end group
+app -> route : VpcDel()
+route -> ResourceHandler :DelVpc(namespaceID, paramVNetID)
+ResourceHandler <-> tumblebug : http request to delete Vpc
+route <- ResourceHandler : *tumblebug.VpcInfo 
+
+route -> CloudConnectionHandler : GetUsedConnection(connectionMapping)
+CloudConnectionHandler <-> DB : Delect Vpc Data save
+route <- CloudConnectionHandler : return VpcInfo Data  
+user <- route : return successMessages
+
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+
+title "Vpc Reg"
+
+actor User as user 
+
+
+participant "app.go" as app
+participant "vpc.go" as route
+participant "CloudConnectionHandler.go" as CloudHandler
+participant "ResourceHandler.go" as ResourceHandler
+database Database as DB
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box
+
+group "API Call"
+user -> app : POST : /api/settings/resources/vpc/
+end
+
+@enduml
