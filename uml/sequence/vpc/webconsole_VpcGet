@@ -1,0 +1,36 @@
+@startuml
+
+title "Vpc Get" 
+
+actor User as user 
+
+participant "app.go" as app 
+participant "vpc.go" as router
+participant "ResourceHandler.go"  as resourceHandler 
+participant "ConnectionHandler.go" as connectionHandler 
+database Database as DB
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug
+end box 
+
+group "API Call"
+user -> app : GET:	/api/settings/resources/vpc/id/{vpcId} 
+user -> app : Param : vpcId
+end
+app -> router : VpcGet()
+router -> resourceHandler : GetVpcData()
+resourceHandler <-> tumblebug : http request to vpc get
+router <- resourceHandler 
+
+router -> connectionHandler : GetViewConnection()
+connectionHandler -> connectionHandler : validate
+connectionHandler <-> DB 
+router <- connectionHandler
+
+
+user <- router
+
+
+
+@enduml
