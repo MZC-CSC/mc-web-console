@@ -1,0 +1,36 @@
+@startuml
+title "Vpc List"
+
+actor User as user 
+
+participant "app.go" as app
+participant "vpc.go" as route
+participant "ResourceHandler.go" as handler
+
+box "External Module"
+participant "cb-tumblebug" as tumblebug 
+end box
+
+group "API Call"
+    user -> app : GET : /api/settings/resources/vpc 
+    user -> app : QUERY : optionParam, filterKeyParam, filterValParam 
+end
+
+app -> route : VpcList()
+
+alt optionParam == id 
+
+route -> handler : GetVnetListByID(namespaceID, filterKeyParam, filterValParam)
+handler <-> tumblebug : http request to fetch tumblebug list 
+route <- handler : []tumblebug.listInfo
+user <- route : return VpclistInfo 
+
+else 
+route -> handler : namespaceID, optionParam, filterKeyParam, filterValParam
+handler <-> tumblebug : http request to fetch tumblebug listInfo optionParam credntial 
+route <- handler 
+user <- route : return VpcListInfo 
+end
+
+
+@enduml
