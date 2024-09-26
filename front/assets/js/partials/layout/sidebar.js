@@ -35,14 +35,12 @@ const iconsArr = {
 </svg>`,
 }
 
-
-
 function generateMenuHTML(menus) {
-    let html = ''; //<- 메뉴 완료될때까지 유지 
-    // let html = document.getElementById("sidebar-menu-inner").innerHTML ;
+    // let html = ''; //<- 메뉴 완료될때까지 유지 
+    let html = document.getElementById("sidebar-menu-inner").innerHTML ;
     menus.forEach(title => {
         html += ` <li class="nav-item">`
-        html += ` <span class="nav-link"><h3><strong>${title.displayName}</strong></h3></span>`
+        html += ` <div class="hr-text fs-3">${title.displayName}</div>`
         html += ` </li>`
         title.menus.forEach(category => {
             html += ` <li class="nav-item">`
@@ -59,7 +57,7 @@ function generateMenuHTML(menus) {
                         html += `<div class="dropdown-menu" name="sidebar_${menu.id}"><div class="dropdown-menu-columns">`;
                         menu.menus.forEach(subMenu => {
                             html += `<div class="dropdown-menu-column">`;
-                            html += `<a class="dropdown-item" href="/webconsole/${category.id}/${menu.id}/${subMenu.id}" id="sidebar_${subMenu.id}_${subMenu.id}">`;
+                            html += `<a class="dropdown-item" href="/webconsole/${title.id}/${category.id}/${menu.id}/${subMenu.id}" id="sidebar_${subMenu.id}_${subMenu.id}">`;
                             html += `${subMenu.displayName}</a>`;
                             html += `</div>`;
                         });
