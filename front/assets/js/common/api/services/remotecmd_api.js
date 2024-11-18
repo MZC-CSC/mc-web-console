@@ -110,6 +110,40 @@ export async function initTerminal(id, nsId, mciId, vmid) {
     });
 
     document.getElementById("excute-command").addEventListener("click", async function () {
+        const cmd = $('#excute-command-input').val()
+        if (cmd !== "" || cmd == undefined) {
+            try {
+                term.write(cmd);
+                await processCommand(nsId, mciId, vmid, [cmd], terminalInstance, () => {
+                    prompt();
+                });
+            } catch (error) {
+                alert("An error occurred while processing the command.");
+                console.error(error);
+            }
+        } else {
+            alert("No commnad.");
+        }
+    });
+
+
+    $('#excute-command-input').on('keypress', async function(e) {
+        if (e.which === 13) {
+            const cmd = $('#excute-command-input').val()
+            if (cmd !== "" || cmd == undefined) {
+                try {
+                    term.write(cmd);
+                    await processCommand(nsId, mciId, vmid, [cmd], terminalInstance, () => {
+                        prompt();
+                    });
+                } catch (error) {
+                    alert("An error occurred while processing the command.");
+                    console.error(error);
+                }
+            } else {
+                alert("No commnad.");
+            }
+        }
     });
 }
 
