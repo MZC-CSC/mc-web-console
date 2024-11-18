@@ -201,7 +201,7 @@
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
       <div class="modal-content">
           <div class="modal-header">
-              <h5 class="modal-title" id="cmdtestmodal-title">Remote Treminal</h5>
+              <h5 class="modal-title" id="cmdtestmodal-title">Remote Command Tool</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           
@@ -211,16 +211,33 @@
 
           <div class="modal-body p-0"  id="cmdtestmodal-content">
             <div class="accordion" id="command-example-accordion">
+              
               <div class="accordion-item">
                 <h2 class="accordion-header" id="heading-1">
-                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-1" aria-expanded="false">
-                    easy command transfer
+                  <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-1" aria-expanded="true">
+                    Commnad Excuter
                   </button>
                 </h2>
-                <div id="collapse-1" class="accordion-collapse collapse" data-bs-parent="#command-example-accordion">
+                <div id="collapse-1" class="accordion-collapse" data-bs-parent="#command-example-accordion">
+                  <div class="accordion-body pt-0">
+                    <div class="input-group mb-2">
+                      <input type="text" class="form-control" id="excute-command-input" placeholder="$">
+                      <button class="btn" id="excute-command" type="button">Excute</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-2">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-2" aria-expanded="false">
+                    Script file Excuter
+                  </button>
+                </h2>
+                <div id="collapse-2" class="accordion-collapse collapse" data-bs-parent="#command-example-accordion">
                   <div class="accordion-body pt-0">
                     <div class="d-grid gap-2">
-                      <button id="show-content-btn" class="btn btn-primary" type="button">excute commnad</button>
+                      <button id="excute-script" class="btn btn-primary" type="button">excute commnad</button>
                     </div>
                     <form class="dropzone dz-clickable" id="dropzone-custom" action="./" autocomplete="off" novalidate="">
                       <div class="dz-message">
@@ -231,11 +248,12 @@
                   </div>
                 </div>
               </div>
+              
             </div>
           </div>
 
           <div class="modal-footer">
-              <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Disconnect</button>
+              <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
           </div>
       </div>
   </div>

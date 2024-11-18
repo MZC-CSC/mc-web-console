@@ -92,7 +92,7 @@ export async function initTerminal(id, nsId, mciId, vmid) {
         }
     });
 
-    document.getElementById("show-content-btn").addEventListener("click", async function () {
+    document.getElementById("excute-script").addEventListener("click", async function () {
         if (fileContents.length > 0) {
             for (const cmdarr of fileContents) {
                 try {
@@ -107,6 +107,9 @@ export async function initTerminal(id, nsId, mciId, vmid) {
         } else {
             alert("No file content available or file not loaded.");
         }
+    });
+
+    document.getElementById("excute-command").addEventListener("click", async function () {
     });
 }
 
