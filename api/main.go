@@ -1,21 +1,11 @@
 package main
 
 import (
-	"net/http"
-
-	"github.com/labstack/echo/v4"
+	"mc-web-console/actions"
+	v "mc-web-console/variables"
 )
 
 func main() {
-	e := echo.New()
-
-	e.Static("/", "../front/public")
-
-	e.GET("/api/hello", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]string{
-			"message": "Hello from Echo!",
-		})
-	})
-
-	e.Logger.Fatal(e.Start(":8080"))
+	app := actions.App()
+	app.Logger.Fatal(app.Start(v.ADDR + ":" + v.PORT))
 }
