@@ -13,6 +13,12 @@
 // tomselect Custom CSS
 @import "./tomselect_for_tabler.scss";
 
+// xtermjs
+@import "~@xterm/xterm/css/xterm.css";
+
+// dropzone
+@import "~dropzone/dist/dropzone.css";
+
 .section {
   display: none;
 }

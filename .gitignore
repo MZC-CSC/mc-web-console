@@ -1,3 +1,12 @@
+
+node_modules
+package-lock.json
+public
+.env
+
+##### OLD
+.old
+
 # api
 api/vendor/
 api/**/*.log
