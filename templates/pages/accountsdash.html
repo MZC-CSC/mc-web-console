@@ -1,0 +1,22 @@
+{{define "content"}}
+<div class="col-sm-12 col-lg-12">
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex align-items-center">
+        <div class="subheader">총 보유자산</div>
+      </div>
+      <div id="id1" class="h1 mb-3"></div>
+    </div>
+  </div>
+</div>
+
+<div class="col-lg-12">
+    <div class="card">
+      <div class="table-responsive">
+        <div id="accounts-table"></div>
+      </div>
+    </div>
+</div>
+
+<script src='{{index .Manifest "js/pages/accountsdash.js"}}'></script>
+{{end}}

@@ -1,0 +1,16 @@
+{{define "content"}}
+<div class="text-center mb-4">
+  <a href="#" class="navbar-brand navbar-brand-autodark">
+    <img src='{{index .Manifest "icon-192.png"}}' width="50">
+    <h1 class="mt-3">mc-web-console</h1>
+  </a>
+</div>
+<div class="card card-md">
+  <div class="card-body text-center">
+    <h2>unauthorized</h2>
+    <a href='{{index .Routes "handler.Login"}}' class="btn w-100">
+      Back to Login
+    </a>
+  </div>
+</div>
+{{end}}

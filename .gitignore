@@ -1,6 +1,9 @@
 # refactoring
 .old
-
+node_modules
+.env
+public
+tmp
 
 # api
 api/vendor/
