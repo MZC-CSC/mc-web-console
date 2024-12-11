@@ -3,16 +3,19 @@ package variables
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 var (
-	ADDR         = ""
-	PORT         = ""
-	DATABASE_URL = ""
-	MODE         = ""
-	SECUREKEY    = ""
+	ADDR                  = ""
+	PORT                  = ""
+	DATABASE_URL          = ""
+	MODE                  = ""
+	SECUREKEY             = ""
+	IAMUSE                = false
+	IFRAME_TARGET_IS_HOST = false
 )
 
 func init() {
@@ -25,4 +28,6 @@ func init() {
 	DATABASE_URL = os.Getenv(ENV_PREFIX + "DATABASE_URL")
 	MODE = os.Getenv(ENV_PREFIX + "MODE")
 	SECUREKEY = os.Getenv(ENV_PREFIX + "SECUREKEY")
+	IAMUSE, _ = strconv.ParseBool(os.Getenv(ENV_PREFIX + "IAMUSE"))
+	IFRAME_TARGET_IS_HOST, _ = strconv.ParseBool(os.Getenv(ENV_PREFIX + "IFRAME_TARGET_IS_HOST"))
 }

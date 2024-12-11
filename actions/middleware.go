@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -27,6 +25,16 @@ var (
 
 func init() {
 	routes = make(map[string]string)
+	if v.IAMUSE {
+		certEndPoint := getCertsEndpoint()
+		err := iamtokenvalidator.GetPubkeyIamManager(certEndPoint)
+		if err != nil {
+			err = iamtokenvalidator.GetPubkeyIamManagerTlsSkipped(certEndPoint)
+			if err != nil {
+				panic("Get jwks fail :" + err.Error())
+			}
+		}
+	}
 }
 
 var loggerMiddleware = middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
@@ -81,20 +89,6 @@ func SetRenderMiddleware(skipPaths ...string) echo.MiddlewareFunc {
 				c.Logger().Error(err.Error())
 			}
 			return next(c)
-		}
-	}
-}
-
-func init() {
-	MCIAM_USE, _ := strconv.ParseBool(os.Getenv("MCIAM_USE"))
-	if MCIAM_USE {
-		certEndPoint := getCertsEndpoint()
-		err := iamtokenvalidator.GetPubkeyIamManager(certEndPoint)
-		if err != nil {
-			err = iamtokenvalidator.GetPubkeyIamManagerTlsSkipped(certEndPoint)
-			if err != nil {
-				panic("Get jwks fail :" + err.Error())
-			}
 		}
 	}
 }
