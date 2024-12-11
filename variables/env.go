@@ -12,7 +12,7 @@ var (
 	ADDR                  = ""
 	PORT                  = ""
 	DATABASE_URL          = ""
-	MODE                  = ""
+	MODE                  = MODE_DEVELOPMENT
 	SECUREKEY             = ""
 	IAMUSE                = false
 	IFRAME_TARGET_IS_HOST = false

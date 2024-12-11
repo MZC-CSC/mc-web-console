@@ -17,11 +17,14 @@ func init() {
 
 func main() {
 	var app *echo.Echo
-	if v.IAMUSE {
-		app = actions.App()
-	} else {
-		app = actions.AppWithoutMCIAM()
-	}
+	// if v.IAMUSE {
+	// 	app = actions.App()
+	// } else {
+	// 	app = actions.AppWithoutMCIAM()
+	// }
+
+	app = actions.App()
+
 	app.HideBanner = true
 	app.Logger.SetLevel(log.INFO)
 	app.Logger.SetHeader("${time_rfc3339} | ${level} | ${short_file}:${line}")

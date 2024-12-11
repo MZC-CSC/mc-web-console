@@ -5,11 +5,13 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/m-cmp/mc-web-console/common"
 	v "github.com/m-cmp/mc-web-console/variables"
 )
 
@@ -91,4 +93,21 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	dataMap["Manifest"] = manifest
 
 	return tmpl.ExecuteTemplate(w, filepath.Base(layout), dataMap)
+}
+
+func PageController(c echo.Context) error {
+
+	path := strings.TrimPrefix(c.Request().URL.Path, "/webconsole/")
+
+	common.SetRenderData(c, common.SetDatas{{
+		Key: "PageTitle",
+		Data: map[string]string{
+			"page-pretitle": "계좌",
+			"page-title":    "Accounts",
+		},
+	}})
+	c.Logger().Infof("test PageController %v", c.Request().URL.Path)
+	c.Logger().Infof("test PageController %v", path)
+
+	return c.Render(http.StatusOK, "default."+path, c.Get("Render"))
 }
