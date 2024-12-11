@@ -102,8 +102,8 @@ func PageController(c echo.Context) error {
 	common.SetRenderData(c, common.SetDatas{{
 		Key: "PageTitle",
 		Data: map[string]string{
-			"page-pretitle": "계좌",
-			"page-title":    "Accounts",
+			"page-pretitle": "page-pretitle",
+			"page-title":    "page-title",
 		},
 	}})
 	c.Logger().Infof("test PageController %v", c.Request().URL.Path)
