@@ -89,7 +89,7 @@ func DiskLookup(c echo.Context) error {
 
 // Provider, Region 에서 사용가능한 DiskType 조회
 // 현재 : spider의 cloudos_meta.yaml 값 사용
-// Region 값에 따라 달라지는게 있으면 추가할 것.c buffalo.Context, commonRequest *CommonRequest
+// Region 값에 따라 달라지는게 있으면 추가할 것.c echo.Context, commonRequest *CommonRequest
 func AvailableDiskTypeByProviderRegion(c echo.Context) error {
 	commonRequest := &common.CommonRequest{}
 	c.Bind(commonRequest)

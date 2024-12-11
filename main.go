@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/labstack/echo/v4"
 	"github.com/labstack/gommon/log"
 	"github.com/m-cmp/mc-web-console/actions"
 	v "github.com/m-cmp/mc-web-console/variables"
@@ -15,7 +16,12 @@ func init() {
 }
 
 func main() {
-	app := actions.App()
+	var app *echo.Echo
+	if v.IAMUSE {
+		app = actions.App()
+	} else {
+		app = actions.AppWithoutMCIAM()
+	}
 	app.HideBanner = true
 	app.Logger.SetLevel(log.INFO)
 	app.Logger.SetHeader("${time_rfc3339} | ${level} | ${short_file}:${line}")
