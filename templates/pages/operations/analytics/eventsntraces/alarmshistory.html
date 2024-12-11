@@ -24,42 +24,21 @@
               <div class="col">
                 <div class="card section" id="policy_info">
                   <div class="card-header">
-                    <ul
-                      class="nav nav-tabs card-header-tabs"
-                      data-bs-toggle="tabs"
-                      role="tablist"
-                    >
+                    <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist">
                       <li class="nav-item" role="presentation">
-                        <a
-                          href="#tabs_alarm_details"
-                          class="nav-link active"
-                          data-bs-toggle="tab"
-                          aria-selected="true"
-                          role="tab"
-                          >Detail</a
-                        >
+                        <a href="#tabs_alarm_details" class="nav-link active" data-bs-toggle="tab" aria-selected="true"
+                          role="tab">Detail</a>
                       </li>
                       <li class="nav-item" role="presentation">
-                        <a
-                          href="#tabs_alarm_eventalarms"
-                          class="nav-link"
-                          data-bs-toggle="tab"
-                          aria-selected="false"
-                          tabindex="-1"
-                          role="tab"
-                          >Event & Alarms</a
-                        >
+                        <a href="#tabs_alarm_eventalarms" class="nav-link" data-bs-toggle="tab" aria-selected="false"
+                          tabindex="-1" role="tab">Event & Alarms</a>
                       </li>
                     </ul>
                   </div>
                   <div class="card-body">
                     <div class="container">
                       <div class="tab-content">
-                        <div
-                          class="tab-pane fade active show"
-                          id="tabs_alarm_details"
-                          role="tabpanel"
-                        >
+                        <div class="tab-pane fade active show" id="tabs_alarm_details" role="tabpanel">
                           <div class="container">
                             <div class="row">
                               <!-- 여기 정보 -->
@@ -98,11 +77,7 @@
                             </div>
                           </div>
                         </div>
-                        <div
-                          class="tab-pane fade"
-                          id="tabs_alarm_eventalarms"
-                          role="tabpanel"
-                        >
+                        <div class="tab-pane fade" id="tabs_alarm_eventalarms" role="tabpanel">
                           <div class="container">
                             <div class="row">
                               <div class="card-table table-responsive">
@@ -110,43 +85,42 @@
                                 <div id="eventAlarmlist-table"></div>
                               </div>
                               <div class="card section" id="event_info">
-                                  <div class="row">
-                                    <div class="col-md-6">
-                                      <div class="form-group mb-2">
-                                        <div class="form-label">Occur Time</div>
-                                        <div class="form-description" id="event_occurtime"> </div>
-                                      </div>
-                                      <div class="form-group mb-2">
-                                        <div class="form-label">Metric</div>
-                                        <div class="form-description" id="event_metric"> </div>
-                                      </div>
-                                      <div class="form-group mb-2">
-                                        <div class="form-label">Level</div>
-                                        <div class="form-description" id="event_level"> </div>
-                                      </div>
+                                <div class="row">
+                                  <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                      <div class="form-label">Occur Time</div>
+                                      <div class="form-description" id="event_occurtime"> </div>
                                     </div>
-                                    <div class="col-md-6">
-                                      <div class="form-group mb-2">              
-                                        <div class="form-label">HostName</div>
-                                        <div class="form-description" id="event_hostname"> </div>              
-                                      </div>                                        
-                                      <div class="form-group mb-2">              
-                                        <div class="form-label">Policy seq</div>
-                                        <div class="form-description" id="event_policyseq"> </div>              
-                                      </div>
-                                      <div class="form-group mb-2">              
-                                        <div class="form-label">Data</div>
-                                        <div class="form-description" id="event_data"> </div>              
-                                      </div>  
-                                    </div>       
+                                    <div class="form-group mb-2">
+                                      <div class="form-label">Metric</div>
+                                      <div class="form-description" id="event_metric"> </div>
+                                    </div>
+                                    <div class="form-group mb-2">
+                                      <div class="form-label">Level</div>
+                                      <div class="form-description" id="event_level"> </div>
+                                    </div>
+                                  </div>
+                                  <div class="col-md-6">
+                                    <div class="form-group mb-2">
+                                      <div class="form-label">HostName</div>
+                                      <div class="form-description" id="event_hostname"> </div>
+                                    </div>
+                                    <div class="form-group mb-2">
+                                      <div class="form-label">Policy seq</div>
+                                      <div class="form-description" id="event_policyseq"> </div>
+                                    </div>
+                                    <div class="form-group mb-2">
+                                      <div class="form-label">Data</div>
+                                      <div class="form-description" id="event_data"> </div>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                              <!-- 여기 정보 -->
                             </div>
+                            <!-- 여기 정보 -->
                           </div>
-
                         </div>
+
                       </div>
                     </div>
                   </div>
@@ -155,15 +129,16 @@
             </div>
           </div>
         </div>
-        <!-- 카드엔드 -->
       </div>
+      <!-- 카드엔드 -->
     </div>
   </div>
 </div>
+</div>
 
- <script src='{{index .Manifest "pages/operation/manage/eventalarm.js"}}'></script>
- <script src='{{index .Manifest "partials/operation/manage/server_monitoring.js"}}'></script>
- <script src='{{index .Manifest "common/api/services/eventalarm_api.js"}}'></script>
- <script src='{{index .Manifest "common/api/services/monitoring_api.js"}}'></script>
+<script src='{{index .Manifest "pages/operation/manage/eventalarm.js"}}'></script>
+<script src='{{index .Manifest "partials/operation/manage/server_monitoring.js"}}'></script>
+<script src='{{index .Manifest "common/api/services/eventalarm_api.js"}}'></script>
+<script src='{{index .Manifest "common/api/services/monitoring_api.js"}}'></script>
 
 {{end}}
