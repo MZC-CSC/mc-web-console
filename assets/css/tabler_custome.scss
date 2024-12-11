@@ -1,0 +1,5 @@
+.responsive-number {
+    font-size: clamp(1rem, 1vw, 2rem); /* 최소 1rem, 최대 2rem, 뷰포트 기준으로 조정 */
+    max-width: 100%;
+    white-space: nowrap; /* 숫자가 줄바꿈되지 않도록 설정 */
+}

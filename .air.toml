@@ -1,0 +1,18 @@
+root = "."
+tmp_dir = "tmp"
+[build]
+  cmd = "go build -o ./tmp/main main.go"
+  bin = "./tmp/main & npm run dev"
+  full_bin = ""
+  pre_cmd = ["./devkill.sh"]
+  include_ext = ["go","html"]
+  exclude_dir = ["tmp", "vendor", "node_modules", "tabler-v1.0.0"]
+
+[log]
+  level = "info"
+
+[watch]
+  include = ["."]
+  exclude = ["tmp", "vendor", "node_modules", "tabler-v1.0.0", "templates"]
+  extensions = ["go"]
+  delay = 1000
