@@ -1,5 +1,5 @@
 {{define "content"}}
-<div class="page page-center" >
+<div class="page page-center">
 
   <div class="container container-tight py-4">
 
@@ -7,7 +7,7 @@
       <a class="navbar-brand navbar-brand-autodark">
         <div class="row">
           <div>
-            <img src="/assets/static/logo/mcmp.svg" width="150" >
+            <img src="/assets/static/logo/mcmp.svg" width="150">
           </div>
         </div>
       </a>
@@ -16,10 +16,10 @@
     <div class="card card-md">
       <div class="card-body">
         <h2 class="h2 text-center mb-4">Unauthorized</h2>
-        
-          <div class="form-footer">
-            <a href="/auth/login" class="btn btn-primary w-100">Back to Login</a>
-          </div>
+
+        <div class="form-footer">
+          <a href="/auth/login" class="btn btn-primary w-100">Back to Login</a>
+        </div>
 
       </div>
     </div>
@@ -32,6 +32,6 @@
 </div>
 
 <!-- page JS -->
- <script src='{{index .Manifest "pages/auth/login.js"}}'></script>
- <script src='{{index .Manifest "common/cookie/authcookie.js"}}'></script>
+<script src='{{index .Manifest "pages/auth/login.js"}}'></script>
+<script src='{{index .Manifest "common/cookie/authcookie.js"}}'></script>
 {{end}}
