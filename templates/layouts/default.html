@@ -14,6 +14,7 @@
   </style>
   {{ template  "head" . }}
   <body>
+    
     <div class="page">
 
       {{ template  "side" . }}
@@ -26,9 +27,7 @@
         <!-- Page body -->
         <div class="page-body">
           <div class="container-xl">
-            <div class="row row-deck row-cards">
               {{ template "content" . }}
-            </div>
           </div>
         </div>
 
