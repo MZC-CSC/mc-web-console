@@ -6,13 +6,13 @@ tmp_dir = "tmp"
   full_bin = ""
   pre_cmd = ["./devkill.sh"]
   include_ext = ["go","html"]
-  exclude_dir = ["tmp", "vendor", "node_modules", "tabler-v1.0.0"]
+  exclude_dir = ["tmp", "vendor", "node_modules", "dbmigration", "templates", "scripts"]
 
 [log]
   level = "info"
 
 [watch]
   include = ["."]
-  exclude = ["tmp", "vendor", "node_modules", "tabler-v1.0.0", "templates"]
+  exclude = ["tmp", "vendor", "node_modules", "dbmigration", "templates", "scripts"]
   extensions = ["go"]
   delay = 1000
