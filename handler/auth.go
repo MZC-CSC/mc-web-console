@@ -10,11 +10,12 @@ import (
 	"io"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	v "github.com/m-cmp/mc-web-console/variables"
 	"golang.org/x/crypto/bcrypt"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -45,8 +46,7 @@ var (
 )
 
 func init() {
-	MCIAM_USE, _ := strconv.ParseBool(os.Getenv("MCIAM_USE"))
-	if !MCIAM_USE {
+	if !v.IAMUSE {
 		initCmigAuth()
 	}
 }

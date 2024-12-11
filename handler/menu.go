@@ -8,18 +8,17 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/m-cmp/mc-web-console/common"
+	v "github.com/m-cmp/mc-web-console/variables"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
 func init() {
-	MCIAM_USE, _ := strconv.ParseBool(os.Getenv("MCIAM_USE"))
-	if !MCIAM_USE {
+	if !v.IAMUSE {
 		err := createMenuResource()
 		if err != nil {
 			log.Fatal("create menu fail : ", err.Error())

@@ -1,0 +1,44 @@
+<!doctype html>
+
+<html lang="en">
+  <!-- application CSS -->
+  <link rel="stylesheet" href='{{index .Manifest "application.css"}}'>
+  <style>
+  @import url('https://rsms.me/inter/inter.css');
+  :root {
+      --tblr-font-sans-serif: 'Inter Var', -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif;
+  }
+  body {
+      font-feature-settings: "cv03", "cv04", "cv11";
+  }
+  </style>
+  {{ template  "head" . }}
+  <body>
+    <div class="page">
+
+      {{ template  "side" . }}
+      {{ template  "header" . }}
+
+      <div class="page-wrapper">
+
+        <!-- Page body -->
+        <div class="page-body">
+          <div class="container-xl">
+            <div class="row row-deck row-cards">
+              {{ template "content" . }}
+            </div>
+          </div>
+        </div>
+
+        {{ template  "footer" . }}
+
+      </div>
+      
+    </div>
+  
+  </body>
+
+  <!-- application JS -->
+  <script src='{{index .Manifest "application.js"}}'></script>
+
+</html>

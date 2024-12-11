@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gobuffalo/buffalo/render"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/m-cmp/mc-iam-manager/iamtokenvalidator"
@@ -112,7 +111,7 @@ func TokenValidMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		err := iamtokenvalidator.IsTokenValid(accessToken)
 		if err != nil {
 			log.Println(err.Error())
-			return c.JSON(http.StatusUnauthorized, render.JSON(map[string]interface{}{"error": err.Error()}))
+			return c.JSON(http.StatusUnauthorized, map[string]interface{}{"error": err.Error()})
 		}
 		return next(c)
 	}
@@ -129,8 +128,8 @@ func SetContextMiddleware(skipPaths ...string) echo.MiddlewareFunc {
 			accessToken := strings.TrimPrefix(c.Request().Header.Get("Authorization"), "Bearer ")
 			claims, err := iamtokenvalidator.GetTokenClaimsByIamManagerClaims(accessToken)
 			if err != nil {
-				log.Println(err.Error())
-				return c.JSON(http.StatusInternalServerError, render.JSON(map[string]interface{}{"error": err.Error()}))
+				c.Logger().Error(err.Error())
+				return c.JSON(http.StatusInternalServerError, map[string]interface{}{"error": err.Error()})
 			}
 			c.Set("Authorization", c.Request().Header.Get("Authorization"))
 			c.Set("UserId", claims.UserID)
