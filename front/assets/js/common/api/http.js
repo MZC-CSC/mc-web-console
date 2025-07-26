@@ -102,7 +102,22 @@ export async function commonAPIPost(url, data, attempt) {
             }
         }
         deactivePageLoader()
-        alert("request fail : "+ error.message);
+        
+        // 네트워크 오류나 기타 예외 상황 처리
+        if (!error.response) {
+            // 네트워크 오류 (서버에 연결할 수 없음)
+            if (error.code === 'ECONNABORTED') {
+                alert("Request timeout. Please check your network connection and try again.");
+            } else if (error.code === 'ERR_NETWORK') {
+                alert("Network connection failed. Please check your internet connection and try again.");
+            } else {
+                alert("An error occurred while processing the request: " + error.message);
+            }
+        } else {
+            // HTTP 에러가 있지만 위에서 처리되지 않은 경우
+            alert("An error occurred while processing the request. (Status code: " + error.response.status + ")");
+        }
+        
         return error
     }
 }
