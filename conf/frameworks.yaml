@@ -1,0 +1,77 @@
+# Framework API Management Configuration
+# 이 파일은 여러 프레임워크의 API 버전 정보를 관리합니다.
+# 각 프레임워크는 여러 버전을 가질 수 있으며, activeVersion이 현재 사용 중인 버전입니다.
+
+frameworks:
+  - name: cb-spider
+    displayName: CB-Spider
+    activeVersion: '0.11.13'
+    versions:
+      - version: '0.11.13'
+        swaggerUrl: 'https://raw.githubusercontent.com/cloud-barista/cb-spider/main/api/swagger.yaml'
+        baseUrl: 'http://cb-spider:1024/spider'
+        authType: 'none'
+        username: ''
+        password: ''
+        enabled: true
+
+  - name: cb-tumblebug
+    displayName: CB-Tumblebug
+    activeVersion: '0.11.13'
+    versions:
+      - version: '0.11.13'
+        swaggerUrl: 'https://raw.githubusercontent.com/cloud-barista/cb-tumblebug/main/src/api/rest/docs/swagger.yaml'
+        baseUrl: 'http://cb-tumblebug:1323/tumblebug'
+        authType: 'basic'
+        username: 'default'
+        password: 'default'
+        enabled: true
+
+  - name: cm-ant
+    displayName: CM-Ant
+    activeVersion: '0.4.0'
+    versions:
+      - version: '0.4.0'
+        swaggerUrl: 'https://raw.githubusercontent.com/m-cmp/cm-ant/main/api/swagger.yaml'
+        baseUrl: 'http://cm-ant:8880/ant'
+        authType: 'none'
+        username: ''
+        password: ''
+        enabled: true
+
+  - name: cm-beetle
+    displayName: CM-Beetle
+    activeVersion: '0.4.0'
+    versions:
+      - version: '0.4.0'
+        swaggerUrl: 'https://raw.githubusercontent.com/m-cmp/cm-beetle/main/api/swagger.yaml'
+        baseUrl: 'http://cm-beetle:8056/beetle'
+        authType: 'basic'
+        username: 'default'
+        password: 'default'
+        enabled: true
+
+  - name: cm-honeybee
+    displayName: CM-Honeybee
+    activeVersion: '0.4.0'
+    versions:
+      - version: '0.4.0'
+        swaggerUrl: 'https://raw.githubusercontent.com/m-cmp/cm-honeybee/main/api/swagger.yaml'
+        baseUrl: 'http://cm-honeybee:8081/honeybee'
+        authType: 'none'
+        username: ''
+        password: ''
+        enabled: true
+
+  - name: mc-iam-manager
+    displayName: MC-IAM-Manager
+    activeVersion: '0.1.0'
+    versions:
+      - version: '0.1.0'
+        swaggerUrl: 'https://raw.githubusercontent.com/m-cmp/mc-iam-manager/main/docs/swagger.yaml'
+        baseUrl: 'http://mc-iam-manager:8080'
+        authType: 'bearer'
+        username: ''
+        password: ''
+        enabled: true
+

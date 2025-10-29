@@ -1,0 +1,87 @@
+<div class="page-header d-print-none">
+  <div class="container-fluid">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <h2 class="page-title">API Operations</h2>
+        <div class="text-muted mt-1">프레임워크별 API 명세 조회</div>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <div class="btn-list">
+          <a href="/webconsole/dev/apimanagement" class="btn btn-outline-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><line x1="5" y1="12" x2="19" y2="12" /><line x1="5" y1="12" x2="9" y2="16" /><line x1="5" y1="12" x2="9" y2="8" /></svg>
+            Back to Frameworks
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container-fluid">
+    <!-- Filter Card -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">Filters</h3>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label required">Framework</label>
+            <select class="form-select" id="filterFramework">
+              <option value="">Select Framework...</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Version</label>
+            <select class="form-select" id="filterVersion">
+              <option value="">Active Version</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Format</label>
+            <select class="form-select" id="filterFormat">
+              <option value="json">JSON</option>
+              <option value="yaml">YAML</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-primary w-100" id="btnLoadOperations">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="10" cy="10" r="7" /><line x1="21" y1="21" x2="15" y2="15" /></svg>
+              Load
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">API Operations</h3>
+        <div class="card-actions">
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnExportJson">
+            Export JSON
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="btnExportYaml">
+            Export YAML
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="operationsInfo" class="alert alert-info" style="display:none;">
+          <strong>Framework:</strong> <span id="infoFramework"></span> |
+          <strong>Version:</strong> <span id="infoVersion"></span> |
+          <strong>Total Operations:</strong> <span id="infoCount"></span>
+        </div>
+        <div id="operationsTable"></div>
+        <div id="operationsYaml" style="display:none;">
+          <pre><code id="yamlContent" class="language-yaml"></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/pages/dev/apimanagement/operations.js"></script>
+
