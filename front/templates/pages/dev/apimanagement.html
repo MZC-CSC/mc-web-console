@@ -1,0 +1,134 @@
+<div class="page-header d-print-none">
+  <div class="container-fluid">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <h2 class="page-title">API Framework Management</h2>
+        <div class="text-muted mt-1">개발자 전용 - Framework API 버전 관리</div>
+      </div>
+      <div class="col-auto ms-auto d-print-none">
+        <div class="btn-list">
+          <button type="button" class="btn btn-primary" id="btnSyncAll">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></svg>
+            Sync All
+          </button>
+          <button type="button" class="btn btn-primary" id="btnAddFramework">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            Add Framework
+          </button>
+          <a href="/webconsole/dev/apimanagement/operations" class="btn btn-outline-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="9" cy="7" r="4" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>
+            View API Operations
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container-fluid">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Framework List</h3>
+      </div>
+      <div class="card-body">
+        <div id="frameworksTable"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Framework Modal -->
+<div class="modal modal-blur fade" id="frameworkModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="frameworkModalTitle">Add Framework</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="frameworkForm">
+          <div class="mb-3">
+            <label class="form-label required">Framework Name</label>
+            <input type="text" class="form-control" id="frameworkName" name="name" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">Display Name</label>
+            <input type="text" class="form-control" id="frameworkDisplayName" name="displayName" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">Active Version</label>
+            <input type="text" class="form-control" id="frameworkActiveVersion" name="activeVersion" required>
+          </div>
+          
+          <hr class="my-4">
+          <h4>Version Configuration</h4>
+          <div id="versionsContainer">
+            <div class="version-item border p-3 mb-3" data-version-index="0">
+              <div class="mb-3">
+                <label class="form-label required">Version</label>
+                <input type="text" class="form-control version-number" name="versions[0][version]" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label required">Swagger URL</label>
+                <input type="text" class="form-control" name="versions[0][swaggerUrl]" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label required">Base URL</label>
+                <input type="text" class="form-control" name="versions[0][baseUrl]" required>
+              </div>
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Auth Type</label>
+                  <select class="form-select auth-type-select" name="versions[0][authType]">
+                    <option value="none">None</option>
+                    <option value="basic">Basic</option>
+                    <option value="bearer">Bearer</option>
+                  </select>
+                </div>
+                <div class="col-md-4 mb-3 auth-username" style="display:none;">
+                  <label class="form-label">Username</label>
+                  <input type="text" class="form-control" name="versions[0][username]">
+                </div>
+                <div class="col-md-4 mb-3 auth-password" style="display:none;">
+                  <label class="form-label">Password</label>
+                  <input type="password" class="form-control" name="versions[0][password]">
+                </div>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="versions[0][enabled]" checked>
+                <label class="form-check-label">Enabled</label>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-outline-primary" id="btnAddVersion">Add Another Version</button>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btnSaveFramework">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Versions Modal -->
+<div class="modal modal-blur fade" id="versionsModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="versionsModalTitle">Framework Versions</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="versionsTable"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/pages/dev/apimanagement/manage.js"></script>
+
