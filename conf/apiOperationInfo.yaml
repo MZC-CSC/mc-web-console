@@ -1,0 +1,4302 @@
+serviceActions:
+  cb-spider_0.11.13: {}
+  cb-tumblebug_0.11.13: {}
+  cm-ant_0.4.0: {}
+  cm-beetle_0.4.0: {}
+  cm-honeybee_0.4.0: {}
+  mc-infra-connector_0.4.0:
+    list-all-cluster:
+      method: get
+      resourcePath: /allcluster
+      description: Retrieve a comprehensive list of all Clusters associated with a
+        specific connection, <br> including those mapped between CB-Spider and the
+        CSP, <br> only registered in CB-Spider's metadata, <br> and only existing
+        in the CSP.
+    list-all-cluster-info:
+      method: get
+      resourcePath: /allclusterinfo
+      description: Retrieve a list of all Cluster information associated with a specific
+        connection.
+    list-all-disk:
+      method: get
+      resourcePath: /alldisk
+      description: Retrieve a comprehensive list of all Disks associated with a specific
+        connection, <br> including those mapped between CB-Spider and the CSP, <br>
+        only registered in CB-Spider's metadata, <br> and only existing in the CSP.
+    list-all-disk-info:
+      method: get
+      resourcePath: /alldiskinfo
+      description: Retrieve a list of all Disk information associated with all connections.
+    list-all-keypair:
+      method: get
+      resourcePath: /allkeypair
+      description: Retrieve a comprehensive list of all KeyPairs associated with a
+        specific connection, <br> including those mapped between CB-Spider and the
+        CSP, <br> only registered in CB-Spider's metadata, <br> and only existing
+        in the CSP.
+    list-all-keypair-info:
+      method: get
+      resourcePath: /allkeypairinfo
+      description: Retrieve a list of KeyPair information associated with all connections.
+    list-all-myimage:
+      method: get
+      resourcePath: /allmyimage
+      description: Retrieve a comprehensive list of all MyImages associated with a
+        specific connection, <br> including those mapped between CB-Spider and the
+        CSP, <br> only registered in CB-Spider's metadata, <br> and only existing
+        in the CSP.
+    list-all-myimage-info:
+      method: get
+      resourcePath: /allmyimageinfo
+      description: Retrieve a comprehensive list of all MyImage information associated
+        with a specific connection, <br> including those mapped between CB-Spider
+        and the CSP, <br> only registered in CB-Spider's metadata, <br> and only existing
+        in the CSP.
+    list-all-nlb:
+      method: get
+      resourcePath: /allnlb
+      description: Retrieve a comprehensive list of all Network Load Balancers (NLBs)
+        associated with a specific connection, <br> including those mapped between
+        CB-Spider and the CSP, <br> only registered in CB-Spider's metadata, <br>
+        and only existing in the CSP.
+    list-all-nlb-info:
+      method: get
+      resourcePath: /allnlbinfo
+      description: Retrieve a comprehensive list of all Network Load Balancers (NLBs)
+        associated with a specific connection, <br> including those mapped between
+        CB-Spider and the CSP, <br> only registered in CB-Spider's metadata, <br>
+        and only existing in the CSP.
+    list-all-securitygroup:
+      method: get
+      resourcePath: /allsecuritygroup
+      description: Retrieve a comprehensive list of all Security Groups associated
+        with a specific connection, <br> including those mapped between CB-Spider
+        and the CSP, <br> only registered in CB-Spider's metadata, <br> and only existing
+        in the CSP.
+    list-all-securitygroup-info:
+      method: get
+      resourcePath: /allsecuritygroupinfo
+      description: Retrieve a list of Security Group information associated with all
+        connections.
+    list-all-vm:
+      method: get
+      resourcePath: /allvm
+      description: Retrieve a comprehensive list of all Virtual Machines (VMs) associated
+        with a specific connection, <br> including those mapped between CB-Spider
+        and the CSP, <br> only registered in CB-Spider's metadata, <br> and only existing
+        in the CSP.
+    list-all-vm-info:
+      method: get
+      resourcePath: /allvminfo
+      description: Retrieve a list of detailed information on all Virtual Machines
+        (VMs) associated with a specific connection, <br> including those mapped between
+        CB-Spider and the CSP, <br> only registered in CB-Spider's metadata, <br>
+        and only existing in the CSP.
+    list-all-vpc:
+      method: get
+      resourcePath: /allvpc
+      description: Retrieve a comprehensive list of all Virtual Private Clouds (VPCs)
+        associated with a specific connection, <br> including those mapped between
+        CB-Spider and the CSP, <br> only registered in CB-Spider's metadata, <br>
+        and only existing in the CSP.
+    list-all-vpc-info:
+      method: get
+      resourcePath: /allvpcinfo
+      description: Retrieve a comprehensive list of all Virtual Private Clouds (VPCs)
+        associated with a specific connection, <br> including those mapped between
+        CB-Spider and the CSP, <br> only registered in CB-Spider's metadata, <br>
+        and only existing in the CSP.
+    any-call:
+      method: post
+      resourcePath: /anycall
+      description: Execute a custom function (FID) with key-value parameters through
+        AnyCall. 🕷️ [[Development Guide](https://github.com/cloud-barista/cb-spider/wiki/AnyCall-API-Extension-Guide)]
+    check-tcp-port:
+      method: get
+      resourcePath: /check/tcp
+      description: Verifies whether a given TCP port is open on the specified host.
+    check-udp-port:
+      method: get
+      resourcePath: /check/udp
+      description: 'Verifies whether a given UDP port is open on the specified host.
+
+        ※ Note: As UDP is connectionless, this check mainly performs a lookup and
+        may not confirm if the server is working.'
+    list-cloudos:
+      method: get
+      resourcePath: /cloudos
+      description: Retrieve a list of supported Cloud OS.
+    get-cloudos-metainfo:
+      method: get
+      resourcePath: /cloudos/metainfo/{CloudOSName}
+      description: Retrieve metadata information for a specific Cloud OS.
+    list-cluster:
+      method: get
+      resourcePath: /cluster
+      description: Retrieve a list of Clusters associated with a specific connection.
+    create-cluster:
+      method: post
+      resourcePath: /cluster
+      description: 'Create a new Cluster with specified configurations. 🕷️ [[Concept
+        Guide](https://github.com/cloud-barista/cb-spider/wiki/Provider-Managed-Kubernetes-and-Driver-API)]
+        <br> * NodeGroupList is optional, depends on CSP type: <br> &nbsp;- Type-I
+        (e.g., Tencent, Alibaba): requires separate Node Group addition after Cluster
+        creation. <br> &nbsp;- Type-II (e.g., Azure, NHN): mandates at least one Node
+        Group during initial Cluster creation.'
+    delete-cluster:
+      method: delete
+      resourcePath: /cluster/{Name}
+      description: Delete a specified Cluster.
+    get-cluster:
+      method: get
+      resourcePath: /cluster/{Name}
+      description: Retrieve details of a specific Cluster.
+    add-nodegroup:
+      method: post
+      resourcePath: /cluster/{Name}/nodegroup
+      description: Add a new Node Group to an existing Cluster.
+    remove-nodegroup:
+      method: delete
+      resourcePath: /cluster/{Name}/nodegroup/{NodeGroupName}
+      description: Remove an existing Node Group from a Cluster.
+    change-nodegroup-scaling:
+      method: put
+      resourcePath: /cluster/{Name}/nodegroup/{NodeGroupName}/autoscalesize
+      description: Change the scaling settings for a Node Group in a Cluster.
+    set-nodegroup-autoscaling:
+      method: put
+      resourcePath: /cluster/{Name}/nodegroup/{NodeGroupName}/onautoscaling
+      description: Enable or disable auto scaling for a Node Group in a Cluster.
+    get-cluster-token:
+      method: get
+      resourcePath: /cluster/{Name}/token
+      description: Get a temporary token for accessing EKS cluster (for kubectl exec
+        auth)
+    upgrade-cluster:
+      method: put
+      resourcePath: /cluster/{Name}/upgrade
+      description: Upgrade a Cluster to a specified version.
+    list-connection-config:
+      method: get
+      resourcePath: /connectionconfig
+      description: Retrieve a list of registered Connection Configs.
+    create-connection-config:
+      method: post
+      resourcePath: /connectionconfig
+      description: Create a new Connection Config. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#4-cloud-connection-configuration-%EC%A0%95%EB%B3%B4-%EB%93%B1%EB%A1%9D-%EB%B0%8F-%EA%B4%80%EB%A6%AC)]
+    delete-connection-config:
+      method: delete
+      resourcePath: /connectionconfig/{ConfigName}
+      description: Delete a specific Connection Config.
+    get-connection-config:
+      method: get
+      resourcePath: /connectionconfig/{ConfigName}
+      description: Retrieve details of a specific Connection Config.
+    control-vm:
+      method: put
+      resourcePath: /controlvm/{Name}
+      description: Control the state of a Virtual Machine (VM) such as suspend, resume,
+        or reboot.
+    count-all-cluster:
+      method: get
+      resourcePath: /countcluster
+      description: Get the total number of Clusters across all connections.
+    count-cluster-by-connection:
+      method: get
+      resourcePath: /countcluster/{ConnectionName}
+      description: Get the total number of Clusters for a specific connection.
+    count-all-connection:
+      method: get
+      resourcePath: /countconnectionconfig
+      description: Get the total number of connections.
+    count-connection-by-provider:
+      method: get
+      resourcePath: /countconnectionconfig/{ProviderName}
+      description: Get the total number of connections for a specific provider.
+    count-all-disk:
+      method: get
+      resourcePath: /countdisk
+      description: Get the total number of Disks across all connections.
+    count-disk-by-connection:
+      method: get
+      resourcePath: /countdisk/{ConnectionName}
+      description: Get the total number of Disks for a specific connection.
+    count-all-keypair:
+      method: get
+      resourcePath: /countkeypair
+      description: Get the total number of KeyPairs across all connections.
+    count-keypair-by-connection:
+      method: get
+      resourcePath: /countkeypair/{ConnectionName}
+      description: Get the total number of KeyPairs for a specific connection.
+    count-all-myimage:
+      method: get
+      resourcePath: /countmyimage
+      description: Get the total number of MyImages across all connections.
+    count-myimage-by-connection:
+      method: get
+      resourcePath: /countmyimage/{ConnectionName}
+      description: Get the total number of MyImages for a specific connection.
+    count-all-nlb:
+      method: get
+      resourcePath: /countnlb
+      description: Get the total number of Network Load Balancers (NLBs) across all
+        connections.
+    count-nlb-by-connection:
+      method: get
+      resourcePath: /countnlb/{ConnectionName}
+      description: Get the total number of Network Load Balancers (NLBs) for a specific
+        connection.
+    count-all-securitygroup:
+      method: get
+      resourcePath: /countsecuritygroup
+      description: Get the total number of Security Groups across all connections.
+    count-securitygroup-by-connection:
+      method: get
+      resourcePath: /countsecuritygroup/{ConnectionName}
+      description: Get the total number of Security Groups for a specific connection.
+    count-all-subnet:
+      method: get
+      resourcePath: /countsubnet
+      description: Get the total number of Subnets across all connections.
+    count-subnet-by-connection:
+      method: get
+      resourcePath: /countsubnet/{ConnectionName}
+      description: Get the total number of Subnets for a specific connection.
+    count-all-vm:
+      method: get
+      resourcePath: /countvm
+      description: Get the total number of Virtual Machines (VMs) across all connections.
+    count-vm-by-connection:
+      method: get
+      resourcePath: /countvm/{ConnectionName}
+      description: Get the total number of Virtual Machines (VMs) for a specific connection.
+    count-all-vpc:
+      method: get
+      resourcePath: /countvpc
+      description: Get the total number of VPCs across all connections.
+    count-vpc-by-connection:
+      method: get
+      resourcePath: /countvpc/{ConnectionName}
+      description: Get the total number of VPCs for a specific connection.
+    list-credential:
+      method: get
+      resourcePath: /credential
+      description: Retrieve a list of registered Credentials.
+    register-credential:
+      method: post
+      resourcePath: /credential
+      description: Register a new Credential. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#2-cloud-credential-%EC%A0%95%EB%B3%B4-%EB%93%B1%EB%A1%9D-%EB%B0%8F-%EA%B4%80%EB%A6%AC)]
+    unregister-credential:
+      method: delete
+      resourcePath: /credential/{CredentialName}
+      description: Unregister a specific Credential.
+    get-credential:
+      method: get
+      resourcePath: /credential/{CredentialName}
+      description: Retrieve details of a specific Credential.
+    delete-csp-cluster:
+      method: delete
+      resourcePath: /cspcluster/{Id}
+      description: Delete a specified CSP Cluster.
+    delete-csp-disk:
+      method: delete
+      resourcePath: /cspdisk/{Id}
+      description: Delete a specified CSP Disk.
+    delete-csp-keypair:
+      method: delete
+      resourcePath: /cspkeypair/{Id}
+      description: Delete a specified CSP KeyPair.
+    delete-csp-myimage:
+      method: delete
+      resourcePath: /cspmyimage/{Id}
+      description: Delete a specified CSP MyImage.
+    delete-csp-nlb:
+      method: delete
+      resourcePath: /cspnlb/{Id}
+      description: Delete a specified CSP Network Load Balancer (NLB).
+    delete-csp-securitygroup:
+      method: delete
+      resourcePath: /cspsecuritygroup/{Id}
+      description: Delete a specified CSP Security Group.
+    terminate-csp-vm:
+      method: delete
+      resourcePath: /cspvm/{Id}
+      description: Terminate a specified CSP Virtual Machine (VM).
+    get-csp-vm:
+      method: get
+      resourcePath: /cspvm/{Id}
+      description: Retrieve details of a specific CSP Virtual Machine (VM).
+    delete-csp-vpc:
+      method: delete
+      resourcePath: /cspvpc/{Id}
+      description: Delete a specified CSP Virtual Private Cloud (VPC).
+    destroy-all-resource:
+      method: delete
+      resourcePath: /destroy
+      description: Deletes all resources associated with a specific cloud connection.
+        This action is irreversible.
+    list-disk:
+      method: get
+      resourcePath: /disk
+      description: Retrieve a list of Disks associated with a specific connection.
+    create-disk:
+      method: post
+      resourcePath: /disk
+      description: Create a new Disk with the specified configuration. 🕷️ [[Concept
+        Guide](https://github.com/cloud-barista/cb-spider/wiki/Disk-and-Driver-API)],
+        [[Snapshot-MyImage,Disk Guide](https://github.com/cloud-barista/cb-spider/wiki/VM-Snapshot,-MyImage-and-Disk-Overview)]
+    delete-disk:
+      method: delete
+      resourcePath: /disk/{Name}
+      description: Delete a specified Disk.
+    get-disk:
+      method: get
+      resourcePath: /disk/{Name}
+      description: Retrieve details of a specific Disk.
+    attach-disk:
+      method: put
+      resourcePath: /disk/{Name}/attach
+      description: Attach an existing Disk to a VM.
+    detach-disk:
+      method: put
+      resourcePath: /disk/{Name}/detach
+      description: Detach an existing Disk from a VM.
+    increase-disk-size:
+      method: put
+      resourcePath: /disk/{Name}/size
+      description: Increase the size of an existing disk.
+    list-driver:
+      method: get
+      resourcePath: /driver
+      description: Retrieve a list of registered Cloud Drivers.
+    register-driver:
+      method: post
+      resourcePath: /driver
+      description: Register a new Cloud Driver. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#1-cloud-driver-%EC%A0%95%EB%B3%B4-%EB%93%B1%EB%A1%9D-%EB%B0%8F-%EA%B4%80%EB%A6%AC)]
+    unregister-driver:
+      method: delete
+      resourcePath: /driver/{DriverName}
+      description: Unregister a specific Cloud Driver.
+    get-driver:
+      method: get
+      resourcePath: /driver/{DriverName}
+      description: Retrieve details of a specific Cloud Driver.
+    get-driver-capability:
+      method: get
+      resourcePath: /driver/capability
+      description: Retrieve capability information of the cloud driver.
+    upload-driver:
+      method: post
+      resourcePath: /driver/upload
+      description: Upload a Cloud Driver library file.
+    create-filesystem:
+      method: post
+      resourcePath: /filesystem
+      description: Create a new FileSystem with the specified configuration.
+    get-cluster-owner-vpc:
+      method: post
+      resourcePath: /getclusterowner
+      description: Retrieve the owner VPC of a specified Cluster.
+    get-nlb-owner-vpc:
+      method: post
+      resourcePath: /getnlbowner
+      description: Retrieve the owner VPC of a specified Network Load Balancer (NLB).
+    get-sg-owner-vpc:
+      method: post
+      resourcePath: /getsecuritygroupowner
+      description: Retrieve the owner VPC of a specified Security Group.
+    get-vm-using-rs:
+      method: post
+      resourcePath: /getvmusingresources
+      description: Retrieve details of a VM using resource ID.
+    health-check-health:
+      method: get
+      resourcePath: /health
+      description: Checks the health of CB-Spider service and its dependencies via
+        /health endpoint. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/Readiness-Check-Guide)]
+    health-check-healthcheck:
+      method: get
+      resourcePath: /healthcheck
+      description: Checks the health of CB-Spider service and its dependencies via
+        /healthcheck endpoint. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/Readiness-Check-Guide)]
+    list-keypair:
+      method: get
+      resourcePath: /keypair
+      description: Retrieve a list of KeyPairs associated with a specific connection.
+    create-keypair:
+      method: post
+      resourcePath: /keypair
+      description: Create a new KeyPair with the specified configurations. 🕷️ [[User
+        Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#5-vm-keypair-%EC%83%9D%EC%84%B1-%EB%B0%8F-%EC%A0%9C%EC%96%B4)]
+    delete-keypair:
+      method: delete
+      resourcePath: /keypair/{Name}
+      description: Delete a specified KeyPair.
+    get-keypair:
+      method: get
+      resourcePath: /keypair/{Name}
+      description: Retrieve details of a specific KeyPair.
+    list-myimage:
+      method: get
+      resourcePath: /myimage
+      description: Retrieve a list of MyImages associated with a specific connection.
+    create-myimage:
+      method: post
+      resourcePath: /myimage
+      description: Create a new MyImage snapshot from a specified VM. 🕷️ [[Concept
+        Guide](https://github.com/cloud-barista/cb-spider/wiki/MyImage-and-Driver-API)],
+        [[Snapshot-MyImage,Disk Guide](https://github.com/cloud-barista/cb-spider/wiki/VM-Snapshot,-MyImage-and-Disk-Overview)]
+    delete-myimage:
+      method: delete
+      resourcePath: /myimage/{Name}
+      description: Delete a specified MyImage.
+    get-myimage:
+      method: get
+      resourcePath: /myimage/{Name}
+      description: Retrieve details of a specific MyImage.
+    list-nlb:
+      method: get
+      resourcePath: /nlb
+      description: Retrieve a list of Network Load Balancers (NLBs) associated with
+        a specific connection.
+    create-nlb:
+      method: post
+      resourcePath: /nlb
+      description: Create a new Network Load Balancer (NLB) with specified configurations.
+        🕷️ [[Concept Guide](https://github.com/cloud-barista/cb-spider/wiki/Network-Load-Balancer-and-Driver-API)]
+    delete-nlb:
+      method: delete
+      resourcePath: /nlb/{Name}
+      description: Delete a specified Network Load Balancer (NLB).
+    get-nlb:
+      method: get
+      resourcePath: /nlb/{Name}
+      description: Retrieve details of a specific Network Load Balancer (NLB).
+    get-vmgroup-healthinfo:
+      method: get
+      resourcePath: /nlb/{Name}/health
+      description: Retrieve the health information of the VM group in a specified
+        Network Load Balancer (NLB).
+    remove-nlb-vm:
+      method: delete
+      resourcePath: /nlb/{Name}/vms
+      description: Remove a set of VMs from an existing Network Load Balancer (NLB).
+    add-nlb-vm:
+      method: post
+      resourcePath: /nlb/{Name}/vms
+      description: Add a new set of VMs to an existing Network Load Balancer (NLB).
+    list-org-region:
+      method: get
+      resourcePath: /orgregion
+      description: Retrieve a list of Original Regions associated with a specific
+        connection. <br> The response structure may vary depending on the request
+        ConnectionName.
+    list-org-zone:
+      method: get
+      resourcePath: /orgzone
+      description: Retrieve a list of Original Zones associated with a specific connection.
+        <br> The response structure may vary depending on the request ConnectionName.
+    health-check-ping:
+      method: get
+      resourcePath: /ping
+      description: Checks the health of CB-Spider service and its dependencies via
+        /ping endpoint. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/Readiness-Check-Guide)]
+    list-preconfigured-original-org-region:
+      method: get
+      resourcePath: /preconfig/orgregion
+      description: Retrieve a list of pre-configured Original Regions based on driver
+        and credential names. <br> The response structure may vary depending on the
+        request DriverName and CredentialName.
+    list-region-zone-preconfig:
+      method: get
+      resourcePath: /preconfig/regionzone
+      description: Retrieve a list of pre-configured Region Zones based on driver
+        and credential names. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/REST-API-Region-Zone-Information-Guide)]
+    get-region-zone-preconfig:
+      method: get
+      resourcePath: /preconfig/regionzone/{Name}
+      description: Retrieve details of a specific pre-configured Region Zone based
+        on driver and credential names. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/REST-API-Region-Zone-Information-Guide)]
+    get-vmprice-info:
+      method: post
+      resourcePath: /priceinfo/vm/{RegionName}
+      description: 'Retrieve VM Price Information for a specific connection and region.
+        🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/VM-Price-Info-Guide)]
+        <br> * example body: {"connectionName":"aws-connection","FilterList":[{"Key":"instanceType","Value":"t2.micro"}]}'
+    list-product-family:
+      method: get
+      resourcePath: /productfamily/{RegionName}
+      description: Retrieve a list of Product Families associated with a specific
+        connection and region. 🕷️ [[Concept Guide](https://github.com/cloud-barista/cb-spider/wiki/Price-Info-and-Cloud-Driver-API)],
+        🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/RestAPI-Multi%E2%80%90Cloud-Price-Information-Guide)]
+    health-check-readyz:
+      method: get
+      resourcePath: /readyz
+      description: Checks the health of CB-Spider service and its dependencies via
+        /readyz endpoint. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/Readiness-Check-Guide)]
+    register-cluster:
+      method: post
+      resourcePath: /regcluster
+      description: Register a new Cluster with the specified VPC and CSP ID.
+    unregister-cluster:
+      method: delete
+      resourcePath: /regcluster/{Name}
+      description: Unregister a Cluster with the specified name.
+    register-disk:
+      method: post
+      resourcePath: /regdisk
+      description: Register a new Disk with the specified name, zone, and CSP ID.
+    unregister-disk:
+      method: delete
+      resourcePath: /regdisk/{Name}
+      description: Unregister a Disk with the specified name.
+    list-region:
+      method: get
+      resourcePath: /region
+      description: Retrieve a list of registered Regions.
+    register-region:
+      method: post
+      resourcePath: /region
+      description: Register a new Region. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#3-cloud-regionzone-%EC%A0%95%EB%B3%B4-%EB%93%B1%EB%A1%9D-%EB%B0%8F-%EA%B4%80%EB%A6%AC)]
+    unregister-region:
+      method: delete
+      resourcePath: /region/{RegionName}
+      description: Unregister a specific Region.
+    get-region:
+      method: get
+      resourcePath: /region/{RegionName}
+      description: Retrieve details of a specific Region.
+    list-region-zone:
+      method: get
+      resourcePath: /regionzone
+      description: Retrieve a list of Region Zones associated with a specific connection.
+        🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/REST-API-Region-Zone-Information-Guide)]
+    get-region-zone:
+      method: get
+      resourcePath: /regionzone/{Name}
+      description: Retrieve details of a specific Region Zone. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/REST-API-Region-Zone-Information-Guide)]
+    register-keypair:
+      method: post
+      resourcePath: /regkeypair
+      description: Register a new KeyPair with the specified name and CSP ID.
+    unregister-keypair:
+      method: delete
+      resourcePath: /regkeypair/{Name}
+      description: Unregister a KeyPair with the specified name.
+    register-myimage:
+      method: post
+      resourcePath: /regmyimage
+      description: Register a new MyImage with the specified name and CSP ID.
+    unregister-myimage:
+      method: delete
+      resourcePath: /regmyimage/{Name}
+      description: Unregister a MyImage with the specified name.
+    register-nlb:
+      method: post
+      resourcePath: /regnlb
+      description: Register a new Network Load Balancer (NLB) with the specified name
+        and CSP ID.
+    unregister-nlb:
+      method: delete
+      resourcePath: /regnlb/{Name}
+      description: Unregister a Network Load Balancer (NLB) with the specified name.
+    register-securitygroup:
+      method: post
+      resourcePath: /regsecuritygroup
+      description: Register a new Security Group with the specified name and CSP ID.
+    unregister-securitygroup:
+      method: delete
+      resourcePath: /regsecuritygroup/{Name}
+      description: Unregister a Security Group with the specified name.
+    register-subnet:
+      method: post
+      resourcePath: /regsubnet
+      description: Register a new Subnet within a specified VPC.
+    unregister-subnet:
+      method: delete
+      resourcePath: /regsubnet/{Name}
+      description: Unregister a Subnet from a specified VPC.
+    register-vm:
+      method: post
+      resourcePath: /regvm
+      description: Register a new Virtual Machine (VM) with the specified name and
+        CSP ID.
+    unregister-vm:
+      method: delete
+      resourcePath: /regvm/{Name}
+      description: Unregister a Virtual Machine (VM) with the specified name.
+    register-vpc:
+      method: post
+      resourcePath: /regvpc
+      description: Register a new Virtual Private Cloud (VPC) with the specified name
+        and CSP ID.
+    unregister-vpc:
+      method: delete
+      resourcePath: /regvpc/{Name}
+      description: Unregister a VPC with the specified name.
+    list-securitygroup:
+      method: get
+      resourcePath: /securitygroup
+      description: Retrieve a list of Security Groups associated with a specific connection.
+    create-securitygroup:
+      method: post
+      resourcePath: /securitygroup
+      description: Create a new Security Group with specified rules and tags. 🕷️ [[Concept
+        Guide](https://github.com/cloud-barista/cb-spider/wiki/Security-Group-Rules-and-Driver-API)],
+        🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#4-securitygroup-%EC%83%9D%EC%84%B1-%EB%B0%8F-%EC%A0%9C%EC%96%B4)]
+    delete-securitygroup:
+      method: delete
+      resourcePath: /securitygroup/{Name}
+      description: Delete a specified Security Group.
+    get-securitygroup:
+      method: get
+      resourcePath: /securitygroup/{Name}
+      description: Retrieve details of a specific Security Group.
+    remove-rule:
+      method: delete
+      resourcePath: /securitygroup/{SGName}/rules
+      description: Remove existing rules from a Security Group.
+    add-rule:
+      method: post
+      resourcePath: /securitygroup/{SGName}/rules
+      description: Add new rules to a Security Group.
+    list-vpc-securitygroup:
+      method: get
+      resourcePath: /securitygroup/vpc/{VPCName}
+      description: Retrieve a list of Security Groups associated with a specific VPC
+        in a given cloud connection.
+    fetch-system-info:
+      method: get
+      resourcePath: /sysstats/system
+      description: 'Retrieve system information such as hostname, platform, CPU, memory,
+        and disk.
+
+        Use query parameter ''mode=text'' to get the output in text format instead
+        of JSON.'
+    fetch-resource-usage:
+      method: get
+      resourcePath: /sysstats/usage
+      description: 'Retrieve resource usage information such as CPU, memory, disk
+        I/O, and network I/O.
+
+        Use query parameter ''mode=text'' to get the output in text format instead
+        of JSON.'
+    list-tag:
+      method: get
+      resourcePath: /tag
+      description: 'Retrieve a list of tags for a specified resource.
+
+        ※ Resource types: VPC, SUBNET, SG, KEY, VM, NLB, DISK, MYIMAGE, CLUSTER'
+    add-tag:
+      method: post
+      resourcePath: /tag
+      description: 'Add a tag to a specified resource.
+
+        ※ Resource types: VPC, SUBNET, SG, KEY, VM, NLB, DISK, MYIMAGE, CLUSTER'
+    remove-tag:
+      method: delete
+      resourcePath: /tag/{Key}
+      description: 'Remove a specific tag from a specified resource.
+
+        ※ Resource types: VPC, SUBNET, SG, KEY, VM, NLB, DISK, MYIMAGE, CLUSTER'
+    get-tag:
+      method: get
+      resourcePath: /tag/{Key}
+      description: 'Retrieve a specific tag for a specified resource.
+
+        ※ Resource types: VPC, SUBNET, SG, KEY, VM, NLB, DISK, MYIMAGE, CLUSTER'
+    version-info:
+      method: get
+      resourcePath: /version
+      description: Retrieves the version information of CB-Spider.
+    list-vm:
+      method: get
+      resourcePath: /vm
+      description: Retrieve a list of Virtual Machines (VMs) associated with a specific
+        connection.
+    start-vm:
+      method: post
+      resourcePath: /vm
+      description: Start a new Virtual Machine (VM) with specified configurations.
+        🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#2-%EB%A9%80%ED%8B%B0%ED%81%B4%EB%9D%BC%EC%9A%B0%EB%93%9C-vm-%EC%9D%B8%ED%94%84%EB%9D%BC-%EC%9E%90%EC%9B%90-%EC%A0%9C%EC%96%B4multi-cloud-vm-infra-resource-control)],
+        [[Snapshot-MyImage,Disk Guide](https://github.com/cloud-barista/cb-spider/wiki/VM-Snapshot,-MyImage-and-Disk-Overview)]
+    terminate-vm:
+      method: delete
+      resourcePath: /vm/{Name}
+      description: Terminate a specified Virtual Machine (VM).
+    get-vm:
+      method: get
+      resourcePath: /vm/{Name}
+      description: Retrieve details of a specific Virtual Machine (VM).
+    list-image:
+      method: get
+      resourcePath: /vmimage
+      description: Retrieve a list of Public Images associated with a specific connection.
+        🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/How-to-get-Image-List-with-REST-API)]
+    get-image:
+      method: get
+      resourcePath: /vmimage/{Name}
+      description: Retrieve details of a specific Public Image. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/How-to-get-Image-List-with-REST-API)]
+    list-org-vm-spec:
+      method: get
+      resourcePath: /vmorgspec
+      description: Retrieve a list of Original VM Specs associated with a specific
+        connection. <br> The response structure may vary depending on the request
+        ConnectionName.
+    get-org-vm-spec:
+      method: get
+      resourcePath: /vmorgspec/{Name}
+      description: Retrieve details of a specific Original VM Spec.
+    list-vm-spec:
+      method: get
+      resourcePath: /vmspec
+      description: Retrieve a list of VM specs associated with a specific connection.
+        🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#2-vm-spec-%EC%A0%95%EB%B3%B4-%EC%A0%9C%EA%B3%B5)]
+    get-vm-spec:
+      method: get
+      resourcePath: /vmspec/{Name}
+      description: Retrieve details of a specific VM spec. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#2-vm-spec-%EC%A0%95%EB%B3%B4-%EC%A0%9C%EA%B3%B5)]
+    list-vm-status:
+      method: get
+      resourcePath: /vmstatus
+      description: Retrieve a list of statuses for Virtual Machines (VMs) associated
+        with a specific connection.
+    get-vm-status:
+      method: get
+      resourcePath: /vmstatus/{Name}
+      description: Retrieve the status of a specific Virtual Machine (VM).
+    list-vpc:
+      method: get
+      resourcePath: /vpc
+      description: Retrieve a list of Virtual Private Clouds (VPCs) associated with
+        a specific connection.
+    create-vpc:
+      method: post
+      resourcePath: /vpc
+      description: Create a new Virtual Private Cloud (VPC) with specified subnet
+        configurations. 🕷️ [[User Guide](https://github.com/cloud-barista/cb-spider/wiki/features-and-usages#3-vpcsubnet-%EC%83%9D%EC%84%B1-%EB%B0%8F-%EC%A0%9C%EC%96%B4)]
+    delete-vpc:
+      method: delete
+      resourcePath: /vpc/{Name}
+      description: Delete a specified Virtual Private Cloud (VPC).
+    get-vpc:
+      method: get
+      resourcePath: /vpc/{Name}
+      description: Retrieve details of a specific Virtual Private Cloud (VPC).
+    remove-csp-subnet:
+      method: delete
+      resourcePath: /vpc/{VPCName}/cspsubnet/{Id}
+      description: Remove an existing CSP Subnet from a VPC.
+    add-subnet:
+      method: post
+      resourcePath: /vpc/{VPCName}/subnet
+      description: Add a new Subnet to an existing VPC.
+    remove-subnet:
+      method: delete
+      resourcePath: /vpc/{VPCName}/subnet/{SubnetName}
+      description: Remove an existing Subnet from a VPC.
+    get-subnet:
+      method: get
+      resourcePath: /vpc/{VPCName}/subnet/{SubnetName}
+      description: Retrieve a specific Subnet from a VPC.
+  mc-infra-manager_0.4.0:
+    TestJWTAuth:
+      method: get
+      resourcePath: /auth/test
+      description: Test JWT authentication
+    GetAvailableK8sNodeImage:
+      method: get
+      resourcePath: /availableK8sNodeImage
+      description: (UNDER DEVELOPMENT!!!) Get available kubernetes cluster node image
+    GetAvailableK8sVersion:
+      method: get
+      resourcePath: /availableK8sVersion
+      description: Get available kubernetes cluster version
+    GetAvailableRegionZonesForSpec:
+      method: post
+      resourcePath: /availableRegionZonesForSpec
+      description: Query the availability of a specific spec across all regions/zones
+    GetAvailableRegionZonesForSpecList:
+      method: post
+      resourcePath: /availableRegionZonesForSpecList
+      description: Query the availability for multiple specs in parallel and return
+        batch results
+    CheckK8sNodeGroupsOnK8sCreation:
+      method: get
+      resourcePath: /checkK8sNodeGroupsOnK8sCreation
+      description: Check whether nodegroups are required during the K8sCluster creation
+    CheckK8sNodeImageDesignation:
+      method: get
+      resourcePath: /checkK8sNodeImageDesignation
+      description: Check whether node image designation is possible to create a K8sCluster
+    GetCloudInfo:
+      method: get
+      resourcePath: /cloudInfo
+      description: Get cloud information
+    GetAllConfig:
+      method: get
+      resourcePath: /config
+      description: List all configs
+    PostConfig:
+      method: post
+      resourcePath: /config
+      description: Create or Update config (TB_SPIDER_REST_URL, TB_DRAGONFLY_REST_URL,
+        ...)
+    InitAllConfig:
+      method: delete
+      resourcePath: /config
+      description: Init all configs
+    GetConfig:
+      method: get
+      resourcePath: /config/{configId}
+      description: Get config
+    InitConfig:
+      method: delete
+      resourcePath: /config/{configId}
+      description: Init config
+    GetConnConfigList:
+      method: get
+      resourcePath: /connConfig
+      description: List all registered ConnConfig
+    GetConnConfig:
+      method: get
+      resourcePath: /connConfig/{connConfigName}
+      description: Get registered ConnConfig info
+    RegisterCredential:
+      method: post
+      resourcePath: /credential
+      description: This API registers credential information using hybrid encryption.
+        The process involves compressing and encrypting sensitive data with AES-256,
+        encrypting the AES key with a 4096-bit RSA public key (retrieved via `GET
+        /credential/publicKey`), and using OAEP padding with SHA-256. All values,
+        including the AES key, must be base64 encoded before sending, and the public
+        key token ID must be included in the request.
+    GetPublicKeyForCredentialEncryption:
+      method: get
+      resourcePath: /credential/publicKey
+      description: Generates an RSA key pair using a 4096-bit key size with the RSA
+        algorithm. The public key is generated using the RSA algorithm with OAEP padding
+        and SHA-256 as the hash function. This key is used to encrypt an AES key that
+        will be used for hybrid encryption of credentials.
+    FetchImages:
+      method: post
+      resourcePath: /fetchImages
+      description: Fetch images waiting for completion
+    FetchImagesAsync:
+      method: post
+      resourcePath: /fetchImagesAsync
+      description: Fetch images in the background without waiting for completion
+    GetFetchImagesAsyncResult:
+      method: get
+      resourcePath: /fetchImagesResult
+      description: Get detailed results from the last asynchronous image fetch operation
+    FetchPrice:
+      method: post
+      resourcePath: /fetchPrice
+      description: Fetch price from all CSP connections and update the price information
+        for associated specs in the system.
+    FetchSpecs:
+      method: post
+      resourcePath: /fetchSpecs
+      description: Fetch specs from CSPs and register them in the system.
+    ForwardAnyReqToAny:
+      method: post
+      resourcePath: /forward/{path}
+      description: Forward any (GET) request to CB-Spider
+    CheckHTTPVersion:
+      method: get
+      resourcePath: /httpVersion
+      description: Checks and logs the HTTP version of the incoming request to the
+        server console.
+    InspectResources:
+      method: post
+      resourcePath: /inspectResources
+      description: Inspect Resources (vNet, securityGroup, sshKey, vm) registered
+        in CB-Tumblebug, CB-Spider, CSP
+    InspectResourcesOverview:
+      method: get
+      resourcePath: /inspectResourcesOverview
+      description: Inspect Resources Overview (vNet, securityGroup, sshKey, vm) registered
+        in CB-Tumblebug and CSP for all connections
+    PostK8sClusterDynamicCheckRequest:
+      method: post
+      resourcePath: /k8sClusterDynamicCheckRequest
+      description: Check available ConnectionConfig list before create K8sCluster
+        Dynamically from common spec and image
+    GetK8sClusterInfo:
+      method: get
+      resourcePath: /k8sClusterInfo
+      description: Get kubernetes cluster information
+    RecommendK8sNode:
+      method: post
+      resourcePath: /k8sClusterRecommendNode
+      description: Recommend K8sCluster's Node plan (filter and priority) Find details
+        from https://github.com/cloud-barista/cb-tumblebug/discussions/1234
+    GetLabels:
+      method: get
+      resourcePath: /label/{labelType}/{uid}
+      description: Get labels for a resource identified by its uid
+    CreateOrUpdateLabel:
+      method: put
+      resourcePath: /label/{labelType}/{uid}
+      description: Create or update a label for a resource identified by its uid
+    RemoveLabel:
+      method: delete
+      resourcePath: /label/{labelType}/{uid}/{key}
+      description: Remove a label from a resource identified by its uid
+    GetSystemLabelInfo:
+      method: get
+      resourcePath: /labelInfo
+      description: Return LabelTypes and system defined label keys with example
+    LoadAssets:
+      method: get
+      resourcePath: /loadAssets
+      description: Load Common Resources from internal asset files (Spec, Image)
+    LookupImage:
+      method: post
+      resourcePath: /lookupImage
+      description: Lookup image (for debugging purposes)
+    LookupImageList:
+      method: post
+      resourcePath: /lookupImages
+      description: Lookup image list (for debugging purposes)
+    LookupSpec:
+      method: post
+      resourcePath: /lookupSpec
+      description: Lookup spec (for debugging purposes)
+    LookupSpecList:
+      method: post
+      resourcePath: /lookupSpecs
+      description: Lookup spec list (for debugging purposes)
+    PostMciDynamicCheckRequest:
+      method: post
+      resourcePath: /mciDynamicCheckRequest
+      description: '**⚠️ DEPRECATED: This endpoint is deprecated and will be removed
+        in a future version. Please use `/mciDynamicReview` instead for comprehensive
+        validation and cost estimation.**
+
+
+        Validate resource availability and discover optimal connection configurations
+        before creating MCI dynamically.
+
+        This endpoint provides comprehensive resource validation and connection discovery
+        for MCI planning:
+
+
+        **Resource Validation Process:**
+
+        1. **Specification Analysis**: Validates that requested common specs exist
+        and are accessible
+
+        2. **Provider Discovery**: Identifies available cloud providers and regions
+        for each specification
+
+        3. **Connectivity Assessment**: Tests connection configurations and CSP API
+        accessibility
+
+        4. **Quota Verification**: Checks available quotas and resource limits where
+        possible
+
+        5. **Compatibility Matrix**: Generates matrix of viable spec-provider-region
+        combinations
+
+
+        **Connection Configuration Discovery:**
+
+        - **Available Providers**: Lists all configured cloud providers (AWS, Azure,
+        GCP, etc.)
+
+        - **Active Regions**: Shows available regions per provider with connectivity
+        status
+
+        - **Specification Mapping**: Maps common specs to provider-specific instance
+        types
+
+        - **Image Compatibility**: Validates image availability across different providers/regions
+
+        - **Network Capabilities**: Identifies supported network features and configurations
+
+
+        **Pre-Deployment Validation:**
+
+        - **Resource Existence**: Confirms all specified resources exist in system
+        namespace
+
+        - **Permission Verification**: Validates CSP credentials and required permissions
+
+        - **API Connectivity**: Tests connection to CSP APIs and service endpoints
+
+        - **Dependency Resolution**: Identifies any missing dependencies or prerequisites
+
+
+        **Optimization Recommendations:**
+
+        - **Cost-Effective Regions**: Suggests regions with lower pricing for specified
+        resources
+
+        - **Performance Optimization**: Recommends regions with better network performance
+
+        - **Availability Zone**: Identifies optimal AZ distribution for high availability
+
+        - **Resource Bundling**: Suggests efficient resource combinations and groupings
+
+
+        **Output Information:**
+
+        - **Connection Candidates**: List of viable connection configurations
+
+        - **Provider Capabilities**: Detailed capabilities matrix per provider
+
+        - **Resource Status**: Real-time availability status for each requested resource
+
+        - **Recommendation Summary**: Actionable recommendations for optimal deployment
+
+
+        **Use Cases:**
+
+        - Pre-validate MCI configuration before expensive deployment operations
+
+        - Discover optimal provider/region combinations for cost or performance
+
+        - Troubleshoot resource availability issues during MCI planning
+
+        - Generate connection configuration templates for standardized deployments
+
+        - Assess infrastructure capacity and planning constraints
+
+
+        **Integration Workflow:**
+
+        1. Use this endpoint to validate and discover connection options
+
+        2. Review recommendations and adjust specifications if needed
+
+        3. Use `/mciDynamicReview` for detailed cost estimation and final validation
+
+        4. Proceed with `/mciDynamic` using validated configuration'
+    MergeCSPResourceLabel:
+      method: put
+      resourcePath: /mergeCSPLabel/{labelType}/{uid}
+      description: Fetch the labels in the CSP and merge them with the existing labels
+    GetAllNs:
+      method: get
+      resourcePath: /ns
+      description: List all namespaces or namespaces' ID
+    PostNs:
+      method: post
+      resourcePath: /ns
+      description: Create namespace
+    DelAllNs:
+      method: delete
+      resourcePath: /ns
+      description: Delete all namespaces
+    GetNs:
+      method: get
+      resourcePath: /ns/{nsId}
+      description: Get namespace
+    PutNs:
+      method: put
+      resourcePath: /ns/{nsId}
+      description: Update namespace
+    DelNs:
+      method: delete
+      resourcePath: /ns/{nsId}
+      description: Delete namespace
+    GetBenchmark:
+      method: post
+      resourcePath: /ns/{nsId}/benchmark/mci/{mciId}
+      description: Run MCI benchmark for a single performance metric and return results
+    GetAllBenchmark:
+      method: post
+      resourcePath: /ns/{nsId}/benchmarkAll/mci/{mciId}
+      description: Run MCI benchmark for all performance metrics and return results
+    GetLatencyBenchmark:
+      method: get
+      resourcePath: /ns/{nsId}/benchmarkLatency/mci/{mciId}
+      description: Run MCI benchmark for network latency
+    PostBuildAgnosticImage:
+      method: post
+      resourcePath: /ns/{nsId}/buildAgnosticImage
+      description: Creates an MCI infrastructure, executes post-deployment commands,
+        creates snapshots from each subgroup, and optionally cleans up the MCI. This
+        is a complete workflow for building CSP-agnostic custom images.
+    CheckResource:
+      method: get
+      resourcePath: /ns/{nsId}/checkResource/{resourceType}/{resourceId}
+      description: Check resources' existence
+    PostCmdK8sCluster:
+      method: post
+      resourcePath: /ns/{nsId}/cmd/k8sCluster/{k8sClusterId}
+      description: 'Send a command to specified Container in K8sCluster
+
+        [note] This feature is not intended for general use
+
+        This API is provided as an exceptional and limited function for specific purposes
+        such as migration.
+
+        Kubernetes resource information required as input for this API is not currently
+        provided, and its availability in the future is uncertain.'
+    PostCmdMci:
+      method: post
+      resourcePath: /ns/{nsId}/cmd/mci/{mciId}
+      description: Send a command to specified MCI
+    GetControlK8sCluster:
+      method: get
+      resourcePath: /ns/{nsId}/control/k8sCluster/{k8sClusterId}
+      description: Control the creation of K8sCluster (continue, withdraw)
+    GetControlMci:
+      method: get
+      resourcePath: /ns/{nsId}/control/mci/{mciId}
+      description: Control the lifecycle of MCI (refine, suspend, resume, reboot,
+        terminate)
+    GetControlMciVm:
+      method: get
+      resourcePath: /ns/{nsId}/control/mci/{mciId}/vm/{vmId}
+      description: Control the lifecycle of VM (suspend, resume, reboot, terminate)
+    DeleteDeregisterVNet:
+      method: delete
+      resourcePath: /ns/{nsId}/deregisterCspResource/vNet/{vNetId}
+      description: Deregister the VNet, which was created in CSP
+    DeleteDeregisterSubnet:
+      method: delete
+      resourcePath: /ns/{nsId}/deregisterCspResource/vNet/{vNetId}/subnet/{subnetId}
+      description: Deregister Subnet, which was created in CSP
+    PostInstallBenchmarkAgentToMci:
+      method: post
+      resourcePath: /ns/{nsId}/installBenchmarkAgent/mci/{mciId}
+      description: Install the benchmark agent to specified MCI
+    GetAllK8sCluster:
+      method: get
+      resourcePath: /ns/{nsId}/k8sCluster
+      description: List all K8sClusters or K8sClusters' ID
+    PostK8sCluster:
+      method: post
+      resourcePath: /ns/{nsId}/k8sCluster
+      description: Create K8sCluster<br>Find details from https://github.com/cloud-barista/cb-tumblebug/discussions/1614
+    DeleteAllK8sCluster:
+      method: delete
+      resourcePath: /ns/{nsId}/k8sCluster
+      description: Delete all K8sClusters
+    GetK8sCluster:
+      method: get
+      resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}
+      description: Get K8sCluster
+    DeleteK8sCluster:
+      method: delete
+      resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}
+      description: Delete K8sCluster
+    PostK8sNodeGroup:
+      method: post
+      resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}/k8sNodeGroup
+      description: Add a K8sNodeGroup
+    DeleteK8sNodeGroup:
+      method: delete
+      resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}/k8sNodeGroup/{k8sNodeGroupName}
+      description: Remove a K8sNodeGroup
+    PutChangeK8sNodeGroupAutoscaleSize:
+      method: put
+      resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}/k8sNodeGroup/{k8sNodeGroupName}/autoscaleSize
+      description: Change a K8sNodeGroup's Autoscale Size
+    PutSetK8sNodeGroupAutoscaling:
+      method: put
+      resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}/k8sNodeGroup/{k8sNodeGroupName}/onAutoscaling
+      description: Set a K8sNodeGroup's Autoscaling On/Off
+    PostK8sNodeGroupDynamic:
+      method: post
+      resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}/k8sNodeGroupDynamic
+      description: Create K8sNodeGroup Dynamically from common spec and image
+    PutUpgradeK8sCluster:
+      method: put
+      resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}/upgrade
+      description: Upgrade a K8sCluster's version
+    PostK8sClusterDynamic:
+      method: post
+      resourcePath: /ns/{nsId}/k8sClusterDynamic
+      description: Create K8sCluster Dynamically from common spec and image
+    GetAllMci:
+      method: get
+      resourcePath: /ns/{nsId}/mci
+      description: List all MCIs or MCIs' ID
+    PostMci:
+      method: post
+      resourcePath: /ns/{nsId}/mci
+      description: 'Create MCI with detailed VM specifications and resource configuration.
+
+        This endpoint creates a complete multi-cloud infrastructure by:
+
+        1. **VM Provisioning**: Creates VMs across multiple cloud providers using
+        predefined specs and images
+
+        2. **Resource Management**: Automatically handles VPC/VNet, security groups,
+        SSH keys, and network configuration
+
+        3. **Status Tracking**: Monitors VM creation progress and handles failures
+        based on policy settings
+
+        4. **Post-Deployment**: Optionally installs monitoring agents and executes
+        custom commands
+
+
+        **Key Features:**
+
+        - Multi-cloud VM deployment with heterogeneous configurations
+
+        - Automatic resource dependency management (VPC → Security Group → VM)
+
+        - Built-in failure handling with configurable policies (continue/rollback/refine)
+
+        - Optional CB-Dragonfly monitoring agent installation
+
+        - Post-deployment command execution support
+
+        - Real-time status updates and progress tracking
+
+
+        **VM Lifecycle:**
+
+        1. Creating → Running (successful deployment)
+
+        2. Creating → Failed (deployment error, handled by failure policy)
+
+        3. Running → Terminated (manual or policy-driven cleanup)
+
+
+        **Failure Policies:**
+
+        - `continue`: Keep successful VMs, mark failed ones for later refinement
+
+        - `rollback`: Delete entire MCI if any VM fails (all-or-nothing)
+
+        - `refine`: Automatically clean up failed VMs, keep successful ones
+
+
+        **Resource Requirements:**
+
+        - Valid VM specifications (must exist in system namespace)
+
+        - Valid images (must be available in target CSP regions)
+
+        - Sufficient CSP quotas and permissions
+
+        - Network connectivity between components'
+    DelAllMci:
+      method: delete
+      resourcePath: /ns/{nsId}/mci
+      description: Delete all MCIs
+    GetMci:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}
+      description: 'Get MCI object (option: status, accessInfo, vmId)'
+    DelMci:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}
+      description: Delete MCI
+    GetMciAssociatedResources:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/associatedResources
+      description: Get associated resource ID list for a given MCI (VNet, Subnet,
+        SecurityGroup, SSHKey, etc.)
+    PutMciAssociatedSecurityGroups:
+      method: put
+      resourcePath: /ns/{nsId}/mci/{mciId}/associatedSecurityGroups
+      description: 'Update all Security Groups associated with a given MCI. The firewall
+        rules of all Security Groups will be synchronized to match the requested set.
+
+        Update all Security Groups associated with a given MCI. The firewall rules
+        of all associated Security Groups will be synchronized to match the requested
+        set.
+
+
+        This API will add missing rules and delete extra rules so that each Security
+        Group''s rules become identical to the requested set.
+
+        Only firewall rules are updated; other metadata (name, description, etc.)
+        is not changed.
+
+
+        Usage:
+
+        Use this API to update (synchronize) the firewall rules of all Security Groups
+        associated with the specified MCI. The rules in the request body will become
+        the only rules in each Security Group after the operation.
+
+        - All existing rules not present in the request will be deleted.
+
+        - All rules in the request that do not exist will be added.
+
+        - If a rule exists but differs in CIDR or port range, it will be replaced.
+
+        - Special protocols (ICMP, etc.) are handled in the same way.
+
+
+        Notes:
+
+        - "Ports" field supports single port ("22"), port range ("80-100"), and multiple
+        ports/ranges ("22,80-100,443").
+
+        - The valid port number range is 0 to 65535 (inclusive).
+
+        - "Protocol" can be TCP, UDP, ICMP, etc. (as supported by the cloud provider).
+
+        - "Direction" must be either "inbound" or "outbound".
+
+        - "CIDR" is the allowed IP range.
+
+        - All existing rules not in the request (including default ICMP, etc.) will
+        be deleted.
+
+        - Metadata (name, description, etc.) is not changed.'
+    RemoveBastionNodes:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}/bastion/{bastionVmId}
+      description: Remove a bastion VM from all vNets
+    GetMciHandlingCommandCount:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/handlingCount
+      description: Get the number of commands currently in 'Handling' status for all
+        VMs in an MCI. Returns per-VM counts and total count.
+    PostMcNLB:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/mcSwNlb
+      description: Create a special purpose MCI for NLB and depoly and setting SW
+        NLB
+    GetAllNLB:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/nlb
+      description: List all NLBs or NLBs' ID
+    PostNLB:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/nlb
+      description: Create NLB
+    DelAllNLB:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}/nlb
+      description: Delete all NLBs
+    GetNLB:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/nlb/{nlbId}
+      description: Get NLB
+    DelNLB:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}/nlb/{nlbId}
+      description: Delete NLB
+    GetNLBHealth:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/nlb/{nlbId}/healthz
+      description: Get NLB Health
+    AddNLBVMs:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/nlb/{nlbId}/vm
+      description: Add VMs to NLB
+    RemoveNLBVMs:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}/nlb/{nlbId}/vm
+      description: Delete VMs from NLB
+    GetSitesInMci:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/site
+      description: Get sites in MCI
+    PostMciSnapshot:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/snapshot
+      description: Create snapshots for the first running VM in each subgroup of an
+        MCI in parallel
+    PostMciSubGroupDynamic:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/subGroupDynamic
+      description: 'Dynamically add new virtual machines to an existing MCI using
+        common specifications and automated resource management.
+
+        This endpoint provides elastic scaling capabilities for running MCIs:
+
+
+        **Dynamic VM Addition Process:**
+
+        1. **MCI Validation**: Verifies target MCI exists and is in a valid state
+        for expansion
+
+        2. **Resource Discovery**: Resolves common spec and image to provider-specific
+        resources
+
+        3. **Network Integration**: Automatically configures new VMs to use existing
+        MCI network resources
+
+        4. **Subgroup Management**: Creates new subgroups or expands existing ones
+        based on configuration
+
+        5. **Status Synchronization**: Updates MCI status and metadata to reflect
+        new VM additions
+
+
+        **Integration with Existing Infrastructure:**
+
+        - **Network Reuse**: New VMs automatically join existing VNets and security
+        groups
+
+        - **SSH Key Sharing**: Uses existing SSH keys for consistent access management
+
+        - **Monitoring Integration**: New VMs inherit monitoring configuration from
+        parent MCI
+
+        - **Label Propagation**: Applies MCI-level labels and policies to new VMs
+
+        - **Resource Consistency**: Maintains naming conventions and resource organization
+
+
+        **Scaling Scenarios:**
+
+        - **Horizontal Scaling**: Add more instances to handle increased workload
+
+        - **Multi-Region Expansion**: Deploy VMs in new regions while maintaining
+        MCI cohesion
+
+        - **Provider Diversification**: Add VMs from different cloud providers for
+        redundancy
+
+        - **Workload Specialization**: Deploy VMs with different specifications for
+        specific tasks
+
+
+        **Configuration Requirements:**
+
+        - `specId`: Must specify valid VM specification from system namespace
+
+        - `imageId`: Must specify valid image compatible with target provider/region
+
+        - `name`: Becomes subgroup name; VMs will be named with sequential suffixes
+
+        - `subGroupSize`: Number of identical VMs to create (default: 1)
+
+
+        **Network and Security:**
+
+        - New VMs automatically inherit security group rules from existing MCI
+
+        - Network connectivity to existing VMs is established automatically
+
+        - Firewall rules and access policies are applied consistently
+
+        - SSH access is configured using existing key pairs
+
+
+        **Example Use Cases:**
+
+        - Scale out web tier during traffic spikes
+
+        - Add GPU instances for machine learning workloads
+
+        - Deploy edge nodes in additional geographic regions
+
+        - Add specialized storage or database nodes to existing application stack
+
+
+        **Post-Addition Operations:**
+
+        - New VMs are immediately available for standard MCI operations
+
+        - Can be individually managed or grouped with existing subgroups
+
+        - Monitoring and logging are automatically configured
+
+        - Application deployment and configuration management can proceed immediately'
+    PostMciDynamicSubGroupVmReview:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/subGroupDynamicReview
+      description: 'Review and validate a VM dynamic addition request for an existing
+        MCI before actual provisioning.
+
+        This endpoint provides comprehensive validation for adding new VMs to existing
+        MCIs without actually creating resources.
+
+        It checks resource availability, validates specifications and images, estimates
+        costs, and provides detailed recommendations.
+
+
+        **Key Features:**
+
+        - Validates VM specification and image against CSP availability
+
+        - Checks compatibility with existing MCI configuration
+
+        - Provides cost estimation for the new VM addition
+
+        - Identifies potential configuration issues and warnings
+
+        - Recommends optimization strategies
+
+        - Non-invasive validation (no resources are created)
+
+
+        **Review Status:**
+
+        - `Ready`: VM can be added successfully
+
+        - `Warning`: VM can be added but with configuration warnings
+
+        - `Error`: Critical errors prevent VM addition
+
+
+        **MCI Integration Validation:**
+
+        - Ensures target MCI exists and is in a compatible state
+
+        - Validates network integration possibilities
+
+        - Checks resource naming conflicts
+
+        - Verifies security group and SSH key compatibility
+
+
+        **Use Cases:**
+
+        - Pre-validation before expensive VM addition operations
+
+        - Cost estimation for scaling decisions
+
+        - Configuration optimization before deployment
+
+        - Risk assessment for VM addition to existing infrastructure'
+    GetMciGroupIds:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/subgroup
+      description: List SubGroup IDs in a specified MCI
+    GetMciGroupVms:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/subgroup/{subgroupId}
+      description: List VMs with a SubGroup label in a specified MCI
+    PostMciSubGroupScaleOut:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/subgroup/{subgroupId}
+      description: 'Horizontally scale an existing VM subgroup by adding more identical
+        instances for increased capacity.
+
+        This endpoint provides elastic scaling capabilities for running application
+        tiers:
+
+
+        **Scale-Out Process:**
+
+        1. **SubGroup Validation**: Verifies target subgroup exists and is in scalable
+        state
+
+        2. **Template Replication**: Uses existing VM configuration as template for
+        new instances
+
+        3. **Resource Allocation**: Ensures sufficient CSP quotas and network resources
+
+        4. **Parallel Deployment**: Deploys multiple new VMs simultaneously for faster
+        scaling
+
+        5. **Integration**: Seamlessly integrates new VMs into existing subgroup and
+        MCI
+
+
+        **Configuration Inheritance:**
+
+        - **VM Specifications**: New VMs inherit exact specifications from existing
+        subgroup members
+
+        - **Network Settings**: Automatically placed in same VNet, subnet, and security
+        groups
+
+        - **SSH Keys**: Use same SSH key pairs for consistent access management
+
+        - **Monitoring**: Inherit monitoring agent configuration and policies
+
+        - **Labels and Metadata**: Propagate all labels and metadata from parent subgroup
+
+
+        **Scaling Scenarios:**
+
+        - **Traffic Spikes**: Quickly add capacity during high-demand periods
+
+        - **Seasonal Scaling**: Scale out for predictable demand increases
+
+        - **Performance Optimization**: Add instances to reduce per-VM resource utilization
+
+        - **Geographic Expansion**: Scale existing workloads to handle broader user
+        base
+
+        - **Fault Tolerance**: Increase redundancy by adding more instances
+
+
+        **Intelligent Scaling:**
+
+        - **Sequential Naming**: New VMs follow established naming pattern (e.g.,
+        web-4, web-5, web-6)
+
+        - **Load Distribution**: New VMs are distributed optimally across availability
+        zones
+
+        - **Resource Efficiency**: Reuses existing network and security infrastructure
+
+        - **Minimal Disruption**: Scaling occurs without affecting existing VM operations
+
+        - **Consistent Configuration**: Ensures all VMs in subgroup remain homogeneous
+
+
+        **Operational Benefits:**
+
+        - **Zero Downtime**: Existing VMs continue running during scale-out operation
+
+        - **Immediate Availability**: New VMs are ready for traffic as soon as deployment
+        completes
+
+        - **Unified Management**: All VMs (old and new) managed through single subgroup
+
+        - **Policy Consistency**: All scaling and management policies apply uniformly
+
+        - **Monitoring Integration**: New VMs automatically included in existing monitoring
+        dashboards
+
+
+        **Scale-Out Considerations:**
+
+        - **CSP Quotas**: Verifies sufficient instance, network, and storage quotas
+
+        - **Region Capacity**: Ensures target region has capacity for requested instance
+        types
+
+        - **Network Limits**: Validates that VNet can accommodate additional VMs
+
+        - **Cost Impact**: Additional VMs incur proportional CSP billing costs
+
+        - **Application Readiness**: Applications should be designed to handle additional
+        instances
+
+
+        **Post-Scale Operations:**
+
+        - New VMs immediately participate in subgroup operations
+
+        - Can be individually managed while maintaining subgroup membership
+
+        - Support for further scaling operations (scale-out or scale-in)
+
+        - Ready for application deployment and load balancer integration
+
+
+        **Best Practices:**
+
+        - Monitor application performance before and after scaling
+
+        - Ensure load balancers are configured to include new instances
+
+        - Verify application clustering and session management handle new instances
+
+        - Consider database connection limits and other resource constraints'
+    PostMciVm:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm
+      description: 'Create and add a group of identical virtual machines (subgroup)
+        to an existing MCI using detailed specifications.
+
+        This endpoint provides precise control over VM configuration and placement
+        within existing infrastructure:
+
+
+        **SubGroup Creation Process:**
+
+        1. **MCI Integration**: Validates target MCI exists and can accommodate new
+        VMs
+
+        2. **Resource Validation**: Verifies all specified resources (specs, images,
+        networks) exist and are accessible
+
+        3. **Homogeneous Deployment**: Creates multiple identical VMs with consistent
+        configuration
+
+        4. **Network Integration**: Integrates new VMs with existing MCI networking
+        and security policies
+
+        5. **Group Management**: Establishes subgroup for collective management and
+        operations
+
+
+        **Detailed Configuration Control:**
+
+        - **Specific Resource References**: Uses exact resource IDs rather than common
+        specifications
+
+        - **Network Placement**: Precise control over VNet, subnet, and security group
+        assignment
+
+        - **Storage Configuration**: Detailed disk configuration including type, size,
+        and performance tiers
+
+        - **Instance Customization**: Full control over VM specifications, images,
+        and metadata
+
+        - **Security Settings**: Explicit security group and SSH key configuration
+
+
+        **SubGroup Benefits:**
+
+        - **Collective Operations**: Perform operations on entire subgroup simultaneously
+
+        - **Homogeneous Scaling**: All VMs in subgroup share identical configuration
+
+        - **Simplified Management**: Single configuration template for multiple VMs
+
+        - **Consistent Naming**: Automatic sequential naming (e.g., web-1, web-2,
+        web-3)
+
+        - **Group Policies**: Apply scaling, monitoring, and lifecycle policies at
+        subgroup level
+
+
+        **Use Cases:**
+
+        - **Application Tiers**: Deploy multiple instances of web servers, application
+        servers, or databases
+
+        - **Load Distribution**: Create multiple identical VMs for load balancing
+        scenarios
+
+        - **High Availability**: Deploy redundant instances across availability zones
+
+        - **Batch Processing**: Create worker nodes for distributed computing workloads
+
+        - **Development Environments**: Provision identical development or testing
+        instances
+
+
+        **Configuration Requirements:**
+
+        - **Resource IDs**: Must specify exact resource identifiers (not common specs)
+
+        - **Network Configuration**: VNet, subnet, and security group must exist and
+        be compatible
+
+        - **SSH Keys**: Must specify valid SSH key pairs for access management
+
+        - **Image Compatibility**: Specified image must be available in target region
+
+        - **Quota Validation**: Sufficient CSP quotas must be available for all requested
+        VMs
+
+
+        **SubGroup Size Considerations:**
+
+        - **Small Groups (1-5 VMs)**: Fast deployment, minimal resource contention
+
+        - **Medium Groups (6-20 VMs)**: Optimized parallel deployment with resource
+        batching
+
+        - **Large Groups (21+ VMs)**: Advanced deployment strategies to avoid CSP
+        rate limits
+
+        - **Resource Limits**: Respects CSP quotas and CB-Tumblebug configuration
+        limits
+
+
+        **Post-Deployment Integration:**
+
+        - SubGroup becomes integral part of parent MCI
+
+        - All VMs inherit MCI-level monitoring and management policies
+
+        - Can be scaled out further or individual VMs can be managed separately
+
+        - Supports all standard CB-Tumblebug VM lifecycle operations'
+    GetBastionNodes:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{targetVmId}/bastion
+      description: Get bastion nodes for a VM
+    SetBastionNodes:
+      method: put
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{targetVmId}/bastion/{bastionVmId}
+      description: Set bastion nodes for a VM
+    GetMciVm:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}
+      description: Get VM in specified MCI
+    DelMciVm:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}
+      description: Delete VM in specified MCI
+    ListVmCommandStatus:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/commandStatus
+      description: List command status records for a VM with various filtering options
+    DeleteVmCommandStatusByCriteria:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/commandStatus
+      description: Delete multiple command status records for a VM based on filtering
+        criteria
+    GetVmCommandStatus:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/commandStatus/{index}
+      description: Get a specific command status record by index for a VM
+    DeleteVmCommandStatus:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/commandStatus/{index}
+      description: Delete a specific command status record by index for a VM
+    ClearAllVmCommandStatus:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/commandStatusAll
+      description: Delete all command status records for a VM
+    GetVmDataDisk:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/dataDisk
+      description: Get available dataDisks for a VM
+    PutVmDataDisk:
+      method: put
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/dataDisk
+      description: Attach/Detach available dataDisk
+    PostVmDataDisk:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/dataDisk
+      description: Provisioning (Create and attach) dataDisk
+    GetVmHandlingCommandCount:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/handlingCount
+      description: Get the number of commands currently in 'Handling' status for a
+        specific VM. Optimized for frequent polling.
+    PostMciVmSnapshot:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/vm/{vmId}/snapshot
+      description: Snapshot VM and create a Custom Image Object using the Snapshot
+    GetAllSiteToSiteVpn:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/vpn
+      description: Get all site-to-site VPNs
+    PostSiteToSiteVpn:
+      method: post
+      resourcePath: /ns/{nsId}/mci/{mciId}/vpn
+      description: 'Create a site-to-site VPN
+
+
+        The supported CSP sets are as follows:
+
+
+        - AWS and one of CSPs in Azure, GCP, Alibaba, Tencent, and IBM
+
+
+        - Note: It will take about `15 ~ 45 minutes`.'
+    GetSiteToSiteVpn:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/vpn/{vpnId}
+      description: Get resource info of a site-to-site VPN
+    DeleteSiteToSiteVpn:
+      method: delete
+      resourcePath: /ns/{nsId}/mci/{mciId}/vpn/{vpnId}
+      description: Delete a site-to-site VPN
+    GetRequestStatusOfSiteToSiteVpn:
+      method: get
+      resourcePath: /ns/{nsId}/mci/{mciId}/vpn/{vpnId}/request/{requestId}
+      description: Check the status of a specific request by its ID
+    PostMciDynamic:
+      method: post
+      resourcePath: /ns/{nsId}/mciDynamic
+      description: 'Create multi-cloud infrastructure dynamically using common specifications
+        and images with automatic resource discovery and optimization.
+
+        This is the **recommended approach** for MCI creation, providing simplified
+        configuration with powerful automation:
+
+
+        **Dynamic Resource Creation:**
+
+        1. **Automatic Resource Discovery**: Validates and selects optimal VM specifications
+        and images from common namespace
+
+        2. **Intelligent Network Setup**: Creates VNets, subnets, security groups,
+        and SSH keys automatically per provider
+
+        3. **Cross-Cloud Orchestration**: Coordinates VM provisioning across multiple
+        cloud providers simultaneously
+
+        4. **Dependency Management**: Handles resource creation order and inter-dependencies
+        automatically
+
+        5. **Failure Recovery**: Implements configurable failure policies for robust
+        deployment
+
+
+        **Key Advantages Over Static MCI:**
+
+        - **Simplified Configuration**: Use common spec/image IDs instead of provider-specific
+        resources
+
+        - **Automatic Resource Management**: No need to pre-create VNets, security
+        groups, or SSH keys
+
+        - **Multi-Cloud Optimization**: Intelligent placement and configuration across
+        providers
+
+        - **Built-in Best Practices**: Security groups, network isolation, and access
+        controls applied automatically
+
+        - **Scalable Architecture**: Supports large-scale deployments with optimized
+        resource utilization
+
+
+        **Configuration Process:**
+
+        1. **Resource Discovery**: Use `/recommendSpec` to find suitable VM specifications
+
+        2. **Image Selection**: Use system namespace to discover compatible images
+
+        3. **Request Validation**: Use `/mciDynamicCheckRequest` to validate configuration
+        before deployment
+
+        4. **Optional Preview**: Use `/mciDynamicReview` to estimate costs and review
+        configuration
+
+        5. **Deployment**: Submit MCI dynamic request with failure policy and deployment
+        options
+
+
+        **Failure Policies (PolicyOnPartialFailure):**
+
+        - **`continue`** (default): Create MCI with successful VMs, failed VMs remain
+        for manual refinement
+
+        - **`rollback`**: Delete entire MCI if any VM fails (all-or-nothing deployment)
+
+        - **`refine`**: Automatically clean up failed VMs, keep successful ones (recommended
+        for large deployments)
+
+
+        **Deployment Options:**
+
+        - **`hold`**: Create MCI object but hold VM provisioning for manual approval
+
+        - **Normal**: Proceed with immediate VM provisioning after resource creation
+
+
+        **Multi-Cloud Example Configuration:**
+
+        ```json
+
+        {
+
+        "name": "multi-cloud-web-tier",
+
+        "description": "Web application across AWS, Azure, and GCP",
+
+        "policyOnPartialFailure": "refine",
+
+        "vm": [
+
+        {
+
+        "name": "aws-web-servers",
+
+        "subGroupSize": "3",
+
+        "specId": "aws+us-east-1+t3.medium",
+
+        "imageId": "ami-0abcdef1234567890",
+
+        "rootDiskSize": "100",
+
+        "label": {"tier": "web", "provider": "aws"}
+
+        },
+
+        {
+
+        "name": "azure-api-servers",
+
+        "subGroupSize": "2",
+
+        "specId": "azure+eastus+Standard_B2s",
+
+        "imageId": "Canonical:0001-com-ubuntu-server-jammy:22_04-lts",
+
+        "label": {"tier": "api", "provider": "azure"}
+
+        }
+
+        ]
+
+        }
+
+        ```
+
+
+        **Performance Considerations:**
+
+        - VM provisioning occurs in parallel across providers
+
+        - Network resources are created concurrently where possible
+
+        - Large deployments (>10 VMs) automatically use optimized batching
+
+        - Built-in rate limiting prevents CSP API throttling
+
+
+        **Monitoring and Post-Deployment:**
+
+        - Optional CB-Dragonfly monitoring agent installation
+
+        - Custom post-deployment command execution
+
+        - Real-time status tracking and progress updates
+
+        - Automatic resource labeling and metadata management'
+    PostMciDynamicReview:
+      method: post
+      resourcePath: /ns/{nsId}/mciDynamicReview
+      description: 'Review and validate MCI dynamic request comprehensively before
+        actual provisioning.
+
+        This endpoint performs comprehensive validation of MCI dynamic creation requests
+        without actually creating resources.
+
+        It checks resource availability, validates specifications and images, estimates
+        costs, and provides detailed recommendations.
+
+
+        **Key Features:**
+
+        - Validates all VM specifications and images against CSP availability
+
+        - Provides cost estimation (including partial estimates when some costs are
+        unknown)
+
+        - Identifies potential configuration issues and warnings
+
+        - Recommends optimization strategies
+
+        - Shows provider and region distribution
+
+        - Non-invasive validation (no resources are created)
+
+
+        **Review Status:**
+
+        - `Ready`: All VMs can be created successfully
+
+        - `Warning`: VMs can be created but with configuration warnings
+
+        - `Error`: Critical errors prevent MCI creation
+
+
+        **Use Cases:**
+
+        - Pre-validation before expensive MCI creation
+
+        - Cost estimation and planning
+
+        - Configuration optimization
+
+        - Multi-cloud resource planning'
+    PostInstallMonitorAgentToMci:
+      method: post
+      resourcePath: /ns/{nsId}/monitoring/install/mci/{mciId}
+      description: Install monitoring agent (CB-Dragonfly agent) to MCI
+    GetMonitorData:
+      method: get
+      resourcePath: /ns/{nsId}/monitoring/mci/{mciId}/metric/{metric}
+      description: Get monitoring data of specified MCI for specified monitoring metric
+        (cpu, memory, disk, network)
+    PutMonitorAgentStatusInstalled:
+      method: put
+      resourcePath: /ns/{nsId}/monitoring/status/mci/{mciId}/vm/{vmId}
+      description: Set monitoring agent (CB-Dragonfly agent) installation status installed
+        (for Windows VM only)
+    GetAllMciPolicy:
+      method: get
+      resourcePath: /ns/{nsId}/policy/mci
+      description: List all MCI policies
+    DelAllMciPolicy:
+      method: delete
+      resourcePath: /ns/{nsId}/policy/mci
+      description: Delete all MCI policies
+    GetMciPolicy:
+      method: get
+      resourcePath: /ns/{nsId}/policy/mci/{mciId}
+      description: Get MCI Policy
+    PostMciPolicy:
+      method: post
+      resourcePath: /ns/{nsId}/policy/mci/{mciId}
+      description: Create MCI Automation policy
+    DelMciPolicy:
+      method: delete
+      resourcePath: /ns/{nsId}/policy/mci/{mciId}
+      description: Delete MCI Policy
+    PostRegisterVNet:
+      method: post
+      resourcePath: /ns/{nsId}/registerCspResource/vNet
+      description: Register the VNet, which was created in CSP
+    PostRegisterSubnet:
+      method: post
+      resourcePath: /ns/{nsId}/registerCspResource/vNet/{vNetId}/subnet
+      description: Register Subnet, which was created in CSP
+    PostRegisterCSPNativeVM:
+      method: post
+      resourcePath: /ns/{nsId}/registerCspVm
+      description: 'Import and register pre-existing virtual machines from cloud service
+        providers into CB-Tumblebug management.
+
+        This endpoint allows you to bring existing CSP resources under CB-Tumblebug
+        control without recreating them:
+
+
+        **Registration Process:**
+
+        1. **Discovery**: Validates that the specified VM exists in the target CSP
+
+        2. **Metadata Import**: Retrieves VM configuration, network settings, and
+        current status
+
+        3. **Resource Mapping**: Creates CB-Tumblebug resource objects that reference
+        the existing CSP resources
+
+        4. **Status Synchronization**: Aligns CB-Tumblebug status with actual CSP
+        VM state
+
+        5. **Management Integration**: Enables CB-Tumblebug operations on the registered
+        VMs
+
+
+        **Supported VM States:**
+
+        - Running VMs (most common use case)
+
+        - Stopped VMs (will be registered with current state)
+
+        - VMs with attached storage and network interfaces
+
+
+        **Resource Compatibility:**
+
+        - VM must exist in a supported CSP (AWS, Azure, GCP, etc.)
+
+        - Network resources (VPC, subnets, security groups) will be discovered and
+        mapped
+
+        - Storage volumes and attached disks will be registered automatically
+
+        - SSH keys and security configurations will be imported
+
+
+        **Post-Registration Capabilities:**
+
+        - Standard CB-Tumblebug VM lifecycle operations (start, stop, terminate)
+
+        - Monitoring agent installation (if CB-Dragonfly is configured)
+
+        - Command execution and automation
+
+        - Integration with other CB-Tumblebug MCIs
+
+
+        **Important Notes:**
+
+        - Registration does not modify the existing VM configuration
+
+        - Original CSP billing and resource management still applies
+
+        - CB-Tumblebug provides additional management layer and automation
+
+        - Ensure proper CSP credentials and permissions are configured'
+    GetAllCustomImage:
+      method: get
+      resourcePath: /ns/{nsId}/resources/customImage
+      description: List all customImages or customImages' ID
+    PostCustomImage:
+      method: post
+      resourcePath: /ns/{nsId}/resources/customImage
+      description: Register existing Custom Image in a CSP (option=register)
+    DelAllCustomImage:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/customImage
+      description: Delete all customImages
+    GetCustomImage:
+      method: get
+      resourcePath: /ns/{nsId}/resources/customImage/{customImageId}
+      description: Get customImage
+    DelCustomImage:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/customImage/{customImageId}
+      description: Delete customImage
+    GetAllDataDisk:
+      method: get
+      resourcePath: /ns/{nsId}/resources/dataDisk
+      description: List all Data Disks or Data Disks' ID
+    PostDataDisk:
+      method: post
+      resourcePath: /ns/{nsId}/resources/dataDisk
+      description: Create Data Disk
+    DelAllDataDisk:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/dataDisk
+      description: Delete all Data Disks
+    GetDataDisk:
+      method: get
+      resourcePath: /ns/{nsId}/resources/dataDisk/{dataDiskId}
+      description: Get Data Disk
+    PutDataDisk:
+      method: put
+      resourcePath: /ns/{nsId}/resources/dataDisk/{dataDiskId}
+      description: Upsize Data Disk
+    DelDataDisk:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/dataDisk/{dataDiskId}
+      description: Delete Data Disk
+    FilterSpecsByRange:
+      method: post
+      resourcePath: /ns/{nsId}/resources/filterSpecsByRange
+      description: Filter specs by range. Use limit field to control the maximum number
+        of results. If limit is 0 or not specified, returns all matching results.
+    GetAllImage:
+      method: get
+      resourcePath: /ns/{nsId}/resources/image
+      description: List all images or images' ID
+    PostImage:
+      method: post
+      resourcePath: /ns/{nsId}/resources/image
+      description: Register image
+    DelAllImage:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/image
+      description: Delete all images
+    GetImage:
+      method: get
+      resourcePath: /ns/{nsId}/resources/image/{imageId}
+      description: GetImage returns an image object if there are matched images for
+        the given namespace and imageKey(imageId)
+    PutImage:
+      method: put
+      resourcePath: /ns/{nsId}/resources/image/{imageId}
+      description: Update image
+    DelImage:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/image/{imageId}
+      description: Delete image
+    SearchImage:
+      method: post
+      resourcePath: /ns/{nsId}/resources/searchImage
+      description: Search image
+    SearchImageOptions:
+      method: get
+      resourcePath: /ns/{nsId}/resources/searchImageOptions
+      description: Get all available options for image search fields
+    GetAllSecurityGroup:
+      method: get
+      resourcePath: /ns/{nsId}/resources/securityGroup
+      description: List all Security Groups or Security Groups' ID
+    PostSecurityGroup:
+      method: post
+      resourcePath: /ns/{nsId}/resources/securityGroup
+      description: Create Security Group
+    DelAllSecurityGroup:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/securityGroup
+      description: Delete all Security Groups
+    GetSecurityGroup:
+      method: get
+      resourcePath: /ns/{nsId}/resources/securityGroup/{securityGroupId}
+      description: Get Security Group
+    PutSecurityGroup:
+      method: put
+      resourcePath: /ns/{nsId}/resources/securityGroup/{securityGroupId}
+      description: 'Update Security Group: Synchronize the firewall rules of the specified
+        Security Group to match the requested list exactly.
+
+        This API will add missing rules and delete extra rules so that the Security
+        Group''s rules become identical to the requested set.
+
+        Only firewall rules are updated; other metadata (name, description, etc.)
+        is not changed.
+
+
+        Usage:
+
+        Use this API to update (synchronize) the firewall rules of a Security Group.
+        The rules in the request body will become the only rules in the Security Group
+        after the operation.
+
+        - All existing rules not present in the request will be deleted.
+
+        - All rules in the request that do not exist will be added.
+
+        - If a rule exists but differs in CIDR or port range, it will be replaced.
+
+        - Special protocols (ICMP, etc.) are handled in the same way.
+
+
+        Notes:
+
+        - "Ports" field supports single port ("22"), port range ("80-100"), and multiple
+        ports/ranges ("22,80-100,443").
+
+        - The valid port number range is 0 to 65535 (inclusive).
+
+        - "Protocol" can be TCP, UDP, ICMP, etc. (as supported by the cloud provider).
+
+        - "Direction" must be either "inbound" or "outbound".
+
+        - "CIDR" is the allowed IP range.
+
+        - All existing rules not in the request (including default ICMP, etc.) will
+        be deleted.
+
+        - Metadata (name, description, etc.) is not changed.'
+    DelSecurityGroup:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/securityGroup/{securityGroupId}
+      description: Delete Security Group
+    PostFirewallRules:
+      method: post
+      resourcePath: /ns/{nsId}/resources/securityGroup/{securityGroupId}/rules
+      description: 'Add new FirewallRules: Add the provided firewall rules to the
+        existing rules in the Security Group.
+
+        This API will only add new rules without deleting or modifying existing ones.
+
+        If a rule with identical properties already exists, it will be skipped to
+        avoid duplicates.
+
+
+        Usage:
+
+        Use this API to add new firewall rules to a Security Group while preserving
+        existing rules.
+
+        - Only new rules that don''t already exist will be added.
+
+        - Existing rules remain unchanged.
+
+        - If an identical rule already exists, it will be skipped.
+
+
+        Notes:
+
+        - "Ports" field supports single port ("22"), port range ("80-100"), and multiple
+        ports/ranges ("22,80-100,443").
+
+        - The valid port number range is 0 to 65535 (inclusive).
+
+        - "Protocol" can be TCP, UDP, ICMP, ALL, etc. (as supported by the cloud provider).
+
+        - "Direction" must be either "inbound" or "outbound".
+
+        - "CIDR" is the allowed IP range.'
+    DelFirewallRules:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/securityGroup/{securityGroupId}/rules
+      description: 'Delete specific FirewallRules: Remove specified rules from the
+        Security Group while keeping other existing rules.
+
+        This API will remove only the specified rules from the Security Group, leaving
+        all other rules intact.
+
+
+        Usage:
+
+        Use this API to remove specific firewall rules from a Security Group. Only
+        the rules matching the provided criteria will be deleted.
+
+        - Rules that exactly match the provided Direction, Protocol, Port, and CIDR
+        will be removed.
+
+        - All other existing rules will remain unchanged.
+
+
+        Notes:
+
+        - "Ports" field supports single port ("22"), port range ("80-100"), and multiple
+        ports/ranges ("22,80-100,443").
+
+        - "Protocol" can be TCP, UDP, ICMP, ALL, etc. (as supported by the cloud provider).
+
+        - "Direction" must be either "inbound" or "outbound".
+
+        - "CIDR" is the allowed IP range.'
+    PostSpec:
+      method: post
+      resourcePath: /ns/{nsId}/resources/spec
+      description: Register spec
+    GetSpec:
+      method: get
+      resourcePath: /ns/{nsId}/resources/spec/{specId}
+      description: Get spec
+    PutSpec:
+      method: put
+      resourcePath: /ns/{nsId}/resources/spec/{specId}
+      description: Update spec
+    DelSpec:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/spec/{specId}
+      description: Delete spec
+    GetAllSqlDb:
+      method: get
+      resourcePath: /ns/{nsId}/resources/sqlDb
+      description: Get all SQL Databases (TBD)
+    PostSqlDb:
+      method: post
+      resourcePath: /ns/{nsId}/resources/sqlDb
+      description: 'Create a SQL Databases
+
+
+        Supported CSPs: AWS, Azure, GCP, NCP
+
+        - Note - `connectionName` example: aws-ap-northeast-2, azure-koreacentral,
+        gcp-asia-northeast3, ncp-kr
+
+
+        - Note - Please check the `requiredCSPResource` property which includes CSP
+        specific values.
+
+
+        - Note - You can find the API usage examples on this link, https://github.com/cloud-barista/mc-terrarium/discussions/110
+
+        '
+    GetSqlDb:
+      method: get
+      resourcePath: /ns/{nsId}/resources/sqlDb/{sqlDbId}
+      description: Get resource info of a SQL datatbase
+    DeleteSqlDb:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/sqlDb/{sqlDbId}
+      description: Delete a SQL datatbase
+    GetAllSshKey:
+      method: get
+      resourcePath: /ns/{nsId}/resources/sshKey
+      description: List all SSH Keys or SSH Keys' ID
+    PostSshKey:
+      method: post
+      resourcePath: /ns/{nsId}/resources/sshKey
+      description: Create SSH Key
+    DelAllSshKey:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/sshKey
+      description: Delete all SSH Keys
+    GetSshKey:
+      method: get
+      resourcePath: /ns/{nsId}/resources/sshKey/{sshKeyId}
+      description: Get SSH Key
+    PutSshKey:
+      method: put
+      resourcePath: /ns/{nsId}/resources/sshKey/{sshKeyId}
+      description: Update SSH Key
+    DelSshKey:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/sshKey/{sshKeyId}
+      description: Delete SSH Key
+    GetAllVNet:
+      method: get
+      resourcePath: /ns/{nsId}/resources/vNet
+      description: List all VNets or VNets' ID
+    PostVNet:
+      method: post
+      resourcePath: /ns/{nsId}/resources/vNet
+      description: Create a new VNet
+    DelAllVNet:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/vNet
+      description: Delete all VNets
+    GetVNet:
+      method: get
+      resourcePath: /ns/{nsId}/resources/vNet/{vNetId}
+      description: Get VNet
+    DelVNet:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/vNet/{vNetId}
+      description: 'Delete VNet
+
+        - withsubnets: delete VNet and its subnets
+
+        - refine: delete information of VNet and its subnets if there''s no info/resource
+        in Spider/CSP
+
+        - force: delete VNet and its subnets regardless of the status of info/resource
+        in Spider/CSP'
+    GetAllSubnet:
+      method: get
+      resourcePath: /ns/{nsId}/resources/vNet/{vNetId}/subnet
+      description: List all subnets
+    PostSubnet:
+      method: post
+      resourcePath: /ns/{nsId}/resources/vNet/{vNetId}/subnet
+      description: Create Subnet
+    GetSubnet:
+      method: get
+      resourcePath: /ns/{nsId}/resources/vNet/{vNetId}/subnet/{subnetId}
+      description: Get Subnet
+    DelSubnet:
+      method: delete
+      resourcePath: /ns/{nsId}/resources/vNet/{vNetId}/subnet/{subnetId}
+      description: 'Delete Subnet
+
+        - refine: delete a subnet `object` if there''s no resource on CSP or no inforamation
+        on Spider
+
+        - force: force: delete a subnet `resource` on a CSP regardless of the current
+        resource status (e.g., attempt to delete even if in use)'
+    CreateSharedResource:
+      method: post
+      resourcePath: /ns/{nsId}/sharedResource
+      description: Create shared resources for MC-Infra
+    DelAllSharedResources:
+      method: delete
+      resourcePath: /ns/{nsId}/sharedResources
+      description: Delete all Default Resource Objects in the given namespace
+    PostFileToK8sCluster:
+      method: post
+      resourcePath: /ns/{nsId}/transferFile/k8sCluster/{k8sClusterId}
+      description: 'Transfer a file to specified Container in K8sCluster. The tar
+        command is required in the container.
+
+        [note] This feature is not intended for general use
+
+        This API is provided as an exceptional and limited function for specific purposes
+        such as migration.
+
+        Kubernetes resource information required as input for this API is not currently
+        provided, and its availability in the future is uncertain.'
+    PostFileToMci:
+      method: post
+      resourcePath: /ns/{nsId}/transferFile/mci/{mciId}
+      description: 'Transfer a file to specified MCI to the specified path.
+
+        The file size should be less than 10MB.
+
+        Not for gerneral file transfer but for specific purpose (small configuration
+        files).'
+    UpdateExistingSpecListByAvailableRegionZones:
+      method: post
+      resourcePath: /ns/{nsId}/updateExistingSpecListByAvailableRegionZones
+      description: Query all specs for a specific provider across all regions, check
+        their availability, and remove specs that are not available in their respective
+        regions
+    GetObject:
+      method: get
+      resourcePath: /object
+      description: Get value of an object
+    DeleteObject:
+      method: delete
+      resourcePath: /object
+      description: Delete an object
+    GetObjects:
+      method: get
+      resourcePath: /objects
+      description: List all objects for a given key
+    DeleteObjects:
+      method: delete
+      resourcePath: /objects
+      description: Delete child objects along with the given object
+    GetProviderList:
+      method: get
+      resourcePath: /provider
+      description: List all registered Providers
+    GetRegions:
+      method: get
+      resourcePath: /provider/{providerName}/region
+      description: Get registered region info
+    GetRegion:
+      method: get
+      resourcePath: /provider/{providerName}/region/{regionName}
+      description: Get registered region info
+    RecordProvisioningEvent:
+      method: post
+      resourcePath: /provisioning/event
+      description: 'Manually record a provisioning success or failure event for historical
+        tracking and analysis.
+
+        This endpoint allows external systems or manual processes to contribute to
+        provisioning history:
+
+
+        **Use Cases:**
+
+        - **External Provisioning Tools**: Record events from non-CB-Tumblebug provisioning
+        systems
+
+        - **Manual Testing**: Log results from manual deployment tests
+
+        - **Migration**: Import historical data from other systems
+
+        - **Integration**: Connect with CI/CD pipelines for comprehensive tracking
+
+
+        **Event Types:**
+
+        - **Success Events**: Only recorded if previous failures exist for the spec
+
+        - **Failure Events**: Always recorded to build failure pattern database
+
+
+        **Data Quality:**
+
+        - Provide accurate timestamps for proper chronological analysis
+
+        - Include detailed error messages for failure events
+
+        - Use consistent spec ID and image name formats
+
+
+        **Impact on System:**
+
+        - Contributes to risk analysis algorithms
+
+        - Affects future MCI review recommendations
+
+        - Builds historical baseline for reliability metrics'
+    GetProvisioningLog:
+      method: get
+      resourcePath: /provisioning/log/{specId}
+      description: 'Retrieve detailed provisioning history for a specific VM specification
+        including success/failure patterns and risk analysis.
+
+        This endpoint provides comprehensive insights into provisioning reliability:
+
+
+        **Historical Data Includes:**
+
+        - Success and failure counts with timestamps
+
+        - CSP-specific error messages and failure patterns
+
+        - Image compatibility tracking across different attempts
+
+        - Failure rate analysis and risk assessment
+
+        - Regional and provider-specific reliability metrics
+
+
+        **Use Cases:**
+
+        - **Pre-deployment Risk Assessment**: Check if a spec has historical failures
+        before creating MCI
+
+        - **Troubleshooting**: Analyze failure patterns to identify root causes
+
+        - **Capacity Planning**: Understand reliability patterns for different specs
+        and regions
+
+        - **Cost Optimization**: Avoid specs with high failure rates that waste resources
+
+
+        **Response Details:**
+
+        - `failureCount`: Total number of provisioning failures
+
+        - `successCount`: Number of successes (only tracked after failures occur)
+
+        - `failureImages`: List of CSP images that failed with this spec
+
+        - `successImages`: List of CSP images that succeeded with this spec
+
+        - `failureMessages`: Detailed error messages from CSP
+
+        - `lastUpdated`: Timestamp of most recent provisioning attempt'
+    DeleteProvisioningLog:
+      method: delete
+      resourcePath: /provisioning/log/{specId}
+      description: 'Remove all provisioning history data for a specific VM specification.
+
+        This operation permanently deletes historical failure and success records:
+
+
+        **Warning**: This action is irreversible and will remove:
+
+        - All failure and success statistics
+
+        - Historical error messages and troubleshooting data
+
+        - Risk analysis baseline for future deployments
+
+        - Failure pattern analysis data
+
+
+        **When to Use:**
+
+        - **Data Cleanup**: Remove outdated or irrelevant provisioning history
+
+        - **Fresh Start**: Clear history after infrastructure changes that resolve
+        previous issues
+
+        - **Privacy Compliance**: Remove logs containing sensitive error information
+
+        - **Storage Management**: Clean up logs to manage kvstore space
+
+
+        **Impact on System:**
+
+        - Future risk analysis for this spec will have no historical baseline
+
+        - MCI review process will not show historical warnings for this spec
+
+        - Provisioning reliability metrics will be reset to zero'
+    AnalyzeProvisioningRisk:
+      method: get
+      resourcePath: /provisioning/risk/{specId}
+      description: 'Evaluate the likelihood of provisioning failure based on historical
+        data for a specific VM specification and image combination.
+
+        This endpoint provides intelligent risk assessment to help prevent deployment
+        failures:
+
+
+        **Risk Analysis Factors:**
+
+        - Historical failure rate for the VM specification
+
+        - Image-specific compatibility with the spec
+
+        - Recent failure patterns and trends
+
+        - Cross-reference of spec+image combination success rates
+
+
+        **Risk Levels:**
+
+        - `high`: Very likely to fail (>80% failure rate or image-specific failures)
+
+        - `medium`: Moderate risk (50-80% failure rate or mixed results)
+
+        - `low`: Low risk (<50% failure rate or no previous failures)
+
+        - `unknown`: Insufficient data for analysis
+
+
+        **Recommended Actions by Risk Level:**
+
+        - **High Risk**: Consider alternative specs or images, verify CSP quotas and
+        permissions
+
+        - **Medium Risk**: Proceed with caution, have backup plans ready
+
+        - **Low Risk**: Safe to proceed with normal deployment
+
+
+        **Integration Points:**
+
+        - Automatically called during MCI review process
+
+        - Can be used in CI/CD pipelines for deployment validation
+
+        - Helpful for capacity planning and resource selection'
+    GetReadyz:
+      method: get
+      resourcePath: /readyz
+      description: Check Tumblebug is ready
+    RecommendSpec:
+      method: post
+      resourcePath: /recommendSpec
+      description: 'Recommend specs for configuring an infrastructure (filter and
+        priority)
+
+        Find details from https://github.com/cloud-barista/cb-tumblebug/discussions/1234
+
+        Get available options by /recommendSpecOptions for filtering and prioritizing
+        specs in RecommendSpec API'
+    RecommendSpecOptions:
+      method: get
+      resourcePath: /recommendSpecOptions
+      description: Get available options for filtering and prioritizing specs in RecommendSpec
+        API
+    RetrieveRegionListFromCsp:
+      method: get
+      resourcePath: /regionFromCsp
+      description: RetrieveR all region lists from CSPs
+    RegisterCspNativeResources:
+      method: post
+      resourcePath: /registerCspResources
+      description: 'Register CSP Native Resources (vNet, securityGroup, sshKey, vm)
+        to CB-Tumblebug.
+
+
+        **Behavior based on connectionName:**
+
+        - If `connectionName` is specified: Registers resources from the specified
+        connection only
+
+        - If `connectionName` is empty or omitted: Registers resources from **all
+        available connections**
+
+
+        **Usage Examples:**
+
+        - Single connection: `{"connectionName": "aws-ap-northeast-2", "nsId": "default",
+        "mciNamePrefix": "mci-01"}`
+
+        - All connections: `{"connectionName": "", "nsId": "default", "mciNamePrefix":
+        "mci-all"}` or `{"nsId": "default", "mciNamePrefix": "mci-all"}`'
+    GetScheduleRegisterCspResourcesList:
+      method: get
+      resourcePath: /registerCspResources/schedule
+      description: Get a list of all scheduled CSP resource registration jobs (jobs
+        are not scoped to namespaces)
+    PostScheduleRegisterCspResources:
+      method: post
+      resourcePath: /registerCspResources/schedule
+      description: 'Create a scheduled job to periodically register CSP-native resources
+        (vNet, securityGroup, sshKey, vm) into CB-Tumblebug
+
+
+        **Resource Registration Behavior:**
+
+        This job registers CSP-native resources based on the `connectionName` field:
+
+        - If `connectionName` is specified: Registers resources from the **specified
+        connection only**
+
+        - If `connectionName` is empty or omitted: Registers resources from **all
+        available connections**
+
+
+        **Usage Examples:**
+
+        - Single connection: `{"jobType": "registerCspResources", "nsId": "default",
+        "intervalSeconds": 60, "connectionName": "aws-ap-northeast-2", "mciNamePrefix":
+        "mci-01"}`
+
+        - All connections: `{"jobType": "registerCspResources", "nsId": "default",
+        "intervalSeconds": 60, "connectionName": "", "mciNamePrefix": "mci-all"}`
+        or `{"jobType": "registerCspResources", "nsId": "default", "intervalSeconds":
+        60, "mciNamePrefix": "mci-all"}`
+
+
+        **Job Status Values:**
+
+        - `Scheduled`: Job is scheduled and waiting for the next execution time
+
+        - `Executing`: Job is currently running the task
+
+        - `Stopped`: Job has been stopped and deleted
+
+
+        **Job Lifecycle:**
+
+        1. Create job (this API) → Status: `Scheduled`, **executes immediately**
+
+        2. First execution starts → Status: `Executing`
+
+        3. Execution completes → Status: `Scheduled` (waits for interval)
+
+        4. After interval → Status: `Executing` (cycles back to step 3)
+
+        5. Pause job → `enabled: false`, Status: `Scheduled` (no execution)
+
+        6. Resume job → `enabled: true`, Status: `Scheduled` (resumes execution)
+
+        7. Delete job → Status: `Stopped`, job removed permanently
+
+
+        **Failure Handling:**
+
+        - Tracks `successCount`, `failureCount`, `consecutiveFailures`
+
+        - Auto-disables after 5 consecutive failures (`autoDisabled: true`)
+
+        - Auto-recovers when next execution succeeds
+
+
+        **Timeout Protection:**
+
+        - Default execution timeout: 30 minutes
+
+        - Jobs exceeding timeout are marked as failed
+
+        - Server restart during execution marks job as interrupted
+
+
+        **Duplicate Prevention:**
+
+        - System checks for existing jobs with same configuration
+
+        - Configuration uniqueness based on: jobType + nsId + connectionName + mciNamePrefix
+        + option + mciFlag
+
+        - Returns 409 Conflict if duplicate job exists with existing job ID'
+    DeleteScheduleRegisterCspResourcesAll:
+      method: delete
+      resourcePath: /registerCspResources/schedule
+      description: '⚠️ **DANGER: This operation deletes ALL scheduled jobs in the
+        system!**
+
+
+        **⚠️ CRITICAL WARNINGS:**
+
+        - This will PERMANENTLY DELETE **ALL** scheduled jobs across all namespaces
+
+        - All job execution history will be lost
+
+        - This operation is IRREVERSIBLE and cannot be undone
+
+        - Use with EXTREME CAUTION in production environments
+
+
+        **Use Cases:**
+
+        - Cleaning up test/development environments
+
+        - Emergency shutdown of all scheduled operations
+
+        - System maintenance or reset
+
+
+        **Safer Alternatives:**
+
+        - Delete individual jobs: Use `DELETE /registerCspResources/schedule/{jobId}`
+
+        - Temporarily stop all jobs: Pause each job individually via `/pause` endpoint
+
+        - Disable without deleting: Update each job with `enabled: false`
+
+
+        **Response Information:**
+
+        - Returns the count of deleted jobs
+
+        - Returns 200 even if no jobs were found (count will be 0)'
+    GetScheduleRegisterCspResourcesStatus:
+      method: get
+      resourcePath: /registerCspResources/schedule/{jobId}
+      description: 'Get the current status of a specific scheduled CSP resource registration
+        job
+
+
+        **Response Fields Explanation:**
+
+        - `status`: Current job state (Scheduled/Executing/Stopped)
+
+        - `enabled`: Whether job is active (can be paused with false)
+
+        - `executionCount`: Total number of executions attempted
+
+        - `successCount`: Number of successful executions
+
+        - `failureCount`: Number of failed executions
+
+        - `consecutiveFailures`: Current streak of failures (resets on success)
+
+        - `autoDisabled`: True if job was auto-disabled due to 5+ consecutive failures
+
+        - `lastExecutedAt`: Timestamp of most recent execution
+
+        - `nextExecutionAt`: Scheduled time for next execution
+
+        - `lastError`: Error message from most recent failure (empty if success)
+
+        - `lastResult`: Result message from most recent execution
+
+
+        **Monitoring Recommendations:**
+
+        - Check `consecutiveFailures` - alert if >= 3
+
+        - Monitor `autoDisabled` - requires manual intervention if true
+
+        - Compare `successCount` vs `failureCount` for reliability metrics'
+    PutScheduleRegisterCspResources:
+      method: put
+      resourcePath: /registerCspResources/schedule/{jobId}
+      description: 'Update the configuration of a scheduled CSP resource registration
+        job (interval, enabled status)
+
+
+        **Updatable Fields:**
+
+        - `intervalSeconds`: Change execution frequency (minimum 10 seconds)
+
+        - `enabled`: Enable (true) or disable (false) the job
+
+
+        **Usage Examples:**
+
+        - Change interval: `{"intervalSeconds": 30}` (30 seconds)
+
+        - Pause job: `{"enabled": false}`
+
+        - Resume job: `{"enabled": true}`
+
+        - Change both: `{"intervalSeconds": 10, "enabled": true}`
+
+
+        **Note:** For simpler pause/resume operations, consider using dedicated `/pause`
+        and `/resume` endpoints'
+    DeleteScheduleRegisterCspResources:
+      method: delete
+      resourcePath: /registerCspResources/schedule/{jobId}
+      description: 'Stop and permanently delete a scheduled CSP resource registration
+        job
+
+
+        **Warning:** This operation is irreversible!
+
+        - Job will be stopped immediately
+
+        - All job data and execution history will be deleted
+
+        - Cannot be recovered after deletion
+
+
+        **Alternatives:**
+
+        - To temporarily stop: Use `/pause` endpoint instead
+
+        - To keep history: Set `enabled: false` via PUT endpoint'
+    PutScheduleRegisterCspResourcesPause:
+      method: put
+      resourcePath: /registerCspResources/schedule/{jobId}/pause
+      description: 'Temporarily pause a scheduled job without deleting it. The job
+        can be resumed later.
+
+        This sets enabled=false and preserves all job state and execution history.'
+    PutScheduleRegisterCspResourcesResume:
+      method: put
+      resourcePath: /registerCspResources/schedule/{jobId}/resume
+      description: 'Resume a previously paused scheduled job to continue periodic
+        execution.
+
+        This sets enabled=true and restarts the job scheduler.'
+    RegisterCspNativeResourcesAll:
+      method: post
+      resourcePath: /registerCspResourcesAll
+      description: '**DEPRECATED**: This endpoint is deprecated. Please use `/registerCspResources`
+        with empty `connectionName` instead.
+
+
+        This endpoint now redirects to `/registerCspResources` for unified API behavior.
+
+
+        **Migration Guide:**
+
+        - Old: `POST /registerCspResourcesAll` with `{"nsId": "default", "mciNamePrefix":
+        "mci-all"}`
+
+        - New: `POST /registerCspResources` with `{"connectionName": "", "nsId": "default",
+        "mciNamePrefix": "mci-all"}`'
+    GetRequest:
+      method: get
+      resourcePath: /request/{reqId}
+      description: Get details of a specific request
+    DeleteRequest:
+      method: delete
+      resourcePath: /request/{reqId}
+      description: Delete details of a specific request
+    GetAllRequests:
+      method: get
+      resourcePath: /requests
+      description: Get details of all requests with optional filters.
+    DeleteAllRequests:
+      method: delete
+      resourcePath: /requests
+      description: Delete details of all requests
+    GetRequiredK8sSubnetCount:
+      method: get
+      resourcePath: /requiredK8sSubnetCount
+      description: Get the required subnet count to create a K8sCluster
+    GetResourcesByLabelSelector:
+      method: get
+      resourcePath: /resources/{labelType}
+      description: 'Get resources based on a label selector. The label selector supports
+        the following operators:
+
+        - `=` : Selects resources where the label key equals the specified value (e.g.,
+        `env=production`).
+
+        - `!=` : Selects resources where the label key does not equal the specified
+        value (e.g., `tier!=frontend`).
+
+        - `in` : Selects resources where the label key is in the specified set of
+        values (e.g., `region in (us-west, us-east)`).
+
+        - `notin` : Selects resources where the label key is not in the specified
+        set of values (e.g., `env notin (production, staging)`).
+
+        - `exists` : Selects resources where the label key exists (e.g., `env exists`).
+
+        - `!exists` : Selects resources where the label key does not exist (e.g.,
+        `env !exists`).'
+    ListObjectStorages:
+      method: get
+      resourcePath: /resources/objectStorage
+      description: 'Get the list of all object storages (buckets)
+
+
+        **Important Notes:**
+
+        - The actual response will be XML format with root element `ListAllMyBucketsResult`
+
+        - The response includes xmlns attribute: `xmlns="http://s3.amazonaws.com/doc/2006-03-01/"`
+
+        - Swagger UI may show `resource.ListAllMyBucketsResult` due to rendering limitations
+
+
+        **Actual XML Response Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <ListAllMyBucketsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <Owner>
+
+        <ID>aws-ap-northeast-2</ID>
+
+        <DisplayName>aws-ap-northeast-2</DisplayName>
+
+        </Owner>
+
+        <Buckets>
+
+        </Buckets>
+
+        </ListAllMyBucketsResult>
+
+        ```'
+    GetObjectStorage:
+      method: get
+      resourcePath: /resources/objectStorage/{objectStorageName}
+      description: 'Get details of an object storage (bucket)
+
+
+        **Important Notes:**
+
+        - The actual response will be XML format with root element `ListBucketResult`
+
+
+        **Actual XML Response Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <Name>spider-test-bucket</Name>
+
+        <Prefix></Prefix>
+
+        <Marker></Marker>
+
+        <MaxKeys>1000</MaxKeys>
+
+        <IsTruncated>false</IsTruncated>
+
+        </ListBucketResult>
+
+        ```'
+    CreateObjectStorage:
+      method: put
+      resourcePath: /resources/objectStorage/{objectStorageName}
+      description: 'Create an object storage (bucket)
+
+
+        **Important Notes:**
+
+        - The `objectStorageName` must be globally unique across all existing buckets
+        in the S3 compatible storage.
+
+        - The bucket namespace is shared by all users of the system.'
+    DeleteMultipleDataObjects:
+      method: post
+      resourcePath: /resources/objectStorage/{objectStorageName}
+      description: '`Delete` multiple objects from a bucket
+
+
+        **Important Notes:**
+
+        - The request body must contain the list of objects to delete in XML format
+
+        - The `delete` query parameter must be set to `true`
+
+
+        **Request Body Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <Object>
+
+        <Key>test-object1.txt</Key>
+
+        </Object>
+
+        <Object>
+
+        <Key>test-object2.txt</Key>
+
+        </Object>
+
+        </Delete>
+
+        ```
+
+
+        **Actual XML Response Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <DeleteResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <Deleted>
+
+        <Key>test-object1.txt</Key>
+
+        </Deleted>
+
+        <Deleted>
+
+        <Key>test-object2.txt</Key>
+
+        </Deleted>
+
+        </DeleteResult>
+
+        ```'
+    DeleteObjectStorage:
+      method: delete
+      resourcePath: /resources/objectStorage/{objectStorageName}
+      description: Delete an object storage (bucket)
+    ExistObjectStorage:
+      method: head
+      resourcePath: /resources/objectStorage/{objectStorageName}
+      description: Check existence of an object storage (bucket)
+    DeleteDataObject:
+      method: delete
+      resourcePath: /resources/objectStorage/{objectStorageName}/{objectKey}
+      description: Delete an object from a bucket
+    GetObjectInfoGetDataObjectInfo:
+      method: head
+      resourcePath: /resources/objectStorage/{objectStorageName}/{objectKey}
+      description: 'Get an object info from a bucket
+
+
+        **Important Notes:**
+
+        - The generated `Download file` link in Swagger UI may not work because this
+        API get the object metadata only.'
+    GetObjectStorageCORS:
+      method: get
+      resourcePath: /resources/objectStorage/{objectStorageName}/cors
+      description: 'Get CORS configuration of an object storage (bucket)
+
+
+        **Important Notes:**
+
+        - The actual response will be XML format with root element `CORSConfiguration`
+
+
+        **Actual XML Response Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <CORSRule>
+
+        <AllowedOrigin>*</AllowedOrigin>
+
+        <AllowedMethod>GET</AllowedMethod>
+
+        <AllowedMethod>PUT</AllowedMethod>
+
+        <AllowedMethod>POST</AllowedMethod>
+
+        <AllowedMethod>DELETE</AllowedMethod>
+
+        <AllowedHeader>*</AllowedHeader>
+
+        <ExposeHeader>ETag</ExposeHeader>
+
+        <ExposeHeader>x-amz-server-side-encryption</ExposeHeader>
+
+        <ExposeHeader>x-amz-request-id</ExposeHeader>
+
+        <ExposeHeader>x-amz-id-2</ExposeHeader>
+
+        <MaxAgeSeconds>3000</MaxAgeSeconds>
+
+        </CORSRule>
+
+        </CORSConfiguration>
+
+        ```
+
+
+        **Error Response Example (if CORS not configured):**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <Error>
+
+        <Code>NoSuchCORSConfiguration</Code>
+
+        <Message>The CORS configuration does not exist</Message>
+
+        <Resource>/example-bucket</Resource>
+
+        <RequestId>656c76696e6727732072657175657374</RequestId>
+
+        </Error>
+
+        ```'
+    SetObjectStorageCORS:
+      method: put
+      resourcePath: /resources/objectStorage/{objectStorageName}/cors
+      description: 'Set CORS configuration of an object storage (bucket)
+
+
+        **Important Notes:**
+
+        - The CORS configuration must be provided in the request body in XML format.
+
+        - The actual request body should have root element `CORSConfiguration`
+
+
+        **Actual XML Request Body Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <CORSConfiguration>
+
+        <CORSRule>
+
+        <AllowedOrigin>https://example.com</AllowedOrigin>
+
+        <AllowedOrigin>https://app.example.com</AllowedOrigin>
+
+        <AllowedMethod>GET</AllowedMethod>
+
+        <AllowedMethod>PUT</AllowedMethod>
+
+        <AllowedHeader>Content-Type</AllowedHeader>
+
+        <AllowedHeader>Authorization</AllowedHeader>
+
+        <ExposeHeader>ETag</ExposeHeader>
+
+        <MaxAgeSeconds>1800</MaxAgeSeconds>
+
+        </CORSRule>
+
+        <CORSRule>
+
+        <AllowedOrigin>*</AllowedOrigin>
+
+        <AllowedMethod>GET</AllowedMethod>
+
+        <MaxAgeSeconds>300</MaxAgeSeconds>
+
+        </CORSRule>
+
+        </CORSConfiguration>
+
+        ```'
+    DeleteObjectStorageCORS:
+      method: delete
+      resourcePath: /resources/objectStorage/{objectStorageName}/cors
+      description: Delete CORS configuration of an object storage (bucket)
+    GetObjectStorageLocation:
+      method: get
+      resourcePath: /resources/objectStorage/{objectStorageName}/location
+      description: 'Get the location of an object storage (bucket)
+
+
+        **Important Notes:**
+
+        - The actual response will be XML format with root element `LocationConstraint`
+
+
+        **Actual XML Response Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">ap-northeast-2</LocationConstraint>
+
+        ```'
+    GetObjectStorageVersioning:
+      method: get
+      resourcePath: /resources/objectStorage/{objectStorageName}/versioning
+      description: 'Get versioning status of an object storage (bucket)
+
+
+        **Important Notes:**
+
+        - The actual response will be XML format with root element `VersioningConfiguration`
+
+
+        **Actual XML Response Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <Status>Enabled</Status>
+
+        </VersioningConfiguration>
+
+        ```'
+    SetObjectStorageVersioning:
+      method: put
+      resourcePath: /resources/objectStorage/{objectStorageName}/versioning
+      description: 'Set versioning status of an object storage (bucket)
+
+
+        **Important Notes:**
+
+        - The request body must be XML format with root element `VersioningConfiguration`
+
+        - The `Status` field can be either `Enabled` or `Suspended`
+
+
+        **Request Body Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <Status>Enabled</Status>
+
+        </VersioningConfiguration>
+
+        ```'
+    ListObjectVersions:
+      method: get
+      resourcePath: /resources/objectStorage/{objectStorageName}/versions
+      description: 'List object versions in an object storage (bucket)
+
+
+        **Important Notes:**
+
+        - The actual response will be XML format with root element `ListVersionsResult`
+
+
+        **Actual XML Response Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <ListVersionsResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <Name>spider-test-bucket</Name>
+
+        <Prefix></Prefix>
+
+        <KeyMarker></KeyMarker>
+
+        <VersionIdMarker></VersionIdMarker>
+
+        <NextKeyMarker></NextKeyMarker>
+
+        <NextVersionIdMarker></NextVersionIdMarker>
+
+        <MaxKeys>1000</MaxKeys>
+
+        <IsTruncated>false</IsTruncated>
+
+        <Version>
+
+        <Key>test-file.txt</Key>
+
+        <VersionId>yb4PgjnFVD2LfRZHXBjjsHBkQRHlu.TZ</VersionId>
+
+        <IsLatest>true</IsLatest>
+
+        <LastModified>2025-09-04T04:24:12Z</LastModified>
+
+        <ETag>23228a38faecd0591107818c7281cece</ETag>
+
+        <Size>23</Size>
+
+        <StorageClass>STANDARD</StorageClass>
+
+        <Owner>
+
+        <ID>aws-config01</ID>
+
+        <DisplayName>aws-config01</DisplayName>
+
+        </Owner>
+
+        </Version>
+
+        </ListVersionsResult>
+
+        ```'
+    DeleteVersionedObject:
+      method: delete
+      resourcePath: /resources/objectStorage/{objectStorageName}/versions/{objectKey}
+      description: Delete a specific version of an object in an object storage (bucket)
+    GeneratePresignedDownloadURL:
+      method: get
+      resourcePath: /resources/objectStorage/presigned/download/{objectStorageName}/{objectKey}
+      description: 'Generate a presigned URL for downloading an object from a bucket
+
+
+        **Important Notes:**
+
+        - The actual response will be XML format with root element `PresignedURLResult`
+
+        - The `expires` query parameter specifies the expiration time in seconds for
+        the presigned URL (default: 3600 seconds)
+
+        - The generated presigned URL can be used to download the object directly
+        without further authentication
+
+
+        **Actual XML Response Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <PresignedURLResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <PresignedURL>https://globally-unique-bucket-hctdx3.s3.dualstack.ap-southeast-2.amazonaws.com/test-file.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA***EXAMPLE%2F20250904%2Fap-southeast-2%2Fs3%2Faws4_request&X-Amz-Date=20250904T061448Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=***-signature</PresignedURL>
+
+        <Expires>3600</Expires>
+
+        <Method>GET</Method>
+
+        </PresignedURLResult>
+
+        ```'
+    GeneratePresignedUploadURL:
+      method: get
+      resourcePath: /resources/objectStorage/presigned/upload/{objectStorageName}/{objectKey}
+      description: 'Generate a presigned URL for uploading an object to a bucket
+
+
+        **Important Notes:**
+
+        - The actual response will be XML format with root element `PresignedURLResult`
+
+        - The `expires` query parameter specifies the expiration time in seconds for
+        the presigned URL (default: 3600 seconds)
+
+        - The generated presigned URL can be used to upload the object directly without
+        further authentication
+
+
+        **Actual XML Response Example:**
+
+        ```xml
+
+        <?xml version="1.0" encoding="UTF-8"?>
+
+        <PresignedURLResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+
+        <PresignedURL>https://globally-unique-bucket-hctdx3.s3.dualstack.ap-southeast-2.amazonaws.com/test-file.txt?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA***EXAMPLE%2F20250904%2Fap-southeast-2%2Fs3%2Faws4_request&X-Amz-Date=20250904T061448Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=***-signature</PresignedURL>
+
+        <Expires>3600</Expires>
+
+        <Method>PUT</Method>
+
+        </PresignedURLResult>
+
+        ```'
+    PostSystemMci:
+      method: post
+      resourcePath: /systemMci
+      description: 'Create specialized MCI instances for CB-Tumblebug system operations
+        and infrastructure probing.
+
+        This endpoint provisions system-level infrastructure that supports CB-Tumblebug''s
+        internal functions:
+
+
+        **System MCI Types:**
+
+        - `probe`: Creates lightweight VMs for network connectivity testing and CSP
+        capability discovery
+
+        - `monitor`: Deploys monitoring infrastructure for system health and performance
+        tracking
+
+        - `test`: Provisions test environments for validating CSP integrations and
+        features
+
+
+        **Probe MCI Features:**
+
+        - **Connectivity Testing**: Validates network paths between different CSP
+        regions
+
+        - **Latency Measurement**: Measures inter-region and inter-provider network
+        performance
+
+        - **Feature Discovery**: Tests CSP-specific capabilities and service availability
+
+        - **Resource Validation**: Verifies that CB-Tumblebug can successfully provision
+        resources
+
+
+        **System Namespace:**
+
+        - All system MCIs are created in the special `system` namespace
+
+        - Isolated from user workloads and regular MCI operations
+
+        - Managed automatically by CB-Tumblebug internal processes
+
+        - May be used for background maintenance and monitoring tasks
+
+
+        **Automatic Configuration:**
+
+        - Uses optimized VM specifications for system tasks (typically minimal resources)
+
+        - Automatically selects appropriate regions and providers based on probe requirements
+
+        - Configures necessary network access and security policies
+
+        - Deploys with minimal attack surface and security hardening
+
+
+        **Lifecycle Management:**
+
+        - System MCIs may be automatically created, updated, or destroyed by CB-Tumblebug
+
+        - Typically short-lived for specific system tasks
+
+        - Resource cleanup is handled automatically
+
+        - Status and results are logged for system administrators
+
+
+        **Use Cases:**
+
+        - Infrastructure health checks and validation
+
+        - Performance benchmarking across cloud providers
+
+        - Automated testing of new CSP integrations
+
+        - Network topology discovery and optimization'
+    PostTestStreamResponse:
+      method: post
+      resourcePath: /testStreamResponse
+      description: Receives a number and streams the decrementing number every second
+        until zero
+    AnalyzeProvisioningRiskDetailed:
+      method: get
+      resourcePath: /tumblebug/provisioning/risk/detailed
+      description: 'Provides comprehensive risk analysis with separate assessments
+        for VM specification and image risks, plus actionable recommendations.
+
+        This endpoint offers enhanced risk analysis by separating spec-level and image-level
+        risk factors:
+
+
+        **Risk Analysis Breakdown:**
+
+        - **Spec Risk**: Analyzes whether the VM specification itself has compatibility
+        or resource issues
+
+        - **Image Risk**: Evaluates the track record of the specific image with this
+        spec
+
+        - **Overall Risk**: Combines both factors to determine the primary risk source
+
+        - **Recommendations**: Provides actionable guidance based on risk analysis
+
+
+        **Spec Risk Factors:**
+
+        - Number of different images that failed with this spec (indicates spec-level
+        issues)
+
+        - Overall failure rate across all images
+
+        - Success/failure ratio with various images
+
+
+        **Image Risk Factors:**
+
+        - Previous success/failure history of this specific image with this spec
+
+        - Whether this is a new, untested combination
+
+
+        **Recommendation Types:**
+
+        - Change VM specification (when spec is the primary risk factor)
+
+        - Try different image (when image is the primary risk factor)
+
+        - Monitor deployment closely (for new combinations or medium risk)
+
+        - Proceed with confidence (for low-risk combinations)'
+    UpdateImagesFromAsset:
+      method: post
+      resourcePath: /updateImagesFromAsset
+      description: Update image information based on the cloudimage.csv asset file
+    PostUtilToDesignNetwork:
+      method: post
+      resourcePath: /util/net/design
+      description: Design a hierarchical network configuration of a VPC network or
+        multi-cloud network consisting of multiple VPC networks
+    PostUtilToValidateNetwork:
+      method: post
+      resourcePath: /util/net/validate
+      description: Validate a hierarchical configuration of a VPC network or multi-cloud
+        network consisting of multiple VPC networks
+    PostUtilToDesignVNet:
+      method: post
+      resourcePath: /util/vNet/design
+      description: Design VNet and subnets based on user-friendly properties
+  mc-iam-manager_0.4.0:
+    mciamAuthCerts:
+      method: get
+      resourcePath: /api/auth/certs
+      description: Retrieve authentication certificates for MC-IAM-Manager to be used
+        in target frameworks for token validation.
+    mciamLogin:
+      method: post
+      resourcePath: /api/auth/login
+      description: Authenticate user and issue JWT token.
+    mciamLogout:
+      method: post
+      resourcePath: /api/auth/logout
+      description: Invalidate the user's refresh token and log out.
+    mciamRefreshToken:
+      method: post
+      resourcePath: /api/auth/refresh
+      description: Refresh JWT access token using a valid refresh token.
+    mciamGetTempCredentialProviders:
+      method: get
+      resourcePath: /api/auth/temp-credential-csps
+      description: Get temporary credential provider information for AWS and GCP
+    mciamValidateToken:
+      method: post
+      resourcePath: /api/auth/validate
+      description: Validate the current access token and refresh if expired
+    mciamListCredentials:
+      method: get
+      resourcePath: /api/csp-credentials
+      description: 모든 CSP 인증 정보 목록을 조회합니다
+    mciamCreateCredential:
+      method: post
+      resourcePath: /api/csp-credentials
+      description: 새로운 CSP 인증 정보를 생성합니다
+    mciamDeleteCredential:
+      method: delete
+      resourcePath: /api/csp-credentials/{id}
+      description: CSP 인증 정보를 삭제합니다
+    mciamGetCredentialByID:
+      method: get
+      resourcePath: /api/csp-credentials/{id}
+      description: 특정 CSP 인증 정보를 ID로 조회합니다
+    mciamUpdateCredential:
+      method: put
+      resourcePath: /api/csp-credentials/{id}
+      description: CSP 인증 정보를 업데이트합니다
+    setupInitialAdmin:
+      method: post
+      resourcePath: /api/initial-admin
+      description: Creates the initial platform admin user with necessary permissions.
+        platform admin 생성인데
+    createMcmpApiPermissionActionMapping:
+      method: post
+      resourcePath: /api/mcmp-api-permission-action-mappings
+      description: Creates a new mapping between a permission and an API action
+    listPermissionsByActionID:
+      method: get
+      resourcePath: /api/mcmp-api-permission-action-mappings/actions/{actionId}/permissions
+      description: Returns all permissions mapped to a specific API action
+    listWorkspaceActionsByPermissionID:
+      method: post
+      resourcePath: /api/mcmp-api-permission-action-mappings/actions/list
+      description: Returns all workspace actions mapped to a specific permission
+    listPlatformActions:
+      method: post
+      resourcePath: /api/mcmp-api-permission-action-mappings/list
+      description: Returns all platform actions mapped to a specific permission
+    deleteMapping:
+      method: delete
+      resourcePath: /api/mcmp-api-permission-action-mappings/permissions/{permissionId}/actions/{actionId}
+      description: Deletes a mapping between a permission and an API action
+    updateMapping:
+      method: put
+      resourcePath: /api/mcmp-api-permission-action-mappings/permissions/{permissionId}/actions/{actionId}
+      description: Updates an existing mapping between a permission and an API action
+    getPlatformActionsByPermissionID:
+      method: get
+      resourcePath: /api/mcmp-api-permission-action-mappings/platforms/id/{permissionId}/actions
+      description: Returns all platform actions mapped to a specific permission
+    listServicesAndActions:
+      method: post
+      resourcePath: /api/mcmp-apis/list
+      description: Retrieves all MCMP API service and action definitions currently
+        stored in the database.
+    mcmpApiCall:
+      method: post
+      resourcePath: /api/mcmp-apis/mcmpApiCall
+      description: Executes a defined MCMP API action with parameters structured in
+        McmpApiCallRequest.
+    UpdateFrameworkService:
+      method: put
+      resourcePath: /api/mcmp-apis/name/{serviceName}
+      description: Updates specific fields (e.g., BaseURL, Auth info) of an MCMP API
+        service definition identified by its name. Cannot update name or version.
+    setActiveVersion:
+      method: put
+      resourcePath: /api/mcmp-apis/name/{serviceName}/versions/{version}/activate
+      description: Sets the specified version of an MCMP API service as the active
+        one.
+    syncMcmpAPIs:
+      method: post
+      resourcePath: /api/mcmp-apis/syncMcmpAPIs
+      description: Triggers the synchronization of MCMP API definitions from the configured
+        YAML URL to the database.
+    testCallGetAllNs:
+      method: get
+      resourcePath: /api/mcmp-apis/test/mc-infra-manager/getallns
+      description: Calls the GetAllNs action of the mc-infra-manager service via the
+        CallApi service.
+    createMenu:
+      method: post
+      resourcePath: /api/menus
+      description: Create a new menu
+    deleteMenu:
+      method: delete
+      resourcePath: /api/menus/id/{menuId}
+      description: Delete a menu
+    getMenuByID:
+      method: post
+      resourcePath: /api/menus/id/{menuId}
+      description: Get menu details by ID
+    updateMenu:
+      method: put
+      resourcePath: /api/menus/id/{menuId}
+      description: Update menu information
+    listMenus:
+      method: post
+      resourcePath: /api/menus/list
+      description: List all menus as a tree structure. Admin permission required.
+    deleteMenusRolesMapping:
+      method: delete
+      resourcePath: /api/menus/platform-roles
+      description: Delete the mapping between a platform role and a menu.
+    createMenusRolesMapping:
+      method: post
+      resourcePath: /api/menus/platform-roles
+      description: Create a new menu mapping
+    listMappedMenusByRole:
+      method: post
+      resourcePath: /api/menus/platform-roles/list
+      description: List menus mapped to a specific platform role.
+    registerMenusFromYAML:
+      method: post
+      resourcePath: /api/menus/setup/initial-menus
+      description: Register or update menus from a local YAML file specified by the
+        filePath query parameter, or from the MCWEBCONSOLE_MENUYAML URL in .env if
+        not provided. If loaded from URL, the file is saved to asset/menu/menu.yaml.
+    registerMenusFromBody:
+      method: post
+      resourcePath: /api/menus/setup/initial-menus2
+      description: 'Parse YAML text in the request body and register or update menus
+        in the database. Recommended Content-Type: text/plain, text/yaml, application/yaml.'
+    listMenusTree:
+      method: post
+      resourcePath: /api/menus/tree/list
+      description: List all menus as a tree structure. Admin permission required.
+    getUserMenuTree:
+      method: get
+      resourcePath: /api/menus/user-menu-tree
+      description: Get menu tree based on user's platform roles
+    createMciamPermission:
+      method: post
+      resourcePath: /api/permissions/mciam
+      description: Create a new permission with the specified information.
+    deleteMciamPermission:
+      method: delete
+      resourcePath: /api/permissions/mciam/{id}
+      description: Delete a permission by its ID.
+    updateMciamPermission:
+      method: put
+      resourcePath: /api/permissions/mciam/{id}
+      description: Update the details of an existing permission.
+    getMciamPermissionByID:
+      method: get
+      resourcePath: /api/permissions/mciam/id/{id}
+      description: Retrieve permission details by permission ID.
+    listMciamPermissions:
+      method: post
+      resourcePath: /api/permissions/mciam/list
+      description: Retrieve a list of all permissions.
+    createProject:
+      method: post
+      resourcePath: /api/projects
+      description: Create a new project with the specified information.
+    deleteProject:
+      method: delete
+      resourcePath: /api/projects/{id}
+      description: Delete a project by its ID.
+    getProjectByID:
+      method: get
+      resourcePath: /api/projects/{id}
+      description: Retrieve project details by project ID.
+    updateProject:
+      method: put
+      resourcePath: /api/projects/{id}
+      description: Update the details of an existing project.
+    addWorkspaceToProject:
+      method: post
+      resourcePath: /api/projects/{id}/workspaces/{workspaceId}
+      description: 프로젝트에 워크스페이스를 연결합니다.
+    listProjects:
+      method: post
+      resourcePath: /api/projects/list
+      description: Retrieve a list of all projects.
+    getProjectByName:
+      method: get
+      resourcePath: /api/projects/name/{projectName}
+      description: Get project details by name
+    createResourceType:
+      method: post
+      resourcePath: /api/resource-types/cloud-resources
+      description: 새로운 리소스 타입을 생성합니다
+    deleteResourceType:
+      method: delete
+      resourcePath: /api/resource-types/cloud-resources/framework/:frameworkId/id/:resourceTypeId
+      description: 리소스 타입을 삭제합니다
+    getCloudResourceTypeByID:
+      method: get
+      resourcePath: /api/resource-types/cloud-resources/framework/:frameworkId/id/:resourceTypeId
+      description: 특정 리소스 타입을 ID로 조회합니다
+    updateResourceType:
+      method: put
+      resourcePath: /api/resource-types/cloud-resources/framework/:frameworkId/id/:resourceTypeId
+      description: 리소스 타입 정보를 업데이트합니다
+    listCloudResourceTypes:
+      method: post
+      resourcePath: /api/resource-types/cloud-resources/list
+      description: 모든 리소스 타입 목록을 조회합니다
+    createRole:
+      method: post
+      resourcePath: /api/roles
+      description: Create a new role
+    getRoleMciamPermissions:
+      method: get
+      resourcePath: /api/roles/{roleType}/{roleId}/mciam-permissions
+      description: 특정 역할의 MC-IAM 권한 ID 목록을 조회합니다.
+    removeMciamPermissionFromRole:
+      method: delete
+      resourcePath: /api/roles/{roleType}/{roleId}/mciam-permissions/{permissionId}
+      description: 역할에서 MC-IAM 권한을 제거합니다.
+    assignMciamPermissionToRole:
+      method: post
+      resourcePath: /api/roles/{roleType}/{roleId}/mciam-permissions/{permissionId}
+      description: 역할에 MC-IAM 권한을 할당합니다.
+    assignPlatformRole:
+      method: post
+      resourcePath: /api/roles/assign/platform-role
+      description: Assign a platform role to a user
+    assignWorkspaceRole:
+      method: post
+      resourcePath: /api/roles/assign/workspace-role
+      description: Assign a workspace role to a user
+    createCspRole:
+      method: post
+      resourcePath: /api/roles/csp
+      description: Create a new csp role
+    addCspRoleMappings:
+      method: post
+      resourcePath: /api/roles/csp-roles
+      description: Create a new mapping between role and CSP role
+    createCspRoles:
+      method: post
+      resourcePath: /api/roles/csp-roles/batch
+      description: Create multiple new csp roles
+    getCspRoleMappingByRoleId:
+      method: get
+      resourcePath: /api/roles/csp-roles/id/:roleId
+      description: Get a mapping between role and CSP role
+    deleteCspRole:
+      method: delete
+      resourcePath: /api/roles/csp-roles/id/{roleId}
+      description: Delete a role
+    updateCspRole:
+      method: put
+      resourcePath: /api/roles/csp-roles/id/{roleId}
+      description: Update role information
+    listCspRoleMappings:
+      method: post
+      resourcePath: /api/roles/csp-roles/list
+      description: Get a mapping between role and CSP role
+    getCspRoleByID:
+      method: get
+      resourcePath: /api/roles/csp/id/{roleId}
+      description: Get csp role details by ID
+    listCSPRoles:
+      method: post
+      resourcePath: /api/roles/csp/list
+      description: Get a list of all csp roles
+    getCspRoleByName:
+      method: get
+      resourcePath: /api/roles/csp/name/{roleName}
+      description: Get csp role details by Name
+    deleteRole:
+      method: delete
+      resourcePath: /api/roles/id/{roleId}
+      description: Delete a role by its name.
+    getRoleByRoleID:
+      method: get
+      resourcePath: /api/roles/id/{roleId}
+      description: Get role details by ID
+    updateRole:
+      method: put
+      resourcePath: /api/roles/id/{roleId}
+      description: Update the details of an existing role.
+    assignRole:
+      method: post
+      resourcePath: /api/roles/id/{roleId}/assign
+      description: Assign a role to a user
+    removeRole:
+      method: delete
+      resourcePath: /api/roles/id/{roleId}/unassign
+      description: Remove a role from a user
+    listRoles:
+      method: post
+      resourcePath: /api/roles/list
+      description: Retrieve a list of all roles.
+    listUsersByCspRole:
+      method: post
+      resourcePath: /api/roles/mappings/csp-roles/list
+      description: List users by csp role
+    listRoleMasterMappings:
+      method: post
+      resourcePath: /api/roles/mappings/list
+      description: List role master mappings
+    listUsersByPlatformRole:
+      method: post
+      resourcePath: /api/roles/mappings/platform-roles/users/list
+      description: List users by platform role
+    getRoleMasterMappings:
+      method: get
+      resourcePath: /api/roles/mappings/role/id/:roleId
+      description: Get role master mappings
+    listUsersByWorkspaceRole:
+      method: post
+      resourcePath: /api/roles/mappings/workspace-roles/users/list
+      description: List users by workspace role
+    listPlatformRoles:
+      method: post
+      resourcePath: /api/roles/menu-roles/list
+      description: Get a list of all menu roles
+    getRoleByRoleName:
+      method: get
+      resourcePath: /api/roles/name/{roleName}
+      description: Retrieve role details by role name.
+    createPlatformRole:
+      method: post
+      resourcePath: /api/roles/platform-roles
+      description: Create a new menu role
+    deletePlatformRole:
+      method: delete
+      resourcePath: /api/roles/platform-roles/id/{roleId}
+      description: Delete a platform role
+    getPlatformRoleByID:
+      method: get
+      resourcePath: /api/roles/platform-roles/id/{roleId}
+      description: Get platform role details by ID
+    getPlatformRoleByName:
+      method: get
+      resourcePath: /api/roles/platform-roles/name/{roleName}
+      description: Get menu role details by Name
+    removeCspRoleMappings:
+      method: delete
+      resourcePath: /api/roles/unassign/csp-roles
+      description: Delete a mapping between workspace role and CSP role
+    removePlatformRole:
+      method: delete
+      resourcePath: /api/roles/unassign/platform-role
+      description: Remove a platform role from a user
+    removeWorkspaceRole:
+      method: delete
+      resourcePath: /api/roles/unassign/workspace-role
+      description: Remove a workspace role from a user
+    createWorkspaceRole:
+      method: post
+      resourcePath: /api/roles/workspace-roles
+      description: Create a new workspace role
+    deleteWorkspaceRole:
+      method: delete
+      resourcePath: /api/roles/workspace-roles/id/{roleId}
+      description: Delete a workspace role
+    getWorkspaceRoleByID:
+      method: get
+      resourcePath: /api/roles/workspace-roles/id/{roleId}
+      description: Get workspace role details by ID
+    listWorkspaceRoles:
+      method: post
+      resourcePath: /api/roles/workspace-roles/list
+      description: Get a list of all workspace roles
+    getWorkspaceRoleByName:
+      method: get
+      resourcePath: /api/roles/workspace-roles/name/{roleName}
+      description: Get workspace role details by Name
+    checkUserRoles:
+      method: get
+      resourcePath: /api/setup/check-user-roles
+      description: Check all roles assigned to a user. 특정 유저가 가진 role 목록을 조회합니다.
+    initializeMenuPermissions:
+      method: get
+      resourcePath: /api/setup/initial-role-menu-permission
+      description: CSV 파일을 읽어서 메뉴 권한을 초기화합니다
+    syncProjects:
+      method: post
+      resourcePath: /api/setup/sync-projects
+      description: mc-infra-manager의 네임스페이스 목록을 조회하여 로컬 DB에 없는 프로젝트를 추가합니다.
+    createUser:
+      method: post
+      resourcePath: /api/users
+      description: Create a new user with the specified information.
+    deleteUser:
+      method: delete
+      resourcePath: /api/users/{id}
+      description: Delete a user by their ID.
+    updateUser:
+      method: put
+      resourcePath: /api/users/{id}
+      description: Update the details of an existing user.
+    getUserByID:
+      method: get
+      resourcePath: /api/users/id/{userId}
+      description: Retrieve user details by user ID.
+    updateUserStatus:
+      method: post
+      resourcePath: /api/users/id/{userId}/status
+      description: Update user status (active/inactive)
+    getUserWorkspaceAndWorkspaceRolesByUserIDAndWorkspaceID:
+      method: get
+      resourcePath: /api/users/id/{userId}/workspaces/id/{workspaceId}/roles/list
+      description: Get workspaces and roles for a specific user and workspace
+    getUserWorkspacesByUserID:
+      method: get
+      resourcePath: /api/users/id/{userId}/workspaces/list
+      description: Get workspaces for a specific user
+    getUserWorkspaceAndWorkspaceRolesByUserID:
+      method: get
+      resourcePath: /api/users/id/{userId}/workspaces/roles/list
+      description: Get workspaces and roles for a specific user
+    getUserByKcID:
+      method: get
+      resourcePath: /api/users/kc/{kcUserId}
+      description: Get user details by KcID
+    listUsers:
+      method: post
+      resourcePath: /api/users/list
+      description: Retrieve a list of all users.
+    listUserMenuTree:
+      method: post
+      resourcePath: /api/users/menus-tree/list
+      description: Get the menu tree accessible to the current user's platform role.
+    listUserMenu:
+      method: post
+      resourcePath: /api/users/menus/list
+      description: Get the menu list accessible to the current user's platform role.
+    getUserByUsername:
+      method: get
+      resourcePath: /api/users/name/{username}
+      description: Get user details by username
+    listUserProjectsByWorkspace:
+      method: get
+      resourcePath: /api/users/workspaces/id/{workspaceId}/projects/list
+      description: List projects for the current user
+    listUserWorkspaces:
+      method: post
+      resourcePath: /api/users/workspaces/list
+      description: List workspaces for the current user
+    listUserWorkspaceAndWorkspaceRoles:
+      method: post
+      resourcePath: /api/users/workspaces/roles/list
+      description: List workspaces and roles for the current user
+    createWorkspace:
+      method: post
+      resourcePath: /api/workspaces
+      description: Create a new workspace with the specified information.
+    addUserToWorkspace:
+      method: post
+      resourcePath: /api/workspaces/{id}/users
+      description: Add a user to a workspace
+    removeUserFromWorkspace:
+      method: delete
+      resourcePath: /api/workspaces/{id}/users/{userId}
+      description: Remove a user from a workspace
+    addProjectToWorkspace:
+      method: post
+      resourcePath: /api/workspaces/assign/projects
+      description: Add a project to a workspace
+    deleteWorkspace:
+      method: delete
+      resourcePath: /api/workspaces/id/{workspaceId}
+      description: Delete a workspace by its ID.
+    getWorkspaceByID:
+      method: get
+      resourcePath: /api/workspaces/id/{workspaceId}
+      description: Retrieve workspace details by workspace ID.
+    updateWorkspace:
+      method: put
+      resourcePath: /api/workspaces/id/{workspaceId}
+      description: Update the details of an existing workspace.
+    getWorkspaceProjectsByWorkspaceId:
+      method: get
+      resourcePath: /api/workspaces/id/{workspaceId}/projects/list
+      description: Retrieve project list belonging to specific workspace
+    getUserWorkspaceRoles:
+      method: get
+      resourcePath: /api/workspaces/id/{workspaceId}/users/id/{userId}
+      description: Get roles assigned to a user in a workspace
+    listUsersAndRolesByWorkspace:
+      method: post
+      resourcePath: /api/workspaces/id/{workspaceId}/users/list
+      description: Retrieve users and roles list belonging to workspace
+    listWorkspaces:
+      method: post
+      resourcePath: /api/workspaces/list
+      description: Retrieve a list of all workspaces.
+    getWorkspaceByName:
+      method: get
+      resourcePath: /api/workspaces/name/{workspaceName}
+      description: Retrieve specific workspace by name
+    listWorkspaceProjects:
+      method: post
+      resourcePath: /api/workspaces/projects/list
+      description: Retrieve project list belonging to specific workspace
+    mciamGetTemporaryCredentials:
+      method: post
+      resourcePath: /api/workspaces/temporary-credentials
+      description: Get temporary credentials for CSP
+    removeProjectFromWorkspace:
+      method: delete
+      resourcePath: /api/workspaces/unassign/projects
+      description: Remove a project from a workspace
+    listAllWorkspaceUsersAndRoles:
+      method: post
+      resourcePath: /api/workspaces/users-roles/list
+      description: Retrieve the list of users and roles assigned to the workspace.
+    listWorkspaceUsers:
+      method: post
+      resourcePath: /api/workspaces/users/list
+      description: List users by workspace criteria
+    mciamWorkspaceTicket:
+      method: post
+      resourcePath: /api/workspaces/workspace-ticket
+      description: Set workspace ticket
+    mciamCheckHealth:
+      method: get
+      resourcePath: /readyz
+      description: Check the health status of the service.

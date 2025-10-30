@@ -88,7 +88,7 @@ export async function getProjectListByWorkspaceId(workspaceId) {
     }
   }
   let projectList = [];
-  const response = await webconsolejs["common/api/http"].commonAPIPost('/api/mc-iam-manager/getProjectsByWorkspaceId', requestObject)
+  const response = await webconsolejs["common/api/http"].commonAPIPost('/api/mc-iam-manager/getWorkspaceProjectsByWorkspaceId', requestObject)
   let data = response.data.responseData.projects
   console.debug("GetWPmappingListByWorkspaceId data :", data)
   data.forEach(item => {
@@ -185,7 +185,7 @@ export function setPrjSelectBox(projectList, curProjectId) {
 // handle workspace
 
 export async function createWorkspace(name, description) {
-  const controller = '/api/mc-iam-manager/CreateWorkspace'
+  const controller = '/api/mc-iam-manager/createWorkspace'
   var data = {
     request: {
       "name": name,
@@ -275,7 +275,7 @@ export async function getProjectList() {
 // handle users
 
 export async function getUsers() {
-  const controller = '/api/mc-iam-manager/Listusers'
+  const controller = '/api/mc-iam-manager/listUsers'
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
     null,
@@ -301,7 +301,7 @@ export async function getUsersById(userId) {
 
 // handle roles
 export async function createRole(roleName, roleDescription) {
-  const controller = '/api/mc-iam-manager/CreateRole'
+  const controller = '/api/mc-iam-manager/createRole'
   var data = {
     request: {
       name: roleName,
@@ -461,7 +461,7 @@ export async function getWorkspaceUserRoleMappingListOrderbyWorkspace(wsId) {
 }
 
 export async function getWorkspaceUserRoleMappingListByWorkspaceId(wsId) {
-  const controller = '/api/mc-iam-manager/listUsersAndRolesByWorkspaces'
+  const controller = '/api/mc-iam-manager/listUsersAndRolesByWorkspace'
   var data = {
     pathParams: {
       workspaceId: wsId,
@@ -492,7 +492,9 @@ export async function deleteWorkspaceUserRoleMapping(wsId, requserId) {
 // handle workspace projects mapping
 
 export async function createWPmapping(worskspaceId, projectsArr) {
-  const controller = '/api/mc-iam-manager/createProject'
+  //const controller = '/api/mc-iam-manager/CreateWPmapping'
+  const controller = '/api/mc-iam-manager/addProjectToWorkspace'
+  
   var data = {
     request: {
       "workspaceId": worskspaceId,

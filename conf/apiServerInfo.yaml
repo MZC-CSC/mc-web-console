@@ -1,0 +1,41 @@
+services:
+  cb-spider_0.11.13:
+    version: 0.11.13
+    baseurl: http://cb-spider:1024/spider
+  cb-tumblebug_0.11.13:
+    version: 0.11.13
+    baseurl: http://cb-tumblebug:1323/tumblebug
+    auth:
+      type: basic
+      username: default
+      password: default
+  cm-ant_0.4.0:
+    version: 0.4.0
+    baseurl: http://cm-ant:8880/ant
+  cm-beetle_0.4.0:
+    version: 0.4.0
+    baseurl: http://cm-beetle:8056/beetle
+    auth:
+      type: basic
+      username: default
+      password: default
+  cm-honeybee_0.4.0:
+    version: 0.4.0
+    baseurl: http://cm-honeybee:8081/honeybee
+  mc-infra-connector_0.4.0:
+    version: 0.4.0
+    baseurl: http://43.202.200.215:1024/spider
+    auth:
+      type: basic
+  mc-infra-manager_0.4.0:
+    version: 0.4.0
+    baseurl: http://43.202.200.215:1323/tumblebug
+    auth:
+      type: basic
+      username: default
+      password: default
+  mc-iam-manager_0.4.0:
+    version: 0.4.0
+    baseurl: http://43.202.200.215:5000
+    auth:
+      type: bearer

@@ -1,6 +1,6 @@
 // 유저 목록 조회
 export async function getUserList() {
-    const controller = "/api/mc-iam-manager/Listusers";
+    const controller = "/api/mc-iam-manager/listUsers";
     const response = await webconsolejs["common/api/http"].commonAPIPost(controller);
     return response.data.responseData;
 }
@@ -18,7 +18,7 @@ export async function createUser(userData) {
 }
 
 // export async function getUserById(userId) {
-//     const controller = "/api/mc-iam-manager/Getuserbyid";
+//     const controller = "/api/mc-iam-manager/getUserByID";
 //     const data = {
 //         pathParams: {
 //             "userId": userId.toString()
@@ -41,7 +41,7 @@ export async function getUserByName(username) {
 }
 
 export async function getUserWorkspacesByUserID(userId) {
-    const controller = "/api/mc-iam-manager/Getuserworkspacesbyuserid";
+    const controller = "/api/mc-iam-manager/getUserWorkspacesByUserID";
     // var controller = "/api/" + "/mc-iam-manager/" + "Getuserworkspacesbyuserid";
 
     const data = {

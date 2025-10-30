@@ -22,7 +22,7 @@ document.getElementById("loginbtn").addEventListener('click',async function () {
             alert("Token save failed: " + error.message);
             return;
         }
-        const controller = "/api/mc-iam-manager/GetAllAvailableMenus";
+        const controller = "/api/mc-iam-manager/listUserMenu";
         const getAllAvailableMenusResponse = await webconsolejs["common/api/http"].commonAPIPost(controller);
         const menuListresponse = getAllAvailableMenusResponse.data.responseData;
         

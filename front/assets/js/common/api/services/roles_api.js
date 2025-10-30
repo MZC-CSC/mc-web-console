@@ -9,7 +9,7 @@ export async function getRoleList() {
 
 // 사용자에게 할당된 메뉴 리스트
 export async function getAllAvailableMenus() {
-    const controller = "/api/mc-iam-manager/GetAllAvailableMenus";
+    const controller = "/api/mc-iam-manager/listUserMenu";
     const response = await webconsolejs["common/api/http"].commonAPIPost(controller);
     return response.data.responseData;
 }
@@ -42,7 +42,7 @@ export async function getMenusResources() {
 
 // 역할 생성
 export async function createRole(role) {
-    const controller = "/api/mc-iam-manager/Createrole";
+    const controller = "/api/mc-iam-manager/createRole";
     const data = {
         Request: {
             name: role.name,
@@ -58,7 +58,7 @@ export async function createRole(role) {
 
 // 역할 수정
 export async function updateRole(roleId, role) {
-    const controller = "/api/mc-iam-manager/Updaterole";
+    const controller = "/api/mc-iam-manager/updateRole";
     const data = {
         pathParams: {
             "roleId": roleId.toString()

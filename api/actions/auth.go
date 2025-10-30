@@ -112,16 +112,29 @@ func AuthValidate(c buffalo.Context) error {
 // MCMP AUTH
 
 func AuthMCIAMLogin(c buffalo.Context) error {
+	log.Println("#### AuthMCIAMLogin called")
+	
 	commonRequest := &handler.CommonRequest{}
-	c.Bind(commonRequest)
+	if err := c.Bind(commonRequest); err != nil {
+		log.Printf("ERROR: Failed to bind request: %v", err)
+		return c.Render(http.StatusBadRequest, r.JSON(map[string]interface{}{"error": err.Error()}))
+	}
+	
+	log.Printf("Bound request: %+v", commonRequest)
+	log.Printf("Request data: %+v", commonRequest.Request)
 
-	commonResponse, _ := handler.AnyCaller(c, "login", commonRequest, false)
+	commonResponse, err := handler.AnyCaller(c, "mciamlogin", commonRequest, false)
+	if err != nil {
+		log.Printf("ERROR: AnyCaller failed: %v", err)
+		return c.Render(http.StatusInternalServerError, r.JSON(map[string]interface{}{"error": err.Error()}))
+	}
+	log.Printf("AnyCaller response status: %d", commonResponse.Status.StatusCode)
 	if commonResponse.Status.StatusCode != 200 && commonResponse.Status.StatusCode != 201 {
 		return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
 	}
 
 	tx := c.Value("tx").(*pop.Connection)
-	_, err := self.CreateUserSessFromResponseData(tx, commonResponse, commonRequest.Request.(map[string]interface{})["id"].(string))
+	_, err = self.CreateUserSessFromResponseData(tx, commonResponse, commonRequest.Request.(map[string]interface{})["id"].(string))
 	if err != nil {
 		return c.Render(http.StatusInternalServerError, r.JSON(map[string]interface{}{"error": err.Error()}))
 	}

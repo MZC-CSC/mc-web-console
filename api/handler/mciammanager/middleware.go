@@ -1,6 +1,7 @@
 package mciammanager
 
 import (
+	"fmt"
 	"log"
 	"mc_web_console_api/handler"
 	"net/http"
@@ -30,14 +31,56 @@ func init() {
 }
 
 func getCertsEndpoint() string {
-	viper.SetConfigName("api")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./conf")
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Error reading config file, %s", err)
+	// Read services from apiServerInfo.yaml
+	serverInfoViper := viper.New()
+	serverInfoViper.SetConfigName("apiServerInfo")
+	serverInfoViper.SetConfigType("yaml")
+	serverInfoViper.AddConfigPath("../conf")
+	if err := serverInfoViper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading apiServerInfo config file, %s", err)
 	}
-	baseUrl := viper.Get("services.mc-iam-manager.baseurl").(string)
-	certUri := viper.Get("serviceActions.mc-iam-manager.Getcerts.resourcePath").(string)
+
+	// Read serviceActions from apiOperationInfo.yaml
+	apiViper := viper.New()
+	apiViper.SetConfigName("apiOperationInfo")
+	apiViper.SetConfigType("yaml")
+	apiViper.AddConfigPath("../conf")
+	if err := apiViper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading apiOperationInfo config file, %s", err)
+	}
+
+	// Find mc-iam-manager service key dynamically
+	services := serverInfoViper.Get("services").(map[string]interface{})
+	var iamServiceKey string
+	var baseUrl string
+	for key := range services {
+		if len(key) >= 15 && key[:15] == "mc-iam-manager_" {
+			iamServiceKey = key
+			baseUrl = serverInfoViper.Get("services." + key + ".baseurl").(string)
+			break
+		}
+	}
+
+	if iamServiceKey == "" {
+		log.Fatalf("mc-iam-manager service not found in apiServerInfo.yaml")
+	}
+
+	// Try to get certs endpoint - check multiple possible operation names
+	var certUri string
+	certUriPath := apiViper.Get("serviceActions." + iamServiceKey + ".mciamAuthCerts.resourcePath")
+	if certUriPath != nil {
+		certUri = certUriPath.(string)
+	} else {
+		// Fallback to old naming convention
+		certUriPath = apiViper.Get("serviceActions." + iamServiceKey + ".Getcerts.resourcePath")
+		if certUriPath != nil {
+			certUri = certUriPath.(string)
+		} else {
+			log.Fatalf("mc-iam-manager certs endpoint not found in apiOperationInfo.yaml (tried mciamAuthCerts and Getcerts)")
+		}
+	}
+
+	fmt.Println("Cert Endpoint is : ", baseUrl+certUri)
 	return baseUrl + certUri
 }
 
