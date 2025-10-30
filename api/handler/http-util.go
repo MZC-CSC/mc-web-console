@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mc_web_console_api/handler/apispecmanager"
 	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
@@ -15,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/gobuffalo/buffalo"
-	"github.com/spf13/viper"
 )
 
 // ////////////////////////////////////////////////////////////////
@@ -72,17 +72,167 @@ var (
 )
 
 func init() {
-	viper.SetConfigName("api")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("../conf")
+	log.Println("[http-util] Starting initialization...")
 
-	if err := viper.ReadInConfig(); err != nil {
-		panic(fmt.Errorf("fatal error reading actions/conf/api.yaml file: %s", err))
+	// Load from apiServerInfo.yaml and apiOperationInfo.yaml
+	serverInfo, err := apispecmanager.LoadApiServerInfo()
+	if err != nil {
+		log.Printf("[http-util] ERROR: Failed to load apiServerInfo.yaml: %v", err)
+		log.Printf("[http-util] Falling back to legacy api.yaml")
+		loadFromLegacyApiYaml()
+		return
+	}
+	log.Println("[http-util] Successfully loaded apiServerInfo.yaml")
+
+	operationInfo, err := apispecmanager.LoadApiOperationInfo()
+	if err != nil {
+		log.Printf("[http-util] ERROR: Failed to load apiOperationInfo.yaml: %v", err)
+		log.Printf("[http-util] Falling back to legacy api.yaml")
+		loadFromLegacyApiYaml()
+		return
+	}
+	log.Println("[http-util] Successfully loaded apiOperationInfo.yaml")
+
+	// Convert to ApiYamlSet structure
+	ApiYamlSet.Services = make(map[string]Service)
+	ApiYamlSet.ServiceActions = make(map[string]map[string]Spec)
+
+	// Parse services - handle both map types
+	var services map[string]interface{}
+	if svc, ok := serverInfo["services"].(map[string]interface{}); ok {
+		services = svc
+	} else if svc, ok := serverInfo["services"].(map[interface{}]interface{}); ok {
+		services = convertMap(svc)
+	} else {
+		log.Printf("[http-util] ERROR: services is not a map, type: %T", serverInfo["services"])
 	}
 
-	if err := viper.Unmarshal(&ApiYamlSet); err != nil {
-		panic(fmt.Errorf("unable to decode into struct: %v", err))
+	if services != nil {
+		log.Printf("[http-util] Parsing %d services", len(services))
+		for serviceKey, serviceData := range services {
+			svcMap := convertMap(serviceData)
+			if len(svcMap) > 0 {
+				service := Service{
+					BaseURL: getStringValue(svcMap, "baseurl"),
+				}
+
+				if authData, ok := svcMap["auth"]; ok {
+					authMap := convertMap(authData)
+					service.Auth = Auth{
+						Type:     getStringValue(authMap, "type"),
+						Username: getStringValue(authMap, "username"),
+						Password: getStringValue(authMap, "password"),
+					}
+				}
+
+				ApiYamlSet.Services[serviceKey] = service
+				log.Printf("[http-util] Parsed service: %s -> %s", serviceKey, service.BaseURL)
+			}
+		}
 	}
+
+	// Parse serviceActions - handle both map types
+	var serviceActions map[string]interface{}
+	if sa, ok := operationInfo["serviceActions"].(map[string]interface{}); ok {
+		serviceActions = sa
+	} else if sa, ok := operationInfo["serviceActions"].(map[interface{}]interface{}); ok {
+		serviceActions = convertMap(sa)
+	}
+
+	if serviceActions != nil {
+		log.Printf("[http-util] Parsing serviceActions, found %d service keys", len(serviceActions))
+		for serviceKey, operations := range serviceActions {
+			// Convert operations map
+			opsMap := convertMap(operations)
+
+			if len(opsMap) == 0 {
+				// Skip if empty (e.g., empty {} or null)
+				log.Printf("[http-util] Skipping serviceActions for %s (empty map)", serviceKey)
+				ApiYamlSet.ServiceActions[serviceKey] = make(map[string]Spec)
+				continue
+			}
+
+			ApiYamlSet.ServiceActions[serviceKey] = make(map[string]Spec)
+			log.Printf("[http-util] Parsing operations for %s, found %d operations", serviceKey, len(opsMap))
+
+			for opId, opData := range opsMap {
+				opMap := convertMap(opData)
+
+				if len(opMap) == 0 {
+					log.Printf("[http-util] Skipping operation %s.%s (empty map)", serviceKey, opId)
+					continue
+				}
+
+				spec := Spec{
+					Method:       getStringValue(opMap, "method"),
+					ResourcePath: getStringValue(opMap, "resourcePath"),
+					Description:  getStringValue(opMap, "description"),
+				}
+				ApiYamlSet.ServiceActions[serviceKey][opId] = spec
+				log.Printf("[http-util]   Added operation: %s -> %s %s", opId, spec.Method, spec.ResourcePath)
+			}
+		}
+	}
+
+	log.Println("[http-util] Loaded API configuration from apiServerInfo.yaml and apiOperationInfo.yaml")
+	log.Printf("[http-util] Loaded %d services", len(ApiYamlSet.Services))
+	log.Printf("[http-util] Loaded %d service actions", len(ApiYamlSet.ServiceActions))
+
+	// Debug: Print loaded service keys
+	// for serviceKey := range ApiYamlSet.Services {
+	// 	log.Printf("[http-util]   Service: %s", serviceKey)
+	// }
+	// for serviceKey, ops := range ApiYamlSet.ServiceActions {
+	// 	log.Printf("[http-util]   ServiceAction: %s (%d operations)", serviceKey, len(ops))
+	// 	for opId := range ops {
+	// 		log.Printf("[http-util]     - %s", opId)
+	// 	}
+	// }
+}
+
+func getStringValue(m map[string]interface{}, key string) string {
+	if val, ok := m[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
+}
+
+// convertMap converts map[interface{}]interface{} to map[string]interface{}
+func convertMap(input interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+
+	switch m := input.(type) {
+	case map[string]interface{}:
+		return m
+	case map[interface{}]interface{}:
+		for k, v := range m {
+			key, ok := k.(string)
+			if !ok {
+				continue
+			}
+
+			// Recursively convert nested maps
+			switch val := v.(type) {
+			case map[interface{}]interface{}:
+				result[key] = convertMap(val)
+			case map[string]interface{}:
+				result[key] = val
+			default:
+				result[key] = v
+			}
+		}
+		return result
+	}
+
+	return result
+}
+
+func loadFromLegacyApiYaml() {
+	// Fallback to legacy api.yaml loading (kept for backward compatibility)
+	log.Println("[http-util] Loading from legacy api.yaml")
+	// Keep existing viper-based loading code here if needed
 }
 
 // AnyCaller는 buffalo.Context, operationId, commonRequest, auth유무 를 받아 conf/api.yaml 정보를 바탕으로 commonCaller를 호출합니다.
@@ -116,38 +266,65 @@ func AnyCaller(c buffalo.Context, operationId string, commonRequest *CommonReque
 // AnyCaller 와 동일한 방식으로 작동하며, subsystemName, operationId 로 호출할 서브시스템의 함수를 특정합니다.
 // 모든 응답과 error 는 commonResponse 내 설정되어 반환됩니다.
 func SubsystemAnyCaller(c buffalo.Context, subsystemName, operationId string, commonRequest *CommonRequest, auth bool) (*CommonResponse, error) {
+	log.Printf("[SubsystemAnyCaller] subsystemName=%s, operationId=%s, auth=%v", subsystemName, operationId, auth)
+	
 	targetFrameworkInfo, targetApiSpec, err := getApiSpecBySubsystem(subsystemName, operationId)
 	if (err != nil || targetFrameworkInfo == Service{} || targetApiSpec == Spec{}) {
+		log.Printf("[SubsystemAnyCaller] ERROR: getApiSpecBySubsystem failed: %v", err)
 		commonResponse := CommonResponseStatusNotFound(operationId + "-" + err.Error())
 		return commonResponse, err
 	}
+	log.Printf("[SubsystemAnyCaller] Found spec - Method: %s, ResourcePath: %s, BaseURL: %s", 
+		targetApiSpec.Method, targetApiSpec.ResourcePath, targetFrameworkInfo.BaseURL)
 
 	var authString string
 	if auth {
+		log.Printf("[SubsystemAnyCaller] Attempting to get auth token...")
 		authString, err = getAuth(c, targetFrameworkInfo)
 		if err != nil {
+			log.Printf("[SubsystemAnyCaller] ERROR: getAuth failed: %v", err)
 			commonResponse := CommonResponseStatusBadRequest(err.Error())
 			return commonResponse, err
 		}
+		log.Printf("[SubsystemAnyCaller] Auth token obtained successfully")
 	} else {
 		authString = ""
+		log.Printf("[SubsystemAnyCaller] No auth required")
 	}
 
+	log.Printf("[SubsystemAnyCaller] Calling CommonCaller...")
 	commonResponse, err := CommonCaller(strings.ToUpper(targetApiSpec.Method), targetFrameworkInfo.BaseURL, targetApiSpec.ResourcePath, commonRequest, authString)
 	if err != nil {
+		log.Printf("[SubsystemAnyCaller] ERROR: CommonCaller failed: %v", err)
 		return commonResponse, err
 	}
+	log.Printf("[SubsystemAnyCaller] CommonCaller succeeded, status: %d", commonResponse.Status.StatusCode)
 	return commonResponse, err
 }
 
 // getApiSpec은 OpertinoId를 받아 conf/api.yaml에 정의된 Service, Spec 을 반환합니다.
 // 없을경우 not found error를 반환합니다.
 func GetApiSpec(requestOpertinoId string) (string, Service, Spec, error) {
+	log.Printf("[GetApiSpec] Looking for operationId: %s", requestOpertinoId)
+	requestOpertinoIdLower := strings.ToLower(requestOpertinoId)
+
 	for framework, api := range ApiYamlSet.ServiceActions {
 		for opertinoId, spec := range api {
-			if opertinoId == strings.ToLower(requestOpertinoId) {
-				return framework, ApiYamlSet.Services[framework], spec, nil
+			if strings.ToLower(opertinoId) == requestOpertinoIdLower {
+				log.Printf("[GetApiSpec] Found: framework=%s, operationId=%s", framework, opertinoId)
+				service, ok := ApiYamlSet.Services[framework]
+				if !ok {
+					log.Printf("[GetApiSpec] WARNING: Service not found for framework: %s", framework)
+					return "", Service{}, Spec{}, fmt.Errorf("service not found for framework: %s", framework)
+				}
+				return framework, service, spec, nil
 			}
+		}
+	}
+	log.Printf("[GetApiSpec] Not found! Available operations:")
+	for framework, api := range ApiYamlSet.ServiceActions {
+		for opId := range api {
+			log.Printf("[GetApiSpec]   %s -> %s", framework, opId)
 		}
 	}
 	return "", Service{}, Spec{}, fmt.Errorf("getApiSpec not found")
@@ -156,12 +333,40 @@ func GetApiSpec(requestOpertinoId string) (string, Service, Spec, error) {
 // getApiSpecBySubsystem 은 subsystemName, OpertinoId 를 받아 conf/api.yaml에 정의된 Service, Spec 을 반환합니다.
 // 없을경우 not found error를 반환합니다.
 func getApiSpecBySubsystem(subsystemName, requestOpertinoId string) (Service, Spec, error) {
-	apis := ApiYamlSet.ServiceActions[strings.ToLower(subsystemName)]
-	for opertinoId, spec := range apis {
-		if strings.EqualFold(strings.ToLower(opertinoId), strings.ToLower(requestOpertinoId)) {
-			return ApiYamlSet.Services[strings.ToLower(subsystemName)], spec, nil
+	log.Printf("[getApiSpecBySubsystem] Looking for subsystem: %s, operationId: %s", subsystemName, requestOpertinoId)
+	subsystemNameLower := strings.ToLower(subsystemName)
+	requestOpertinoIdLower := strings.ToLower(requestOpertinoId)
+
+	// Search for service key that starts with subsystemName (may include version)
+	for serviceKey, apis := range ApiYamlSet.ServiceActions {
+		serviceKeyLower := strings.ToLower(serviceKey)
+
+		// Match subsystemName (with or without version)
+		// e.g., "mc-iam-manager" should match "mc-iam-manager_0.4.0"
+		if serviceKeyLower == subsystemNameLower || strings.HasPrefix(serviceKeyLower, subsystemNameLower+"_") {
+			log.Printf("[getApiSpecBySubsystem] Found matching service: %s", serviceKey)
+
+			for opertinoId, spec := range apis {
+				if strings.ToLower(opertinoId) == requestOpertinoIdLower {
+					log.Printf("[getApiSpecBySubsystem] Found operation: %s", opertinoId)
+					service, ok := ApiYamlSet.Services[serviceKey]
+					if !ok {
+						log.Printf("[getApiSpecBySubsystem] WARNING: Service not found for key: %s", serviceKey)
+						return Service{}, Spec{}, fmt.Errorf("service not found for key: %s", serviceKey)
+					}
+					return service, spec, nil
+				}
+			}
+
+			// If we found the matching service but not the operation, log available operations
+			log.Printf("[getApiSpecBySubsystem] Operation not found in %s. Available operations:", serviceKey)
+			for opId := range apis {
+				log.Printf("[getApiSpecBySubsystem]   - %s", opId)
+			}
 		}
 	}
+
+	log.Printf("[getApiSpecBySubsystem] Subsystem not found: %s", subsystemName)
 	return Service{}, Spec{}, fmt.Errorf("getApiSpec not found")
 }
 
@@ -206,8 +411,13 @@ func GetApiHosts() (map[string]ServiceNoAuth, error) {
 
 func CommonCaller(callMethod string, targetFwUrl string, endPoint string, commonRequest *CommonRequest, auth string) (*CommonResponse, error) {
 	pathParamsUrl := mappingUrlPathParams(endPoint, commonRequest)
+	log.Printf("[CommonCaller] After PathParams mapping: %s", pathParamsUrl)
 	queryParamsUrl := mappingQueryParams(pathParamsUrl, commonRequest)
+	log.Printf("[CommonCaller] After QueryParams mapping: %s", queryParamsUrl)
 	requestUrl := targetFwUrl + queryParamsUrl
+	log.Printf("[CommonCaller] Final request URL: %s", requestUrl)
+	log.Printf("[CommonCaller] Method: %s", callMethod)
+	log.Printf("[CommonCaller] Request body: %+v", commonRequest.Request)
 	commonResponse, err := CommonHttpToCommonResponse(requestUrl, commonRequest.Request, callMethod, auth)
 	return commonResponse, err
 }

@@ -63,13 +63,38 @@ frameworks:
         password: ''
         enabled: true
 
+  - name: mc-infra-connector
+    displayName: mc-infra-connector
+    activeVersion: '0.4.0'
+    versions:
+      - version: '0.4.0'
+        swaggerUrl: 'https://raw.githubusercontent.com/cloud-barista/cb-spider/master/api/swagger.yaml'
+        baseUrl: 'http://43.202.200.215:1024/spider'
+        authType: 'basic'
+        username: ''
+        password: ''
+        enabled: true
+
+
+  - name: mc-infra-manager
+    displayName: mc-infra-manager
+    activeVersion: '0.4.0'
+    versions:
+      - version: '0.4.0'
+        swaggerUrl: 'https://raw.githubusercontent.com/cloud-barista/cb-tumblebug/main/src/interface/rest/docs/swagger.yaml'
+        baseUrl: 'http://43.202.200.215:1323/tumblebug'
+        authType: 'basic'
+        username: 'default'
+        password: 'default'
+        enabled: true
+
   - name: mc-iam-manager
     displayName: MC-IAM-Manager
-    activeVersion: '0.1.0'
+    activeVersion: '0.4.0'
     versions:
-      - version: '0.1.0'
-        swaggerUrl: 'https://raw.githubusercontent.com/m-cmp/mc-iam-manager/main/docs/swagger.yaml'
-        baseUrl: 'http://mc-iam-manager:8080'
+      - version: '0.4.0'
+        swaggerUrl: 'https://raw.githubusercontent.com/m-cmp/mc-iam-manager/refs/heads/main/src/docs/swagger.yaml'
+        baseUrl: 'http://43.202.200.215:5000'
         authType: 'bearer'
         username: ''
         password: ''

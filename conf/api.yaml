@@ -11,8 +11,8 @@ services:
       password:
 
   mc-iam-manager:
-    version: 0.2.11
-    baseurl: http://iam_url:3000
+    version: 0.4.0
+    baseurl: http://43.202.200.215:5000
     auth:
       type: bearer
 
