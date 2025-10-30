@@ -35,13 +35,21 @@ fi
 python3 -c "import yaml" 2>/dev/null
 if [ $? -ne 0 ]; then
   echo -e "${YELLOW}Installing PyYAML...${NC}"
-  pip3 install pyyaml
+  pip3 install --break-system-packages pyyaml || pip3 install --user pyyaml || {
+    echo -e "${RED}Failed to install PyYAML. Please install manually:${NC}"
+    echo -e "${YELLOW}  pip3 install --break-system-packages pyyaml${NC}"
+    exit 1
+  }
 fi
 
 python3 -c "import requests" 2>/dev/null
 if [ $? -ne 0 ]; then
   echo -e "${YELLOW}Installing requests...${NC}"
-  pip3 install requests
+  pip3 install --break-system-packages requests || pip3 install --user requests || {
+    echo -e "${RED}Failed to install requests. Please install manually:${NC}"
+    echo -e "${YELLOW}  pip3 install --break-system-packages requests${NC}"
+    exit 1
+  }
 fi
 
 echo ""

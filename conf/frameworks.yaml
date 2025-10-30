@@ -100,3 +100,15 @@ frameworks:
         password: ''
         enabled: true
 
+  - name: mc-observability
+    displayName: MC-IAM-Manager
+    activeVersion: '0.4.3'
+    versions:
+      - version: '0.4.3'
+        swaggerUrl: 'https://raw.githubusercontent.com/m-cmp/mc-observability/refs/heads/main/java/swagger/swagger.yaml'
+        baseUrl: 'http://43.202.200.215:18080'
+        authType: 'bearer'
+        username: ''
+        password: ''
+        enabled: true
+

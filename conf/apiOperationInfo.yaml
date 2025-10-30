@@ -4300,3 +4300,291 @@ serviceActions:
       method: get
       resourcePath: /readyz
       description: Check the health status of the service.
+  mc-observability_0.4.3:
+    LogLabelsQuery:
+      method: get
+      resourcePath: /api/o11y/log/labels
+      description: Retrieve the list of label keys provided by Loki.
+    LogVolumeQuery:
+      method: get
+      resourcePath: /api/o11y/log/log_volumes
+      description: Retrieve log volumes (metric time series data) for the given period.
+    LogRangeQuery:
+      method: get
+      resourcePath: /api/o11y/log/query_range
+      description: Retrieve log data for a specific query within a given time range.
+    GetAllInfluxDB:
+      method: get
+      resourcePath: /api/o11y/monitoring/influxdb
+      description: Retrieve all InfluxDB servers
+    GetPlugins:
+      method: get
+      resourcePath: /api/o11y/monitoring/plugins
+      description: Retrieve plugin list
+    GetAllVMs:
+      method: get
+      resourcePath: /api/o11y/monitoring/vm
+      description: Retrieve all targets
+    GetPaginatedTriggerHistories:
+      method: get
+      resourcePath: /api/o11y/trigger/history
+      description: Get paginated trigger histories
+    GetPaginatedTriggerPolicies:
+      method: get
+      resourcePath: /api/o11y/trigger/policy
+      description: Get paginated trigger policies
+    CreateTriggerPolicy:
+      method: post
+      resourcePath: /api/o11y/trigger/policy
+      description: Create trigger policy
+    GetMeasurementFields:
+      method: get
+      resourcePath: /api/o11y/monitoring/influxdb/measurement
+      description: Retrieve InfluxDB measurements
+    GetMeasurementTags:
+      method: get
+      resourcePath: /api/o11y/monitoring/influxdb/tag
+      description: Retrieve InfluxDB tags
+    GetAllAlertRules:
+      method: get
+      resourcePath: /api/o11y/trigger/alert/alert-rules
+      description: Get all alert rules
+    GetAllAlerts:
+      method: get
+      resourcePath: /api/o11y/trigger/alert/alerts
+      description: Get all alerts
+    GetAllContactPoints:
+      method: get
+      resourcePath: /api/o11y/trigger/alert/contact-points
+      description: Get all contact points
+    CheckGrafanaHealthStatus:
+      method: get
+      resourcePath: /api/o11y/trigger/alert/health
+      description: Check grafana health status
+    GetPaginatedAlertTestHistories:
+      method: get
+      resourcePath: /api/o11y/trigger/alert/test-history
+      description: Get paginated alert test histories
+    GetSupportedNotificationChannels:
+      method: get
+      resourcePath: /api/o11y/trigger/noti/channel
+      description: Get supported notification channels
+    GetPaginatedNotificationHistories:
+      method: get
+      resourcePath: /api/o11y/trigger/noti/history
+      description: Get paginated notification histories
+    DeleteTriggerPolicy:
+      method: delete
+      resourcePath: /api/o11y/trigger/policy/{id}
+      description: Delete trigger policy
+    LabelValueQuery:
+      method: get
+      resourcePath: /api/o11y/log/labels/{label}/values
+      description: Retrieve the list of values for a specific label key.
+    GetVMByNsMci:
+      method: get
+      resourcePath: /api/o11y/monitoring/{nsId}/{mciId}/vm
+      description: Retrieve target list by NS/MCI
+    TestAlertReceiverConnection:
+      method: post
+      resourcePath: /api/o11y/trigger/alert/alert-receiver/test
+      description: Test alert receiver connection
+    SearchAlertsByTitle:
+      method: get
+      resourcePath: /api/o11y/trigger/alert/alerts/search
+      description: Search alerts by title
+    UpdateTriggerHistoryComment:
+      method: put
+      resourcePath: /api/o11y/trigger/history/{id}/comment
+      description: Update trigger history comment
+    UpdateTriggerPolicyNotificationChannels:
+      method: put
+      resourcePath: /api/o11y/trigger/policy/{id}/channel
+      description: Update trigger policy notification channels
+    AddTriggerVM:
+      method: post
+      resourcePath: /api/o11y/trigger/policy/{id}/vm
+      description: Add trigger vm
+    RemoveTriggerVM:
+      method: delete
+      resourcePath: /api/o11y/trigger/policy/{id}/vm
+      description: Remove trigger vm
+    GetMetricsByVMId:
+      method: post
+      resourcePath: /api/o11y/monitoring/influxdb/metric/{nsId}/{mciId}/{vmId}
+      description: Retrieve InfluxDB metrics
+    GetMetricsByNsIdAndMciId:
+      method: post
+      resourcePath: /api/o11y/monitoring/influxdb/metric/{nsId}/{mciId}
+      description: Retrieve InfluxDB metrics
+    GetVM:
+      method: get
+      resourcePath: /api/o11y/monitoring/{nsId}/{mciId}/vm/{vmId}
+      description: Get target (VM)
+    PostVM:
+      method: post
+      resourcePath: /api/o11y/monitoring/{nsId}/{mciId}/vm/{vmId}
+      description: Create target (VM)
+    PutVM:
+      method: put
+      resourcePath: /api/o11y/monitoring/{nsId}/{mciId}/vm/{vmId}
+      description: Update target
+    DeleteVM:
+      method: delete
+      resourcePath: /api/o11y/monitoring/{nsId}/{mciId}/vm/{vmId}
+      description: Delete target
+    GetMonitoringItems:
+      method: get
+      resourcePath: /api/o11y/monitoring/{nsId}/{mciId}/vm/{vmId}/item
+      description: Retrieve monitoring item list
+    AddMonitoringItem:
+      method: post
+      resourcePath: /api/o11y/monitoring/{nsId}/{mciId}/vm/{vmId}/item
+      description: Add monitoring item
+    UpdateMonitoringItem:
+      method: put
+      resourcePath: /api/o11y/monitoring/{nsId}/{mciId}/vm/{vmId}/item
+      description: Update monitoring item
+    DeleteMonitoringItem:
+      method: delete
+      resourcePath: /api/o11y/monitoring/{nsId}/{mciId}/vm/{vmId}/item/{itemSeq}
+      description: Delete monitoring item
+    GetAnomalyMeasurementList:
+      method: get
+      resourcePath: /api/o11y/insight/anomaly-detection/measurement
+      description: Get measurements, field lists available for the feature
+    GetAnomalyFieldListByMeasurement:
+      method: get
+      resourcePath: /api/o11y/insight/anomaly-detection/measurement/{measurement}
+      description: Get Field list of specific measurements available for that feature
+    GetAnomalyDetectionOptions:
+      method: get
+      resourcePath: /api/o11y/insight/anomaly-detection/options
+      description: Fetch the available target types, metric types, and interval options
+        for the anomaly detection API.
+    GetAllAnomalyDetectionSettings:
+      method: get
+      resourcePath: /api/o11y/insight/anomaly-detection/settings
+      description: Fetch the current settings for all anomaly detection targets.
+    PostAnomalyDetectionSettings:
+      method: post
+      resourcePath: /api/o11y/insight/anomaly-detection/settings
+      description: Register a target for anomaly detection and automatically schedule
+        detection tasks.
+    PutAnomalyDetectionSettings:
+      method: put
+      resourcePath: /api/o11y/insight/anomaly-detection/settings/{settingSeq}
+      description: Modify the settings for a specific anomaly detection target, including
+        the monitoring metric and interval.
+    DeleteAnomalyDetectionSettings:
+      method: delete
+      resourcePath: /api/o11y/insight/anomaly-detection/settings/{settingSeq}
+      description: Remove a target from anomaly detection, stopping and removing any
+        scheduled tasks.
+    GetMCIAnomalyDetectionSettings:
+      method: get
+      resourcePath: /api/o11y/insight/anomaly-detection/settings/ns/{nsId}/mci/{mciId}
+      description: Fetch the current anomaly detection settings for a specific mci
+        group.
+    GetVMAnomalyDetectionSettings:
+      method: get
+      resourcePath: /api/o11y/insight/anomaly-detection/settings/ns/{nsId}/mci/{mciId}/vm/{vmId}
+      description: Fetch the current anomaly detection settings for a specific vm.
+    GetAnomalyDetectionMCIHistory:
+      method: get
+      resourcePath: /api/o11y/insight/anomaly-detection/ns/{nsId}/mci/{mciId}/history
+      description: Fetch the results of anomaly detection for mci group within a given
+        time range.
+    GetAnomalyDetectionVMHistory:
+      method: get
+      resourcePath: /api/o11y/insight/anomaly-detection/ns/{nsId}/mci/{mciId}/vm/{vmId}/history
+      description: Fetch the results of anomaly detection for a specific vm within
+        a given time range.
+    PostAnomalyDetection:
+      method: post
+      resourcePath: /api/o11y/insight/anomaly-detection/{settingSeq}
+      description: Request anomaly detection
+    GetPredictionMeasurementList:
+      method: get
+      resourcePath: /api/o11y/insight/predictions/measurement
+      description: Get measurements, field lists available for the feature
+    GetPredictionFieldListByMeasurement:
+      method: get
+      resourcePath: /api/o11y/insight/predictions/measurement/{measurement}
+      description: Get Field list of specific measurement available for that feature
+    GetPredictionOptions:
+      method: get
+      resourcePath: /api/o11y/insight/predictions/options
+      description: Fetch the available target types, metric types, and prediction
+        range options for the prediction API.
+    PostPredictionMCI:
+      method: post
+      resourcePath: /api/o11y/insight/predictions/ns/{nsId}/mci/{mciId}
+      description: Predict future metrics (cpu, mem, disk, system) for a given mci
+        group.
+    PostPredictionVM:
+      method: post
+      resourcePath: /api/o11y/insight/predictions/ns/{nsId}/mci/{mciId}/vm/{vmId}
+      description: Predict future metrics (cpu, mem, disk, system) for a given vm.
+    GetPredictionMCIHistory:
+      method: get
+      resourcePath: /api/o11y/insight/predictions/ns/{nsId}/mci/{mciId}/history
+      description: Get previously stored prediction data for a specific mci group.
+    GetPredictionVMHistory:
+      method: get
+      resourcePath: /api/o11y/insight/predictions/ns/{nsId}/mci/{mciId}/vm/{vmId}/history
+      description: Get previously stored prediction data for a specific vm.
+    GetLLMChatSessions:
+      method: get
+      resourcePath: /api/o11y/insight/llm/session
+      description: Retrieve all active LLM chat sessions for log analysis.
+    PostLLMChatSession:
+      method: post
+      resourcePath: /api/o11y/insight/llm/session
+      description: Create a new LLM chat session for log analysis with specified provider
+        and model.
+    DeleteLLMChatSession:
+      method: delete
+      resourcePath: /api/o11y/insight/llm/session
+      description: Delete a specific LLM chat session and its conversation history.
+    DeleteAllLLMChatSessions:
+      method: delete
+      resourcePath: /api/o11y/insight/llm/sessions
+      description: Delete all LLM chat sessions and their conversation histories.
+    GetLLMSessionHistory:
+      method: get
+      resourcePath: /api/o11y/insight/llm/session/{sessionId}/history
+      description: Retrieve the conversation history for a specific LLM chat session.
+    GetLLMAPIKeys:
+      method: get
+      resourcePath: /api/o11y/insight/llm/api-keys
+      description: Retrieve the current API key configuration.
+    PostLLMAPIKeys:
+      method: post
+      resourcePath: /api/o11y/insight/llm/api-keys
+      description: Save or update the API key configuration.
+    DeleteLLMAPIKeys:
+      method: delete
+      resourcePath: /api/o11y/insight/llm/api-keys
+      description: Delete the API key configuration.
+    GetLLMModelOptions:
+      method: get
+      resourcePath: /api/o11y/insight/llm/model
+      description: Retrieve available LLM model options and configurations for log
+        analysis.
+    PostLogAnalysisQuery:
+      method: post
+      resourcePath: /api/o11y/insight/log-analysis/query
+      description: Submit a query to the log analysis chat session for intelligent
+        log investigation and troubleshooting.
+    PostAlertAnalysisQuery:
+      method: post
+      resourcePath: /api/o11y/insight/alert-analysis/query
+      description: Submit a query to the alert analysis chat session for intelligent
+        alert investigation.
+    GetReadyz:
+      method: get
+      resourcePath: /readyz
+      description: 'Check if the service is ready to serve traffic.
+
+        Returns 200 OK when all systems are ready, 503 if any system is not ready.'
