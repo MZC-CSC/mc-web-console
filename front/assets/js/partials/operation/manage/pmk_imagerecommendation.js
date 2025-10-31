@@ -208,7 +208,7 @@ export async function getRecommendImageInfoPmk() {
 		var searchParams = {
 			includeDeprecatedImage: false,
 			isGPUImage: isGPUImage === "true",
-			isKubernetesImage: false,
+			isKubernetesImage: true,
 			isRegisteredByAsset: false,
 			osArchitecture: osArchitecture,
 			osType: osType,
