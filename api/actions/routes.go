@@ -77,3 +77,106 @@ func GetApiHosts(c buffalo.Context) error {
 
 	return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
 }
+
+func ListServicesAndActions(c buffalo.Context) error {
+	// MCIAM_USE에 따라 적절한 subsystem의 ListServicesAndActions operationId 호출
+	var subsystemName string
+	if MCIAM_USE {
+		subsystemName = "mc-iam-manager"
+	} else {
+		subsystemName = "mc-web-console"
+	}
+
+	commonRequest := &handler.CommonRequest{}
+	c.Bind(commonRequest)
+
+	log.Printf("== ListServicesAndActions\t:\n== subsystemName\t:[ %s ]\n== MCIAM_USE\t:[ %v ]\n==\n", subsystemName, MCIAM_USE)
+	
+	commonResponse, err := handler.SubsystemAnyCaller(c, subsystemName, "listservicesandactions", commonRequest, true)
+	if err != nil {
+		log.Printf("ListServicesAndActions error: %v", err)
+		return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
+	}
+
+	return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
+}
+
+// DirectCallRequest 는 직접 endpoint 호출을 위한 요청 구조입니다.
+type DirectCallRequest struct {
+	TargetUrl      string                  `json:"targetUrl"`
+	Endpoint       string                  `json:"endpoint"`
+	Method         string                  `json:"method"`
+	TargetAuthToken string                 `json:"targetAuthToken,omitempty"`
+	Parameters     *handler.CommonRequest `json:"parameters,omitempty"`
+}
+
+// DirectCallController 는 대상 서비스 URL, endpoint, HTTP 메소드를 직접 지정하여 호출하는 handler 입니다.
+// Backend 호출은 access-token을 자동으로 전달하고, 지정된 targetAuthToken을 대상 서비스 호출 시 사용합니다.
+func DirectCallController(c buffalo.Context) error {
+	log.Println("#### DirectCallController")
+
+	directCallRequest := &DirectCallRequest{}
+	if err := c.Bind(directCallRequest); err != nil {
+		commonResponse := handler.CommonResponseStatusBadRequest("invalid request body: " + err.Error())
+		return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
+	}
+
+	// 필수 필드 검증
+	if directCallRequest.TargetUrl == "" {
+		commonResponse := handler.CommonResponseStatusBadRequest("targetUrl is required")
+		return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
+	}
+
+	if directCallRequest.Endpoint == "" {
+		commonResponse := handler.CommonResponseStatusBadRequest("endpoint is required")
+		return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
+	}
+
+	if directCallRequest.Method == "" {
+		commonResponse := handler.CommonResponseStatusBadRequest("method is required")
+		return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
+	}
+
+	// HTTP 메소드 검증 및 대문자 변환
+	method := strings.ToUpper(directCallRequest.Method)
+	validMethods := map[string]bool{
+		"GET":    true,
+		"POST":   true,
+		"PUT":    true,
+		"DELETE": true,
+		"PATCH":  true,
+	}
+	if !validMethods[method] {
+		commonResponse := handler.CommonResponseStatusBadRequest("invalid method: " + directCallRequest.Method)
+		return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
+	}
+
+	// Parameters가 없으면 빈 CommonRequest 생성
+	commonRequest := directCallRequest.Parameters
+	if commonRequest == nil {
+		commonRequest = &handler.CommonRequest{}
+	}
+
+	// targetAuthToken 설정 (있으면 사용, 없으면 빈 문자열)
+	targetAuthToken := ""
+	if directCallRequest.TargetAuthToken != "" {
+		// Bearer 접두사가 없으면 추가
+		if !strings.HasPrefix(directCallRequest.TargetAuthToken, "Bearer ") {
+			targetAuthToken = "Bearer " + directCallRequest.TargetAuthToken
+		} else {
+			targetAuthToken = directCallRequest.TargetAuthToken
+		}
+	}
+
+	log.Printf("== DirectCall\t:\n== targetUrl\t:[ %s ]\n== endpoint\t:[ %s ]\n== method\t:[ %s ]\n== targetAuthToken\t:[ %s ]\n== commonRequest\t:\n%+v\n==\n",
+		directCallRequest.TargetUrl, directCallRequest.Endpoint, method, targetAuthToken, commonRequest)
+
+	// CommonCaller를 사용하여 대상 서비스 호출
+	commonResponse, err := handler.CommonCaller(method, directCallRequest.TargetUrl, directCallRequest.Endpoint, commonRequest, targetAuthToken)
+	if err != nil {
+		log.Printf("DirectCallController error: %v", err)
+		return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
+	}
+
+	return c.Render(commonResponse.Status.StatusCode, r.JSON(commonResponse))
+}
