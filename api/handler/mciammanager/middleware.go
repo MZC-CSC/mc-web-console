@@ -22,8 +22,10 @@ func init() {
 		certEndPoint := getCertsEndpoint()
 		err := iamtokenvalidator.GetPubkeyIamManager(certEndPoint)
 		if err != nil {
+			log.Printf("GetPubkeyIamManager failed with certUrl: %s, error: %v", certEndPoint, err)
 			err = iamtokenvalidator.GetPubkeyIamManagerTlsSkipped(certEndPoint)
 			if err != nil {
+				log.Printf("GetPubkeyIamManagerTlsSkipped also failed with certUrl: %s, error: %v", certEndPoint, err)
 				panic("Get jwks fail :" + err.Error())
 			}
 		}
@@ -34,11 +36,15 @@ func getCertsEndpoint() string {
 	viper.SetConfigName("api")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./conf")
+	viper.AddConfigPath("../conf")
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file, %s", err)
 	}
-	baseUrl := viper.Get("services.mc-iam-manager.baseurl").(string)
-	certUri := viper.Get("serviceActions.mc-iam-manager.Getcerts.resourcePath").(string)
+	baseUrl := viper.GetString("services.mc-iam-manager.baseurl")
+	certUri := viper.GetString("serviceActions.mc-iam-manager.mciamAuthCerts.resourcePath")
+	if baseUrl == "" || certUri == "" {
+		log.Fatalf("Missing required config: services.mc-iam-manager.baseurl or serviceActions.mc-iam-manager.mciamAuthCerts.resourcePath")
+	}
 	fmt.Println("Cert Endpoint is : ", baseUrl+certUri)
 	return baseUrl + certUri
 }

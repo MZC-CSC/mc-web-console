@@ -79,33 +79,68 @@ func GetMenuTree(menuList Menus) (*Menus, error) {
 }
 
 func GetAllMCIAMAvailableMenus(c buffalo.Context) (*Menus, error) {
-	commonResponse, err := handler.AnyCaller(c, "getallavailablemenus", &handler.CommonRequest{
+	commonResponse, err := handler.AnyCaller(c, "listUserMenu", &handler.CommonRequest{
 		PathParams: map[string]string{
 			"framework": "mc-web-console",
 		},
 	}, true)
 	if err != nil {
+		log.Println("GetAllMCIAMAvailableMenus error : ", err)
 		return &Menus{}, err
 	}
+	log.Println("GetAllMCIAMAvailableMenus commonResponse : ", commonResponse)
 	if commonResponse.Status.StatusCode != 200 {
 		return &Menus{}, fmt.Errorf(commonResponse.Status.Message)
 	}
-	menuListResp := commonResponse.ResponseData.([]interface{})
+
+	// ResponseData가 배열인지 확인
+	menuListResp, ok := commonResponse.ResponseData.([]interface{})
+	if !ok {
+		log.Printf("GetAllMCIAMAvailableMenus: ResponseData is not []interface{}, got %T: %v", commonResponse.ResponseData, commonResponse.ResponseData)
+		// ResponseData가 배열이 아닌 경우, 빈 배열로 처리
+		return &Menus{}, nil
+	}
+
+	if len(menuListResp) == 0 {
+		log.Println("GetAllMCIAMAvailableMenus: Empty menu list")
+		return &Menus{}, nil
+	}
+
 	menuList := &Menu{}
 	for _, menuResp := range menuListResp {
-		menuPart := strings.Split(menuResp.(map[string]interface{})["rsname"].(string), ":")
+		menuMap, ok := menuResp.(map[string]interface{})
+		if !ok {
+			log.Printf("GetAllMCIAMAvailableMenus: Menu item is not map[string]interface{}, got %T: %v", menuResp, menuResp)
+			continue
+		}
 		menu := &Menu{
-			Id:           menuPart[2],
-			DisplayName:  menuPart[3],
-			ParentMenuId: menuPart[4],
-			Priority:     menuPart[5],
-			MenuNumber:   menuPart[6],
-			IsAction:     menuPart[7],
+			Id:           getString(menuMap, "id"),
+			DisplayName:  getString(menuMap, "displayName"), // API 응답은 camelCase
+			ParentMenuId: getString(menuMap, "parentId"),   // API 응답은 camelCase
+			Priority:     getString(menuMap, "priority"),
+			MenuNumber:   getString(menuMap, "menuNumber"), // API 응답은 camelCase
+			IsAction:     getString(menuMap, "isAction"),   // API 응답은 camelCase
 		}
 		menuList.Menus = append(menuList.Menus, *menu)
 	}
 
+	log.Printf("GetAllMCIAMAvailableMenus: Successfully parsed %d menus", len(menuList.Menus))
 	return &menuList.Menus, nil
+}
+
+// Helper function to safely get string values from map
+func getString(m map[string]interface{}, key string) string {
+	if val, ok := m[key]; ok {
+		switch v := val.(type) {
+		case string:
+			return v
+		case float64:
+			return fmt.Sprintf("%d", int(v))
+		case bool:
+			return fmt.Sprintf("%v", v)
+		}
+	}
+	return ""
 }
 
 func CreateMCIAMMenusByLocalMenuYaml(c buffalo.Context) error {

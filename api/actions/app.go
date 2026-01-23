@@ -66,6 +66,8 @@ func App() *buffalo.App {
 			api.POST("/getmenutree", GetMCIAMmenuTree)
 
 			api.POST("/getapihosts", GetApiHosts)
+			api.POST("/direct-call", DirectCallController)
+			api.POST("/listservicesandactions", ListServicesAndActions)
 
 			api.POST("/getworkspaceuserrolemappingbytoken", GetWorkspaceUserRoleMappingByToken)
 
@@ -75,10 +77,14 @@ func App() *buffalo.App {
 
 			api.Middleware.Skip(mciammanager.SelfApiMiddleware, AnyController)
 			if MCIAM_TICKET_USE {
-				// api.POST("/{operationId}", mciammanager.ApiMiddleware(AnyController))
+				// operationId만으로 호출 (중복 시 에러 반환)
+				api.POST("/{operationId}", mciammanager.ApiMiddleware(AnyController))
+				// subsystemName + operationId로 호출 (중복 operationId 처리)
 				api.POST("/{subsystemName}/{operationId}", mciammanager.ApiMiddleware(SubsystemAnyController))
 			} else {
-				// api.POST("/{operationId}", AnyController)
+				// operationId만으로 호출 (중복 시 에러 반환)
+				api.POST("/{operationId}", AnyController)
+				// subsystemName + operationId로 호출 (중복 operationId 처리)
 				api.POST("/{subsystemName}/{operationId}", SubsystemAnyController)
 			}
 
@@ -106,6 +112,8 @@ func App() *buffalo.App {
 			api.POST("/getcompanyinfo", GetCompanyInfo)
 			api.POST("/getplatformroles", GetPlatformRoles)
 			api.POST("/getworkspaceroles", GetWorkspaceRoles)
+			api.POST("/direct-call", DirectCallController)
+			api.POST("/listservicesandactions", ListServicesAndActions)
 
 			// Projects Manage
 			api.POST("/createproject", CreateProject)
@@ -118,7 +126,9 @@ func App() *buffalo.App {
 			api.POST("/getwpmappinglistbyworkspaceid", GetWPmappingListByWorkspaceId)
 			api.POST("/getworkspaceuserrolemappinglistbyuserid", GetWorkspaceUserRoleMappingListByUserId)
 
-			// api.POST("/{operationId}", AnyController)
+			// operationId만으로 호출 (중복 시 에러 반환)
+			api.POST("/{operationId}", AnyController)
+			// subsystemName + operationId로 호출 (중복 operationId 처리)
 			api.POST("/{subsystemName}/{operationId}", SubsystemAnyController)
 		}
 	})

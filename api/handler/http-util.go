@@ -19,9 +19,9 @@ import (
 
 // ////////////////////////////////////////////////////////////////
 type CommonRequest struct {
-	PathParams  map[string]string `json:"pathParams"`
-	QueryParams map[string]string `json:"queryParams"`
-	Request     interface{}       `json:"request"`
+	PathParams  map[string]string `json:"pathParams,omitempty"`
+	QueryParams map[string]string `json:"queryParams,omitempty"`
+	Request     interface{}       `json:"request,omitempty"`
 }
 
 // 모든 응답을 CommonResponse로 한다.
@@ -44,6 +44,7 @@ type Auth struct {
 }
 
 type Service struct {
+	Version string `mapstructure:"version"`
 	BaseURL string `mapstructure:"baseurl"`
 	Auth    Auth   `mapstructure:"auth"`
 }
@@ -86,9 +87,16 @@ func init() {
 
 // AnyCaller는 buffalo.Context, operationId, commonRequest, auth유무 를 받아 conf/api.yaml 정보를 바탕으로 commonCaller를 호출합니다.
 // 모든 error 는 기본적으로 commonResponse 에 담아져 반환됩니다.
+// operationId가 여러 subsystem에 중복 정의된 경우 BadRequest 에러를 반환합니다.
 func AnyCaller(c buffalo.Context, operationId string, commonRequest *CommonRequest, auth bool) (*CommonResponse, error) {
 	_, targetFrameworkInfo, targetApiSpec, err := GetApiSpec(strings.ToLower(operationId))
-	if (err != nil || targetFrameworkInfo == Service{} || targetApiSpec == Spec{}) {
+	if err != nil {
+		// 중복 에러인 경우 BadRequest로 반환
+		if strings.Contains(err.Error(), "duplicated across multiple subsystems") {
+			commonResponse := CommonResponseStatusBadRequest(err.Error())
+			return commonResponse, err
+		}
+		// 그 외의 경우 NotFound로 반환
 		commonResponse := CommonResponseStatusNotFound(operationId + "-" + err.Error())
 		return commonResponse, err
 	}
@@ -103,7 +111,7 @@ func AnyCaller(c buffalo.Context, operationId string, commonRequest *CommonReque
 	} else {
 		authString = ""
 	}
-
+	log.Println("authString : ", authString)
 	commonResponse, err := CommonCaller(strings.ToUpper(targetApiSpec.Method), targetFrameworkInfo.BaseURL, targetApiSpec.ResourcePath, commonRequest, authString)
 	if err != nil {
 		return commonResponse, err
@@ -131,25 +139,54 @@ func SubsystemAnyCaller(c buffalo.Context, subsystemName, operationId string, co
 	} else {
 		authString = ""
 	}
-
+	log.Println("SubsystemAnyCaller path: ", targetApiSpec.ResourcePath)
+	log.Println("SubsystemAnyCaller commonRequest: ", commonRequest)
 	commonResponse, err := CommonCaller(strings.ToUpper(targetApiSpec.Method), targetFrameworkInfo.BaseURL, targetApiSpec.ResourcePath, commonRequest, authString)
 	if err != nil {
+		log.Println("commonResponse error: ", err)
 		return commonResponse, err
 	}
 	return commonResponse, err
 }
 
 // getApiSpec은 OpertinoId를 받아 conf/api.yaml에 정의된 Service, Spec 을 반환합니다.
+// operationId가 여러 subsystem에 중복 정의된 경우 에러를 반환합니다.
 // 없을경우 not found error를 반환합니다.
 func GetApiSpec(requestOpertinoId string) (string, Service, Spec, error) {
+	var foundFrameworks []string
+	var foundFramework string
+	var foundService Service
+	var foundSpec Spec
+	
+	requestOpertinoIdLower := strings.ToLower(requestOpertinoId)
+	
+	// 모든 subsystem에서 operationId 검색 (대소문자 무시)
 	for framework, api := range ApiYamlSet.ServiceActions {
 		for opertinoId, spec := range api {
-			if opertinoId == strings.ToLower(requestOpertinoId) {
-				return framework, ApiYamlSet.Services[framework], spec, nil
+			if strings.ToLower(opertinoId) == requestOpertinoIdLower {
+				foundFrameworks = append(foundFrameworks, framework)
+				// 첫 번째 매칭을 저장 (에러가 아닌 경우 사용)
+				if foundFramework == "" {
+					foundFramework = framework
+					foundService = ApiYamlSet.Services[framework]
+					foundSpec = spec
+				}
 			}
 		}
 	}
-	return "", Service{}, Spec{}, fmt.Errorf("getApiSpec not found")
+	
+	// 매칭 결과 처리
+	if len(foundFrameworks) == 0 {
+		return "", Service{}, Spec{}, fmt.Errorf("getApiSpec not found")
+	}
+	
+	if len(foundFrameworks) > 1 {
+		// 2개 이상 발견된 경우: subsystem 필수 에러 반환
+		return "", Service{}, Spec{}, fmt.Errorf("operationId '%s' is duplicated across multiple subsystems: %v. Please specify subsystemName", requestOpertinoId, foundFrameworks)
+	}
+	
+	// 정확히 1개 발견된 경우: 반환
+	return foundFramework, foundService, foundSpec, nil
 }
 
 // getApiSpecBySubsystem 은 subsystemName, OpertinoId 를 받아 conf/api.yaml에 정의된 Service, Spec 을 반환합니다.
@@ -178,11 +215,15 @@ func getAuth(c buffalo.Context, service Service) (string, error) {
 		}
 
 	case "bearer":
-		if authValue, ok := c.Value("Authorization").(string); ok {
-			return authValue, nil
-		} else {
-			return "", fmt.Errorf("authorization key does not exist or is not a string")
+		authValue, ok := c.Value("Authorization").(string)
+		if !ok || authValue == "" {
+			return "", fmt.Errorf("authorization key does not exist or is empty")
 		}
+		// Check if the token already has Bearer prefix
+		if !strings.HasPrefix(authValue, "Bearer ") {
+			authValue = "Bearer " + authValue
+		}
+		return authValue, nil
 
 	default:
 		return "", nil
@@ -197,6 +238,38 @@ func GetApiHosts() (map[string]ServiceNoAuth, error) {
 		}
 	}
 	return servicesNoAuth, nil
+}
+
+// ServiceInfoWithActions 는 서비스 정보와 operationId 목록을 포함하는 구조입니다.
+type ServiceInfoWithActions struct {
+	Version    string              `json:"version"`
+	BaseURL    string              `json:"baseUrl"`
+	Auth       Auth                `json:"auth"`
+	Operations map[string]Spec     `json:"operations"`
+}
+
+// GetListServicesAndActions 는 모든 서비스와 각 서비스의 operationId 목록을 반환합니다.
+func GetListServicesAndActions() (map[string]ServiceInfoWithActions, error) {
+	result := make(map[string]ServiceInfoWithActions)
+	
+	// 모든 서비스에 대해 반복
+	for serviceName, service := range ApiYamlSet.Services {
+		serviceInfo := ServiceInfoWithActions{
+			Version:    service.Version,
+			BaseURL:    service.BaseURL,
+			Auth:       service.Auth,
+			Operations: make(map[string]Spec),
+		}
+		
+		// 해당 서비스의 serviceActions 가져오기
+		if actions, exists := ApiYamlSet.ServiceActions[serviceName]; exists {
+			serviceInfo.Operations = actions
+		}
+		
+		result[serviceName] = serviceInfo
+	}
+	
+	return result, nil
 }
 
 ////////////////////////////////////////////////////////////////
