@@ -100,33 +100,15 @@ export function MenuModal({
     }
 
     try {
-      const menuData: {
-        displayName: string;
-        parentMenuId?: string;
-        priority: number;
-        menunumber?: number;
-        isAction: boolean;
-        path?: string;
-      } = {
-        displayName: displayName.trim(),
+      // MenuItem 타입에 맞게 데이터 생성
+      const menuData: Omit<MenuItem, 'id' | 'menus'> = {
+        name: displayName.trim(),
+        parentId: parentId !== '__none__' ? parentId : '',
         priority: priorityNum,
+        menuNumber: menuNumberNum || 0,
         isAction,
+        path: path.trim() || '',
       };
-
-      // parentMenuId 처리: '__none__'이면 undefined, 아니면 값 사용
-      if (parentId !== '__none__') {
-        menuData.parentMenuId = parentId;
-      }
-
-      // menunumber 처리: 값이 있을 때만 추가
-      if (menuNumberNum !== undefined) {
-        menuData.menunumber = menuNumberNum;
-      }
-
-      // path 처리: 값이 있을 때만 추가
-      if (path.trim()) {
-        menuData.path = path.trim();
-      }
 
       if (mode === 'create') {
         await onSubmit(menuData);

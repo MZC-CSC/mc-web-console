@@ -20,6 +20,7 @@ interface MonitoringConfigFormProps {
   onConfigChange: (config: Partial<MonitoringConfig>) => void;
   onStartMonitoring: () => void;
   isMonitoring: boolean;
+  nsId?: string;
 }
 
 /**
@@ -30,8 +31,9 @@ export function MonitoringConfigForm({
   onConfigChange,
   onStartMonitoring,
   isMonitoring,
+  nsId,
 }: MonitoringConfigFormProps) {
-  const { workloads, isLoading: isWorkloadsLoading } = useMCIsWorkloads();
+  const { workloads, isLoading: isWorkloadsLoading } = useMCIsWorkloads(nsId);
   const { servers, isLoading: isServersLoading } = useMCIsServers(config.workload);
   const { measurements, isLoading: isMeasurementsLoading } = useMeasurements(config.server);
   const { metrics, isLoading: isMetricsLoading } = useMetrics(config.measurement);
@@ -41,21 +43,24 @@ export function MonitoringConfigForm({
     if (!config.workload) {
       onConfigChange({ server: null, measurement: null, metric: null });
     }
-  }, [config.workload, onConfigChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.workload]);
 
   useEffect(() => {
     // Server 변경 시 Measurement 초기화
     if (!config.server) {
       onConfigChange({ measurement: null, metric: null });
     }
-  }, [config.server, onConfigChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.server]);
 
   useEffect(() => {
     // Measurement 변경 시 Metric 초기화
     if (!config.measurement) {
       onConfigChange({ metric: null });
     }
-  }, [config.measurement, onConfigChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.measurement]);
 
   const workloadOptions = workloads.map((w) => ({
     value: w.id,
@@ -121,7 +126,7 @@ export function MonitoringConfigForm({
             <FormSelect
               label="Workload"
               value={config.workload || ''}
-              onChange={(e) => onConfigChange({ workload: e.target.value || null })}
+              onChange={(value) => onConfigChange({ workload: value || null })}
               options={workloadOptions}
               placeholder="Workload 선택"
               disabled={isWorkloadsLoading}
@@ -134,7 +139,7 @@ export function MonitoringConfigForm({
             <FormSelect
               label="Server"
               value={config.server || ''}
-              onChange={(e) => onConfigChange({ server: e.target.value || null })}
+              onChange={(value) => onConfigChange({ server: value || null })}
               options={serverOptions}
               placeholder="Server 선택"
               disabled={!config.workload || isServersLoading}
@@ -147,7 +152,7 @@ export function MonitoringConfigForm({
             <FormSelect
               label="Measurement"
               value={config.measurement || ''}
-              onChange={(e) => onConfigChange({ measurement: e.target.value || null })}
+              onChange={(value) => onConfigChange({ measurement: value || null })}
               options={measurementOptions}
               placeholder="Measurement 선택"
               disabled={!config.server || isMeasurementsLoading}
@@ -160,7 +165,7 @@ export function MonitoringConfigForm({
             <FormSelect
               label="Metric"
               value={config.metric || ''}
-              onChange={(e) => onConfigChange({ metric: e.target.value || null })}
+              onChange={(value) => onConfigChange({ metric: value || null })}
               options={metricOptions}
               placeholder="Metric 선택"
               disabled={!config.measurement || isMetricsLoading}
@@ -173,7 +178,7 @@ export function MonitoringConfigForm({
             <FormSelect
               label="Aggregation"
               value={config.aggregation || ''}
-              onChange={(e) => onConfigChange({ aggregation: e.target.value || null })}
+              onChange={(value) => onConfigChange({ aggregation: value || null })}
               options={aggregationOptions}
               placeholder="Aggregation 선택"
             />
@@ -183,7 +188,7 @@ export function MonitoringConfigForm({
             <FormSelect
               label="Range"
               value={config.range || ''}
-              onChange={(e) => onConfigChange({ range: e.target.value || null })}
+              onChange={(value) => onConfigChange({ range: value || null })}
               options={rangeOptions}
               placeholder="Range 선택"
               required
@@ -194,7 +199,7 @@ export function MonitoringConfigForm({
             <FormSelect
               label="Period"
               value={config.period || ''}
-              onChange={(e) => onConfigChange({ period: e.target.value || null })}
+              onChange={(value) => onConfigChange({ period: value || null })}
               options={periodOptions}
               placeholder="Period 선택"
               required
@@ -205,7 +210,7 @@ export function MonitoringConfigForm({
             <FormSelect
               label="Prediction"
               value={config.prediction || ''}
-              onChange={(e) => onConfigChange({ prediction: e.target.value || null })}
+              onChange={(value) => onConfigChange({ prediction: value || null })}
               options={[]}
               placeholder="Prediction 선택"
             />

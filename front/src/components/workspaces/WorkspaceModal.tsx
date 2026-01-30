@@ -4,14 +4,16 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { FormInput } from '@/components/common/FormInput';
 import { Button } from '@/components/common/Button';
-import { Workspace } from '@/types/workspace';
+import { Workspace, Project } from '@/types/workspace';
+import { ProjectSelectModal } from './ProjectSelectModal';
+import { X } from 'lucide-react';
 
 interface WorkspaceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
   workspace?: Workspace | null;
-  onSubmit: (workspace: Omit<Workspace, 'id'> | Workspace) => Promise<void>;
+  onSubmit: (workspace: Omit<Workspace, 'id'> | Workspace, selectedProjects?: Project[]) => Promise<void>;
   isLoading?: boolean;
 }
 
@@ -29,6 +31,8 @@ export function WorkspaceModal({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [selectedProjects, setSelectedProjects] = useState<Project[]>([]);
+  const [isProjectSelectModalOpen, setIsProjectSelectModalOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -38,6 +42,7 @@ export function WorkspaceModal({
       } else {
         setName('');
         setDescription('');
+        setSelectedProjects([]);
       }
       setError(null);
     }
@@ -54,7 +59,10 @@ export function WorkspaceModal({
 
     try {
       if (mode === 'create') {
-        await onSubmit({ name: name.trim(), description: description.trim() || undefined });
+        await onSubmit(
+          { name: name.trim(), description: description.trim() || undefined },
+          selectedProjects.length > 0 ? selectedProjects : undefined
+        );
       } else {
         await onSubmit({ id: workspace!.id, name: name.trim(), description: description.trim() || undefined });
       }
@@ -62,6 +70,16 @@ export function WorkspaceModal({
       const errorMessage = err instanceof Error ? err.message : '작업에 실패했습니다.';
       setError(errorMessage);
     }
+  };
+
+  const handleAddProject = (project: Project) => {
+    if (!selectedProjects.some((p) => p.id === project.id)) {
+      setSelectedProjects([...selectedProjects, project]);
+    }
+  };
+
+  const handleRemoveProject = (projectId: string) => {
+    setSelectedProjects(selectedProjects.filter((p) => p.id !== projectId));
   };
 
   return (
@@ -97,6 +115,53 @@ export function WorkspaceModal({
               placeholder="워크스페이스 설명을 입력하세요 (선택사항)"
               disabled={isLoading}
             />
+
+            {/* 프로젝트 할당 (생성 모드일 때만 표시) */}
+            {mode === 'create' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">프로젝트 할당 (선택사항)</label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setIsProjectSelectModalOpen(true)}
+                  disabled={isLoading}
+                >
+                  프로젝트 추가
+                </Button>
+
+                {/* 선택된 프로젝트 목록 */}
+                {selectedProjects.length > 0 && (
+                  <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                    {selectedProjects.map((project) => (
+                      <div
+                        key={project.id}
+                        className="flex items-center justify-between p-2 bg-accent rounded-md"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{project.name}</p>
+                          {project.description && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {project.description}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 ml-2"
+                          onClick={() => handleRemoveProject(project.id)}
+                          disabled={isLoading}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
@@ -108,6 +173,17 @@ export function WorkspaceModal({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* 프로젝트 선택 모달 */}
+      {mode === 'create' && (
+        <ProjectSelectModal
+          open={isProjectSelectModalOpen}
+          onOpenChange={setIsProjectSelectModalOpen}
+          onSelect={handleAddProject}
+          excludeProjectIds={selectedProjects.map((p) => p.id)}
+          isLoading={isLoading}
+        />
+      )}
     </Dialog>
   );
 }

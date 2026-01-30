@@ -44,11 +44,10 @@ export function useMenu() {
       // Check localStorage first
       const storedMenus = getMenuFromStorage();
       if (storedMenus && storedMenus.length > 0) {
-        // localStorage에 데이터가 있으면 우선 반환하고 백그라운드에서 갱신
-        // Return stored data first and refresh in background
-        fetchMenuFromAPI().catch((error) => {
-          console.error('Background menu refresh failed:', error);
-        });
+        // localStorage에 데이터가 있으면 우선 반환
+        // staleTime이 설정되어 있어 캐시가 유효하면 백그라운드 갱신은 불필요
+        // Return stored data first
+        // Background refresh is unnecessary if cache is valid due to staleTime
         return storedMenus;
       }
 
@@ -56,8 +55,11 @@ export function useMenu() {
       // Call API if no data in localStorage
       return await fetchMenuFromAPI();
     },
-    staleTime: 1000 * 60 * 5, // 5분
-    cacheTime: 1000 * 60 * 30, // 30분
+    staleTime: 1000 * 60 * 5, // 5분 - 캐시가 유효한 동안은 API 호출 안 함
+    gcTime: 1000 * 60 * 30, // 30분
+    // 초기 데이터를 localStorage에서 로드하여 즉시 렌더링
+    // Load initial data from localStorage for immediate rendering
+    placeholderData: typeof window !== 'undefined' ? getMenuFromStorage() || undefined : undefined,
   });
 
   return {

@@ -7,16 +7,23 @@ import { apiPost } from '@/lib/api/client';
 
 /**
  * Workload 목록 조회 Hook
+ * @param nsId - Project의 namespace ID (ns_id). 선택된 project가 있어야만 조회됨
  */
-export function useWorkloads() {
+export function useWorkloads(nsId?: string) {
   const { data, isLoading, error, refetch } = useQuery<Workload[]>({
-    queryKey: ['workloads'],
+    queryKey: ['workloads', nsId],
     queryFn: async () => {
+      if (!nsId) {
+        return [];
+      }
+
       // TODO: 실제 API 연동
       // const response = await apiPost<Workload[]>(
-      //   OPERATION_IDS.GET_WORKLOADS_LIST,
+      //   OPERATION_IDS.GET_ALL_MCI,
       //   {
-      //     request: {},
+      //     pathParams: {
+      //       nsId,
+      //     },
       //   }
       // );
       // return response.responseData || [];
@@ -24,6 +31,7 @@ export function useWorkloads() {
       // 임시 더미 데이터
       return [];
     },
+    enabled: !!nsId, // nsId가 있을 때만 조회
     staleTime: 1000 * 60 * 5, // 5분
   });
 

@@ -6,6 +6,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { AuthLink } from '@/components/auth/AuthLink';
 import { Logo } from '@/components/common/Logo';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/hooks/useAuth';
 import { LoginRequest } from '@/types/auth';
 import { ROUTES } from '@/constants/routes';
 import { apiPostByPath } from '@/lib/api/client';
@@ -21,11 +22,26 @@ import { useQueryClient } from '@tanstack/react-query';
 export function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isAuthenticated } = useAuth();
+  const { login } = useAuth();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [sessionMessage, setSessionMessage] = useState<string | undefined>();
+
+  // 로그인 페이지 로드 시 만료된 인증 상태 정리
+  // Clear expired authentication state on login page load
+  useEffect(() => {
+    const authState = useAuthStore.getState();
+    if (authState.isAuthenticated) {
+      // 쿠키 확인
+      const hasCookie = document.cookie.includes('access_token=');
+      if (!hasCookie) {
+        // 쿠키가 없으면 인증 상태가 유효하지 않으므로 정리
+        console.log('[LoginPage] Clearing expired auth state');
+        authState.logout();
+      }
+    }
+  }, []); // 마운트 시 한 번만 실행
 
   // URL 파라미터에서 세션 만료 메시지 확인
   // Check for session expiry message in URL params
@@ -44,14 +60,10 @@ export function LoginPageClient() {
     }
   }, [searchParams]);
 
-  // 이미 로그인된 경우 리다이렉트
-  // Redirect if already logged in
-  useEffect(() => {
-    if (isAuthenticated) {
-      const redirect = searchParams.get('redirect');
-      router.push(redirect || ROUTES.DASHBOARD);
-    }
-  }, [isAuthenticated, router, searchParams]);
+  // Note: 이미 로그인된 경우의 리다이렉트는 서버 컴포넌트(page.tsx)에서 처리됩니다.
+  // Redirect for already authenticated users is handled by the server component (page.tsx).
+  // 클라이언트에서 중복 체크하면 React 성능 측정과 충돌하여 타이밍 오류가 발생할 수 있습니다.
+  // Duplicate client-side check can cause timing conflicts with React's performance measurement.
 
   /**
    * 로그인 처리
@@ -69,10 +81,12 @@ export function LoginPageClient() {
       // 메뉴 조회 및 저장
       // Fetch and store menus
       try {
-        await fetchAndStoreMenus();
-        // React Query 캐시 무효화하여 사이드바에서 최신 메뉴 조회
-        // Invalidate React Query cache to fetch latest menu in sidebar
-        queryClient.invalidateQueries({ queryKey: ['menu'] });
+        const menuTree = await fetchAndStoreMenus();
+        // React Query 캐시에 직접 설정하여 중복 API 호출 방지
+        // Set React Query cache directly to prevent duplicate API calls
+        if (menuTree && menuTree.length > 0) {
+          queryClient.setQueryData(['menu'], menuTree);
+        }
       } catch (menuError) {
         console.error('Menu fetch error:', menuError);
         // 메뉴 조회 실패해도 로그인은 성공한 것으로 처리
@@ -94,8 +108,8 @@ export function LoginPageClient() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted px-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted px-8">
+      <div className="w-full max-w-7xl space-y-8">
         <div className="flex justify-center">
           <Logo />
         </div>
@@ -124,8 +138,9 @@ export function LoginPageClient() {
 /**
  * 메뉴 조회 및 로컬 스토리지에 저장
  * Fetch menus and store in localStorage
+ * @returns {Promise<MenuItem[] | null>} 메뉴 트리 또는 null
  */
-async function fetchAndStoreMenus() {
+async function fetchAndStoreMenus(): Promise<MenuItem[] | null> {
   try {
     // 메뉴 조회 API 호출
     // Call menu API
@@ -153,11 +168,16 @@ async function fetchAndStoreMenus() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('menuList', JSON.stringify(menuTree));
       }
+
+      return menuTree;
     }
+
+    return null;
   } catch (error) {
     console.error('Failed to fetch menus:', error);
     // 메뉴 조회 실패는 로그인을 막지 않음
     // Menu fetch failure doesn't prevent login
+    return null;
   }
 }
 

@@ -55,7 +55,7 @@ export function useUserWorkspaces() {
       
       // ListUserWorkspaces operationId 사용 (사용자에게 할당된 워크스페이스 목록)
       const response = await apiPost<Workspace[]>(
-        OPERATION_IDS.GET_WORKSPACE_LIST_BY_USER_ID,
+        OPERATION_IDS.LIST_USER_WORKSPACES,
         requestData
       );
 

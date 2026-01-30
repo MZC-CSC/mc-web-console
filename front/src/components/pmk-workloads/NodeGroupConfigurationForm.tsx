@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { FormInput } from '@/components/common/FormInput';
+import { FormNumberInput } from '@/components/common/FormNumberInput';
 import { FormSelect } from '@/components/common/FormSelect';
 import { Button } from '@/components/common/Button';
 import { NodeGroupCreateRequest } from '@/types/pmk-workloads';
@@ -37,12 +38,15 @@ export function NodeGroupConfigurationForm({
   const [isOpen, setIsOpen] = useState(true);
   const [name, setName] = useState(nodeGroup.name || '');
   const [instanceType, setInstanceType] = useState(nodeGroup.instanceType || '');
+  const [imageId, setImageId] = useState(nodeGroup.imageId || '');
   const [minSize, setMinSize] = useState(nodeGroup.minSize?.toString() || '1');
   const [maxSize, setMaxSize] = useState(nodeGroup.maxSize?.toString() || '3');
   const [desiredSize, setDesiredSize] = useState(nodeGroup.desiredSize?.toString() || '1');
   const [autoScaling, setAutoScaling] = useState(true);
   const [rootDiskType, setRootDiskType] = useState('');
   const [rootDiskSize, setRootDiskSize] = useState('');
+  const [isSpecModalOpen, setIsSpecModalOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const handleUpdate = () => {
     onUpdate({
@@ -161,9 +165,8 @@ export function NodeGroupConfigurationForm({
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <FormInput
+            <FormNumberInput
               label="Min Node Size"
-              type="number"
               value={minSize}
               onChange={(e) => {
                 setMinSize(e.target.value);
@@ -172,12 +175,11 @@ export function NodeGroupConfigurationForm({
               placeholder="1"
               required
               disabled={isLoading}
-              min="1"
+              min={1}
             />
 
-            <FormInput
+            <FormNumberInput
               label="Max Node Size"
-              type="number"
               value={maxSize}
               onChange={(e) => {
                 setMaxSize(e.target.value);
@@ -186,12 +188,11 @@ export function NodeGroupConfigurationForm({
               placeholder="3"
               required
               disabled={isLoading}
-              min="1"
+              min={1}
             />
 
-            <FormInput
+            <FormNumberInput
               label="Desired Node Size"
-              type="number"
               value={desiredSize}
               onChange={(e) => {
                 setDesiredSize(e.target.value);
@@ -200,7 +201,7 @@ export function NodeGroupConfigurationForm({
               placeholder="1"
               required
               disabled={isLoading}
-              min="1"
+              min={1}
             />
           </div>
 
@@ -239,9 +240,8 @@ export function NodeGroupConfigurationForm({
                 disabled={isLoading}
               />
 
-              <FormInput
+              <FormNumberInput
                 label="Root Disk Size (GB)"
-                type="number"
                 value={rootDiskSize}
                 onChange={(e) => {
                   setRootDiskSize(e.target.value);
@@ -249,7 +249,7 @@ export function NodeGroupConfigurationForm({
                 }}
                 placeholder="20"
                 disabled={isLoading}
-                min="1"
+                min={1}
               />
             </div>
           )}

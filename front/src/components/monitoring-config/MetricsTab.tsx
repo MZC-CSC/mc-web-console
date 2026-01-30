@@ -22,21 +22,25 @@ export function MetricsTab({ serverId }: MetricsTabProps) {
 
   const metricsColumns: ColumnDef<MonitorMetric>[] = [
     {
+      id: 'name',
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
     },
     {
+      id: 'measurement',
       accessorKey: 'measurement',
       header: 'Measurement',
       cell: ({ row }) => <div>{row.getValue('measurement') || '-'}</div>,
     },
     {
+      id: 'field',
       accessorKey: 'field',
       header: 'Field',
       cell: ({ row }) => <div>{row.getValue('field') || '-'}</div>,
     },
     {
+      id: 'enabled',
       accessorKey: 'enabled',
       header: 'Enabled',
       cell: ({ row }) => {
@@ -56,16 +60,19 @@ export function MetricsTab({ serverId }: MetricsTabProps) {
 
   const pluginsColumns: ColumnDef<MetricPlugin>[] = [
     {
+      id: 'name',
       accessorKey: 'name',
       header: 'Name',
       cell: ({ row }) => <div className="font-medium">{row.getValue('name')}</div>,
     },
     {
+      id: 'type',
       accessorKey: 'type',
       header: 'Type',
       cell: ({ row }) => <div>{row.getValue('type') || '-'}</div>,
     },
     {
+      id: 'enabled',
       accessorKey: 'enabled',
       header: 'Enabled',
       cell: ({ row }) => {
@@ -98,7 +105,7 @@ export function MetricsTab({ serverId }: MetricsTabProps) {
               <TableHeader>
                 <TableRow>
                   {metricsColumns.map((column) => (
-                    <TableHead key={column.id || (column.accessorKey as string)}>
+                    <TableHead key={column.id}>
                       {typeof column.header === 'string' ? column.header : column.id}
                     </TableHead>
                   ))}
@@ -115,9 +122,9 @@ export function MetricsTab({ serverId }: MetricsTabProps) {
                   monitorMetrics.map((metric) => (
                     <TableRow key={metric.id}>
                       {metricsColumns.map((column) => {
-                        const accessorKey = column.accessorKey as keyof MonitorMetric;
-                        const value = metric[accessorKey];
-                        const cell = column.cell
+                        const columnId = column.id as keyof MonitorMetric;
+                        const value = metric[columnId];
+                        const cell = column.cell && typeof column.cell === 'function'
                           ? column.cell({
                               row: {
                                 getValue: (key: string) => metric[key as keyof MonitorMetric],
@@ -126,7 +133,7 @@ export function MetricsTab({ serverId }: MetricsTabProps) {
                             } as any)
                           : value;
                         return (
-                          <TableCell key={column.id || (accessorKey as string)}>
+                          <TableCell key={column.id}>
                             {cell}
                           </TableCell>
                         );
@@ -148,7 +155,7 @@ export function MetricsTab({ serverId }: MetricsTabProps) {
               <TableHeader>
                 <TableRow>
                   {pluginsColumns.map((column) => (
-                    <TableHead key={column.id || (column.accessorKey as string)}>
+                    <TableHead key={column.id}>
                       {typeof column.header === 'string' ? column.header : column.id}
                     </TableHead>
                   ))}
@@ -165,9 +172,9 @@ export function MetricsTab({ serverId }: MetricsTabProps) {
                   metricPlugins.map((plugin) => (
                     <TableRow key={plugin.id}>
                       {pluginsColumns.map((column) => {
-                        const accessorKey = column.accessorKey as keyof MetricPlugin;
-                        const value = plugin[accessorKey];
-                        const cell = column.cell
+                        const columnId = column.id as keyof MetricPlugin;
+                        const value = plugin[columnId];
+                        const cell = column.cell && typeof column.cell === 'function'
                           ? column.cell({
                               row: {
                                 getValue: (key: string) => plugin[key as keyof MetricPlugin],
@@ -176,7 +183,7 @@ export function MetricsTab({ serverId }: MetricsTabProps) {
                             } as any)
                           : value;
                         return (
-                          <TableCell key={column.id || (accessorKey as string)}>
+                          <TableCell key={column.id}>
                             {cell}
                           </TableCell>
                         );

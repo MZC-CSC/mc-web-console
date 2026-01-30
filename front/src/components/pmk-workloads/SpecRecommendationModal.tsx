@@ -77,7 +77,6 @@ export function SpecRecommendationModal({
               value={priority}
               onChange={(value) => setPriority(value)}
               options={[
-                { value: '', label: '전체' },
                 { value: 'cost', label: 'Cost' },
                 { value: 'performance', label: 'Performance' },
               ]}

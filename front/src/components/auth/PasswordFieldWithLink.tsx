@@ -50,25 +50,15 @@ export function PasswordFieldWithLink({
 }: PasswordFieldWithLinkProps) {
   return (
     <div className={cn('space-y-2', className)}>
-      <div className="flex justify-between items-center">
-        <Label
-          htmlFor="password"
-          className={cn(
-            'text-sm font-medium',
-            required && "after:content-['*'] after:ml-0.5 after:text-destructive"
-          )}
-        >
-          비밀번호
-        </Label>
-        {onForgotPasswordClick && (
-          <AuthLink
-            variant="forgot"
-            onClick={onForgotPasswordClick}
-          >
-            {forgotPasswordLinkText}
-          </AuthLink>
+      <Label
+        htmlFor="password"
+        className={cn(
+          'text-sm font-medium',
+          required && "after:content-['*'] after:ml-0.5 after:text-destructive"
         )}
-      </div>
+      >
+        비밀번호
+      </Label>
       <div className="space-y-2">
         <Input
           id="password"
@@ -86,6 +76,16 @@ export function PasswordFieldWithLink({
           <div className="flex items-center gap-1 text-sm text-destructive">
             <AlertCircle className="h-4 w-4" />
             <span>{error}</span>
+          </div>
+        )}
+        {onForgotPasswordClick && (
+          <div className="text-right">
+            <AuthLink
+              variant="forgot"
+              onClick={onForgotPasswordClick}
+            >
+              {forgotPasswordLinkText}
+            </AuthLink>
           </div>
         )}
       </div>

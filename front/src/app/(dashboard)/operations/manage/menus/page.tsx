@@ -139,32 +139,24 @@ export default function MenusPage() {
     }
   };
 
-  const handleModalSubmit = async (menuData: {
-    id?: string;
-    displayName: string;
-    parentMenuId?: string;
-    priority: number;
-    menunumber?: number;
-    isAction: boolean;
-    path?: string;
-  }) => {
+  const handleModalSubmit = async (menuData: Omit<MenuItem, 'id' | 'menus'> | MenuItem) => {
     try {
       if (modalMode === 'create') {
         await createMutation.mutateAsync({
-          displayName: menuData.displayName,
-          parentMenuId: menuData.parentMenuId,
+          displayName: menuData.name,
+          parentMenuId: menuData.parentId,
           priority: menuData.priority,
-          menunumber: menuData.menunumber,
+          menunumber: menuData.menuNumber,
           isAction: menuData.isAction,
           path: menuData.path,
         });
       } else {
         await updateMutation.mutateAsync({
-          id: menuData.id!,
-          displayName: menuData.displayName,
-          parentMenuId: menuData.parentMenuId,
+          id: ('id' in menuData) ? menuData.id : '',
+          displayName: menuData.name,
+          parentMenuId: menuData.parentId,
           priority: menuData.priority,
-          menunumber: menuData.menunumber,
+          menunumber: menuData.menuNumber,
           isAction: menuData.isAction,
           path: menuData.path,
         });

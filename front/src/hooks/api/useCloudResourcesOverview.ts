@@ -19,7 +19,6 @@ export function useCloudResourcesOverview() {
           request: {},
         }
       );
-
       return response.responseData || {};
     },
     staleTime: 1000 * 60 * 5, // 5분

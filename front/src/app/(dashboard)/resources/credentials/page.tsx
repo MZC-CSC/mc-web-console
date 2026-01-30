@@ -10,6 +10,9 @@ import {
 } from '@/hooks/api/useCredentials';
 import { CredentialModal } from '@/components/credentials/CredentialModal';
 import { CredentialDetail } from '@/components/credentials/CredentialDetail';
+import { WorkspaceProjectSelector } from '@/components/common/WorkspaceProjectSelector';
+import { useWorkspaceProjectSelection } from '@/hooks/useWorkspaceProjectSelection';
+import { Card } from '@/components/ui/card';
 
 /**
  * Credentials 관리 페이지
@@ -17,6 +20,15 @@ import { CredentialDetail } from '@/components/credentials/CredentialDetail';
 export default function CredentialsPage() {
   const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Workspace/Project 선택 및 복원 (공통 Hook 사용)
+  const {
+    selectedWorkspaceId,
+    selectedProjectId,
+    isWorkspaceProjectSelected,
+    handleWorkspaceChange,
+    handleProjectChange,
+  } = useWorkspaceProjectSelection();
 
   const { credentials, isLoading, refetch } = useCredentials();
   const registerMutation = useRegisterCredential();
@@ -54,7 +66,18 @@ export default function CredentialsPage() {
   };
 
   return (
-    <>
+    <div className="space-y-6">
+      {/* Workspace/Project 선택 */}
+      <Card className="p-6">
+        <WorkspaceProjectSelector
+          selectedWorkspaceId={selectedWorkspaceId}
+          selectedProjectId={selectedProjectId}
+          onWorkspaceChange={handleWorkspaceChange}
+          onProjectChange={handleProjectChange}
+        />
+      </Card>
+
+      {/* Credentials 목록 (전역 리소스이므로 선택 없이도 표시) */}
       <CrudPageTemplate
         data={credentials}
         columns={columns}
@@ -63,7 +86,7 @@ export default function CredentialsPage() {
         onRefresh={refetch}
         isLoading={isLoading}
         onAdd={handleAdd}
-        detailComponent={CredentialDetail}
+        detailComponent={(props) => <CredentialDetail credential={props.item} />}
         title="Credentials"
         addButtonLabel="Credential 등록"
         emptyMessage="Credential이 없습니다."
@@ -77,6 +100,6 @@ export default function CredentialsPage() {
           isLoading={registerMutation.isPending}
         />
       )}
-    </>
+    </div>
   );
 }

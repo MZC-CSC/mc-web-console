@@ -18,6 +18,7 @@ interface LogMonitorFormProps {
   onServerChange: (serverId: string | null) => void;
   onKeywordChange: (keyword: string) => void;
   onSearch: () => void;
+  nsId?: string;
 }
 
 /**
@@ -32,8 +33,9 @@ export function LogMonitorForm({
   onServerChange,
   onKeywordChange,
   onSearch,
+  nsId,
 }: LogMonitorFormProps) {
-  const { workloads, isLoading: isWorkloadsLoading } = useWorkloads();
+  const { workloads, isLoading: isWorkloadsLoading } = useWorkloads(nsId);
   const { servers, isLoading: isServersLoading } = useServers(selectedWorkload);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export function LogMonitorForm({
           <FormSelect
             label="Workload"
             value={selectedWorkload || ''}
-            onChange={(e) => onWorkloadChange(e.target.value || null)}
+            onChange={(value) => onWorkloadChange(value || null)}
             options={workloadOptions}
             placeholder="Workload 선택"
             disabled={isWorkloadsLoading}
@@ -73,7 +75,7 @@ export function LogMonitorForm({
           <FormSelect
             label="Server"
             value={selectedServer || ''}
-            onChange={(e) => onServerChange(e.target.value || null)}
+            onChange={(value) => onServerChange(value || null)}
             options={serverOptions}
             placeholder="Server 선택"
             disabled={!selectedWorkload || isServersLoading}

@@ -212,6 +212,85 @@
   interface UpdateWorkspaceResponse {}
   ```
 
+### 5.4 API Hook 반환 타입 규칙
+
+**중요**: API 응답 처리는 3단계로 구분됩니다.
+
+#### 1단계: API 함수 (apiPost 등)
+- **항상 `ApiResponse<T>` 전체 반환**
+  ```typescript
+  const response = await apiPost<Workspace[]>(OPERATION_IDS.GET_WORKSPACE_LIST, {});
+  // response: ApiResponse<Workspace[]>
+  ```
+
+#### 2단계: Hook 내부 (queryFn/mutationFn)
+- **API 응답을 그대로 반환**
+  ```typescript
+  queryFn: async () => {
+    const response = await apiPost<Workspace[]>(OPERATION_IDS.GET_WORKSPACE_LIST, {});
+    return response; // ApiResponse<Workspace[]> 전체
+  }
+  ```
+
+- **useQuery/useMutation 타입 지정**
+  ```typescript
+  const { data, isLoading } = useQuery<ApiResponse<Workspace[]>>({
+    queryKey: ['workspaces'],
+    queryFn: async () => { /* ... */ }
+  });
+  ```
+
+#### 3단계: Hook return
+- **`responseData`를 추출하여 의미있는 필드명으로 반환**
+- **절대 `response` 필드명 사용 금지** (모델 타입과 혼동)
+  ```typescript
+  export function useWorkspaces() {
+    const { data, isLoading, error, refetch } = useQuery<ApiResponse<Workspace[]>>({ /* ... */ });
+
+    return {
+      workspaces: data?.responseData || [],  // 모델 추출
+      isLoading,
+      error,
+      refetch,
+    };
+  }
+  ```
+
+- **복잡한 변환이 필요한 경우**:
+  ```typescript
+  export function useMCIStatus(nsId?: string) {
+    const { data, isLoading } = useQuery<ApiResponse<MciStatusResponse>>({ /* ... */ });
+
+    const mciStatus: MCIStatus = {
+      total: data?.responseData?.statusCounts?.total || 0,
+      running: data?.responseData?.statusCounts?.running || 0,
+      // ...
+    };
+
+    return {
+      mciStatus,  // 변환된 모델
+      isLoading,
+      error,
+      refetch,
+    };
+  }
+  ```
+
+#### 4단계: 컴포넌트/Page 사용
+- **Hook에서 반환한 모델을 바로 사용**
+  ```typescript
+  const { workspaces, isLoading } = useWorkspaces();
+  // workspaces는 Workspace[] 타입
+
+  const { mciStatus } = useMCIStatus(nsId);
+  // mciStatus는 MCIStatus 타입
+  ```
+
+**이유**:
+- Backend는 항상 `{ status, responseData }` 구조로 응답
+- Hook은 responseData를 추출하여 사용하기 편한 형태로 제공
+- Page/Component는 비즈니스 로직에만 집중
+
 ---
 
 ## 6. 상수 네이밍

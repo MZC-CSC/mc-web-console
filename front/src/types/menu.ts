@@ -41,7 +41,7 @@ export function convertBackendMenuToMenuItem(
 ): MenuItem {
   // isAction 문자열을 boolean으로 변환
   // Convert isAction string to boolean
-  const isAction = backendMenu.isAction === 'true' || backendMenu.isAction === true;
+  const isAction = backendMenu.isAction === 'true';
   
   // priority 문자열을 숫자로 변환
   // Convert priority string to number
@@ -90,7 +90,7 @@ function flattenBackendMenu(
   const items: MenuItem[] = [];
   
   // 현재 메뉴 변환
-  const isAction = backendMenu.isAction === 'true' || backendMenu.isAction === true;
+  const isAction = backendMenu.isAction === 'true';
   const priority = parseInt(backendMenu.priority, 10) || 0;
   const menuNumber = backendMenu.menunumber ? parseInt(backendMenu.menunumber, 10) : 0;
   const path = parentPath ? `${parentPath}/${backendMenu.id}` : `/${backendMenu.id}`;

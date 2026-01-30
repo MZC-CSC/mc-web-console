@@ -21,6 +21,7 @@ export function EventAlarmsTab({ policySeq }: EventAlarmsTabProps) {
 
   const columns: ColumnDef<EventAlarm>[] = [
     {
+      id: 'occurTime',
       accessorKey: 'occurTime',
       header: 'Occur Time',
       cell: ({ row }) => {
@@ -29,16 +30,19 @@ export function EventAlarmsTab({ policySeq }: EventAlarmsTabProps) {
       },
     },
     {
+      id: 'metric',
       accessorKey: 'metric',
       header: 'Metric',
       cell: ({ row }) => <div>{row.getValue('metric') || '-'}</div>,
     },
     {
+      id: 'hostname',
       accessorKey: 'hostname',
       header: 'Hostname',
       cell: ({ row }) => <div>{row.getValue('hostname') || '-'}</div>,
     },
     {
+      id: 'level',
       accessorKey: 'level',
       header: 'Level',
       cell: ({ row }) => {
@@ -60,6 +64,7 @@ export function EventAlarmsTab({ policySeq }: EventAlarmsTabProps) {
       },
     },
     {
+      id: 'createdAt',
       accessorKey: 'createdAt',
       header: 'Created At',
       cell: ({ row }) => {
@@ -80,7 +85,7 @@ export function EventAlarmsTab({ policySeq }: EventAlarmsTabProps) {
           <TableHeader>
             <TableRow>
               {columns.map((column) => (
-                <TableHead key={column.id || (column.accessorKey as string)}>
+                <TableHead key={column.id}>
                   {typeof column.header === 'string' ? column.header : column.id}
                 </TableHead>
               ))}
@@ -101,9 +106,9 @@ export function EventAlarmsTab({ policySeq }: EventAlarmsTabProps) {
                   onClick={() => setSelectedEvent(eventAlarm)}
                 >
                   {columns.map((column) => {
-                    const accessorKey = column.accessorKey as keyof EventAlarm;
-                    const value = eventAlarm[accessorKey];
-                    const cell = column.cell
+                    const columnId = column.id as keyof EventAlarm;
+                    const value = eventAlarm[columnId];
+                    const cell = column.cell && typeof column.cell === 'function'
                       ? column.cell({
                           row: {
                             getValue: (key: string) => eventAlarm[key as keyof EventAlarm],
@@ -112,7 +117,7 @@ export function EventAlarmsTab({ policySeq }: EventAlarmsTabProps) {
                         } as any)
                       : value;
                     return (
-                      <TableCell key={column.id || (accessorKey as string)}>
+                      <TableCell key={column.id}>
                         {cell}
                       </TableCell>
                     );

@@ -198,6 +198,8 @@ func AuthMCIAMLogin(c buffalo.Context) error {
 }
 
 func AuthMCIAMLoginRefresh(c buffalo.Context) error {
+	log.Println("@@@ AuthMCIAMLoginRefresh called")
+
 	commonRequest := &handler.CommonRequest{}
 	c.Bind(commonRequest)
 
@@ -208,23 +210,19 @@ func AuthMCIAMLoginRefresh(c buffalo.Context) error {
 	var userId string
 	if userIdVal := c.Value("UserId"); userIdVal != nil {
 		userId = userIdVal.(string)
+		log.Println("@@@ AuthMCIAMLoginRefresh: UserId from context:", userId)
 	} else {
-		// Extract UserId from access token
+		// Extract UserId from access token (만료된 token도 처리 가능)
 		accessToken := strings.TrimPrefix(c.Request().Header.Get("Authorization"), "Bearer ")
+		log.Println("@@@ AuthMCIAMLoginRefresh: Extracting userId from access token, token length:", len(accessToken))
 		// Extract preferred_username from token (DB stores this, not sub UUID)
 		preferredUsername, err := extractPreferredUsernameFromToken(accessToken)
 		if err != nil {
-			log.Println("AuthMCIAMLoginRefresh: Failed to extract preferred_username from token:", err.Error())
-			// Fallback to claims.UserID if token parsing fails
-			claims, claimsErr := iamtokenvalidator.GetTokenClaimsByIamManagerClaims(accessToken)
-			if claimsErr != nil {
-				return c.Render(http.StatusUnauthorized, r.JSON(map[string]interface{}{"error": "Invalid token: " + claimsErr.Error()}))
-			}
-			userId = claims.UserID
-		} else {
-			userId = preferredUsername
+			log.Println("@@@ AuthMCIAMLoginRefresh: Failed to extract preferred_username from token:", err.Error())
+			return c.Render(http.StatusUnauthorized, r.JSON(map[string]interface{}{"error": "Failed to extract user information from token"}))
 		}
-		log.Println("AuthMCIAMLoginRefresh: Extracted UserId from token:", userId)
+		userId = preferredUsername
+		log.Println("@@@ AuthMCIAMLoginRefresh: Extracted UserId from token:", userId)
 	}
 
 	log.Println("AuthMCIAMLoginRefresh commonRequest : ", commonRequest)
@@ -242,7 +240,7 @@ func AuthMCIAMLoginRefresh(c buffalo.Context) error {
 
 	if refreshToken != "" {
 		// Use provided refresh_token
-		refreshRes, _ = handler.AnyCaller(c, "mciamRefreshToken", commonRequest, true)
+		refreshRes, _ = handler.AnyCaller(c, "mciamRefreshToken", commonRequest, false)
 	} else {
 		// Get refresh_token from DB
 		sess, err := self.GetUserByUserId(tx, userId)
@@ -251,7 +249,7 @@ func AuthMCIAMLoginRefresh(c buffalo.Context) error {
 			return c.Render(http.StatusInternalServerError, r.JSON(map[string]interface{}{"error": err.Error()}))
 		}
 		commonRequest.Request = map[string]interface{}{"refresh_token": sess.RefreshToken}
-		refreshRes, _ = handler.AnyCaller(c, "mciamRefreshToken", commonRequest, true)
+		refreshRes, _ = handler.AnyCaller(c, "mciamRefreshToken", commonRequest, false)
 	}
 	if refreshRes.Status.StatusCode != 200 {
 		return c.Render(refreshRes.Status.StatusCode, r.JSON(map[string]interface{}{"error": refreshRes.Status.Message}))

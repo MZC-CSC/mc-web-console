@@ -3,15 +3,15 @@
 import { useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { CrudPageTemplate } from '@/components/templates/CrudPageTemplate';
-import { WorkspaceSelector } from '@/components/common/WorkspaceSelector';
-import { ProjectSelector } from '@/components/common/ProjectSelector';
+import { WorkspaceProjectSelector } from '@/components/common/WorkspaceProjectSelector';
+import { useWorkspaceProjectSelection } from '@/hooks/useWorkspaceProjectSelection';
+import { Card } from '@/components/ui/card';
 import { SecurityGroup } from '@/types/resources';
 import {
   useSecurityGroups,
   useCreateSecurityGroup,
   useDeleteSecurityGroup,
 } from '@/hooks/api/useSecurityGroups';
-import { useProject } from '@/hooks/useProject';
 import { SecurityGroupModal } from '@/components/security-groups/SecurityGroupModal';
 import { SecurityGroupDetail } from '@/components/security-groups/SecurityGroupDetail';
 
@@ -19,12 +19,23 @@ import { SecurityGroupDetail } from '@/components/security-groups/SecurityGroupD
  * Security Groups 관리 페이지
  */
 export default function SecurityGroupsPage() {
-  const { currentProject } = useProject();
-  const nsId = currentProject?.ns_id || null;
   const [selectedSecurityGroup, setSelectedSecurityGroup] = useState<SecurityGroup | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { securityGroups, isLoading, refetch } = useSecurityGroups(nsId);
+  // Workspace/Project 선택 및 복원 (공통 Hook 사용)
+  const {
+    selectedWorkspaceId,
+    selectedProjectId,
+    selectedProject,
+    isWorkspaceProjectSelected,
+    handleWorkspaceChange,
+    handleProjectChange,
+  } = useWorkspaceProjectSelection();
+
+  // 선택된 project의 ns_id 조회
+  const nsId = selectedProject?.nsid;
+
+  const { securityGroups, isLoading, refetch } = useSecurityGroups(nsId || null);
   const createMutation = useCreateSecurityGroup();
   const deleteMutation = useDeleteSecurityGroup();
 
@@ -51,16 +62,16 @@ export default function SecurityGroupsPage() {
   ];
 
   const handleAdd = () => {
-    if (!nsId) {
-      alert('Namespace를 선택해주세요.');
+    if (!isWorkspaceProjectSelected || !nsId) {
+      alert('Workspace와 Project를 선택해주세요.');
       return;
     }
     setIsModalOpen(true);
   };
 
   const handleDelete = async (securityGroup: SecurityGroup) => {
-    if (!nsId) {
-      alert('Namespace를 선택해주세요.');
+    if (!isWorkspaceProjectSelected || !nsId) {
+      alert('Workspace와 Project를 선택해주세요.');
       return;
     }
     if (confirm(`정말로 "${securityGroup.name}" Security Group을 삭제하시겠습니까?`)) {
@@ -91,34 +102,58 @@ export default function SecurityGroupsPage() {
   return (
     <div className="space-y-6">
       {/* Workspace/Project 선택 */}
-      <div className="flex gap-4">
-        <WorkspaceSelector />
-        <ProjectSelector />
-      </div>
-
-      {/* Security Groups 목록 */}
-      <CrudPageTemplate
-        data={securityGroups}
-        columns={columns}
-        selectedItem={selectedSecurityGroup}
-        onItemSelect={setSelectedSecurityGroup}
-        onRefresh={refetch}
-        isLoading={isLoading}
-        onAdd={handleAdd}
-        onDelete={handleDelete}
-        detailComponent={SecurityGroupDetail}
-        title="Security Groups"
-        addButtonLabel="Security Group 추가"
-        emptyMessage="Security Group이 없습니다."
-      />
-
-      {isModalOpen && (
-        <SecurityGroupModal
-          open={isModalOpen}
-          onOpenChange={setIsModalOpen}
-          onSubmit={handleModalSubmit}
-          isLoading={createMutation.isPending}
+      <Card className="p-6">
+        <WorkspaceProjectSelector
+          selectedWorkspaceId={selectedWorkspaceId}
+          selectedProjectId={selectedProjectId}
+          onWorkspaceChange={handleWorkspaceChange}
+          onProjectChange={handleProjectChange}
         />
+      </Card>
+
+      {/* Workspace/Project 선택 안내 */}
+      {!isWorkspaceProjectSelected && (
+        <Card className="p-4 bg-muted/50">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="font-medium">안내:</span>
+            <span>
+              {!selectedWorkspaceId
+                ? 'Security Groups를 조회하려면 Workspace를 선택하세요.'
+                : !selectedProjectId
+                  ? 'Security Groups를 조회하려면 Project를 선택하세요.'
+                  : ''}
+            </span>
+          </div>
+        </Card>
+      )}
+
+      {/* Security Groups 목록 (Project 선택 시에만 표시) */}
+      {isWorkspaceProjectSelected && (
+        <>
+          <CrudPageTemplate
+            data={securityGroups}
+            columns={columns}
+            selectedItem={selectedSecurityGroup}
+            onItemSelect={setSelectedSecurityGroup}
+            onRefresh={refetch}
+            isLoading={isLoading}
+            onAdd={handleAdd}
+            onDelete={handleDelete}
+            detailComponent={(props) => <SecurityGroupDetail securityGroup={props.item} />}
+            title="Security Groups"
+            addButtonLabel="Security Group 추가"
+            emptyMessage="Security Group이 없습니다."
+          />
+
+          {isModalOpen && (
+            <SecurityGroupModal
+              open={isModalOpen}
+              onOpenChange={setIsModalOpen}
+              onSubmit={handleModalSubmit}
+              isLoading={createMutation.isPending}
+            />
+          )}
+        </>
       )}
     </div>
   );

@@ -22,7 +22,7 @@ export function useDisks(nsId: string | null) {
         OPERATION_IDS.GET_DISK_LIST,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: {},
         }
@@ -57,8 +57,8 @@ export function useDisk(nsId: string | null, dataDiskId: string | null) {
         OPERATION_IDS.GET_DISK,
         {
           pathParams: {
-            nsId,
-            dataDiskId,
+            nsId: String(nsId),
+            dataDiskId: String(dataDiskId),
           },
           request: {},
         }
@@ -89,7 +89,7 @@ export function useCreateDisk() {
         OPERATION_IDS.CREATE_DISK,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: disk,
         }
@@ -120,8 +120,8 @@ export function useUpdateDisk() {
         OPERATION_IDS.UPDATE_DISK,
         {
           pathParams: {
-            nsId,
-            dataDiskId,
+            nsId: String(nsId),
+            dataDiskId: String(dataDiskId),
           },
           request: disk,
         }
@@ -153,8 +153,8 @@ export function useDeleteDisk() {
         OPERATION_IDS.DELETE_DISK,
         {
           pathParams: {
-            nsId,
-            dataDiskId,
+            nsId: String(nsId),
+            dataDiskId: String(dataDiskId),
           },
           request: {},
         }

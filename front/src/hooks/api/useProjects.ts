@@ -27,7 +27,7 @@ export function useWorkspaceProjects(workspaceId?: string): {
         OPERATION_IDS.GET_WORKSPACE_PROJECTS_BY_WORKSPACE_ID,
         {
           pathParams: {
-            workspaceId: workspaceId,
+            workspaceId: String(workspaceId),
           },
         }
       );
@@ -87,7 +87,7 @@ export function useAllProjects() {
 }
 
 /**
- * 워크스페이스에 프로젝트 추가 Hook
+ * 워크스페이스에 프로젝트 추가 Hook (단일 또는 복수)
  */
 export function useAddProjectToWorkspace() {
   const queryClient = useQueryClient();
@@ -96,14 +96,24 @@ export function useAddProjectToWorkspace() {
     mutationFn: async ({
       workspaceId,
       projectId,
+      projectIds,
     }: {
       workspaceId: string;
-      projectId: string;
+      projectId?: string;
+      projectIds?: string[];
     }) => {
+      // projectIds가 주어지면 사용, 아니면 projectId를 배열로 변환
+      const ids = projectIds || (projectId ? [projectId] : []);
+
+      if (ids.length === 0) {
+        throw new Error('projectId 또는 projectIds가 필요합니다.');
+      }
+
+      // Buffalo API는 request 래퍼를 기대하고, 내부 데이터는 projectIds (배열) 형식
       const response = await apiPost(OPERATION_IDS.ADD_PROJECT_TO_WORKSPACE, {
         request: {
           workspaceId,
-          projectId,
+          projectIds: ids,
         },
       });
 
@@ -132,12 +142,13 @@ export function useRemoveProjectFromWorkspace() {
       workspaceId: string;
       projectId: string;
     }) => {
+      // Buffalo API는 request 래퍼를 기대하고, 내부 데이터는 projectIds (배열) 형식
       const response = await apiPost(
         OPERATION_IDS.REMOVE_PROJECT_FROM_WORKSPACE,
         {
           request: {
             workspaceId,
-            projectId,
+            projectIds: [projectId],
           },
         }
       );
@@ -179,6 +190,35 @@ export function useCreateProject() {
     onSuccess: () => {
       // 전체 프로젝트 목록 갱신
       queryClient.invalidateQueries({ queryKey: ['all-projects'] });
+    },
+  });
+}
+
+/**
+ * 프로젝트 삭제 Hook
+ */
+export function useDeleteProject() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      await apiPost(
+        OPERATION_IDS.DELETE_PROJECT,
+        {
+          pathParams: {
+            id: projectId,
+          },
+          request: {},
+        }
+      );
+
+      return projectId;
+    },
+    onSuccess: () => {
+      // 전체 프로젝트 목록 갱신
+      queryClient.invalidateQueries({ queryKey: ['all-projects'] });
+      // 워크스페이스별 프로젝트 목록도 갱신
+      queryClient.invalidateQueries({ queryKey: ['workspace-projects'] });
     },
   });
 }

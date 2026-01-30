@@ -192,7 +192,7 @@ export function Sidebar({ className }: SidebarProps) {
     );
   }
 
-  if (!menuItems || menuItems.length === 0) {
+  if (!menuItems || !Array.isArray(menuItems) || menuItems.length === 0) {
     return (
       <aside className={cn('w-64 border-r bg-background p-4', className)}>
         <nav className="space-y-1">

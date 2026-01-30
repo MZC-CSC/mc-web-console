@@ -2,38 +2,121 @@
 
 ```yaml
 - generic [active] [ref=e1]:
-  - generic [ref=e4]:
-    - generic [ref=e6]:
-      - generic [ref=e8]: MC
-      - generic [ref=e9]: MC Web Console
-    - generic [ref=e10]:
-      - generic [ref=e11]:
-        - generic [ref=e12]: 로그인
-        - generic [ref=e13]: MC Web Console에 로그인하세요
-      - generic [ref=e14]:
-        - generic [ref=e15]:
-          - generic [ref=e16]:
-            - generic [ref=e17]: 사용자 ID *
-            - textbox "사용자 ID *" [disabled]:
-              - /placeholder: 사용자 ID를 입력하세요
-              - text: mcmp
-          - generic [ref=e18]:
-            - generic [ref=e19]: 비밀번호 *
-            - textbox "비밀번호 *" [disabled]:
-              - /placeholder: 비밀번호를 입력하세요
-              - text: mcmp_password
-        - generic [ref=e20]:
-          - button "로그인" [disabled]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "MC MC Web Console" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e7]:
+            - generic [ref=e9]: MC
+            - generic [ref=e10]: MC Web Console
+        - generic [ref=e11]:
+          - button [ref=e12]:
             - img
-            - text: 로그인
-    - link "계정 등록" [ref=e22] [cursor=pointer]:
-      - /url: "#"
-  - button "Open Next.js Dev Tools" [ref=e28] [cursor=pointer]:
-    - generic [ref=e31]:
-      - text: Compiling
-      - generic [ref=e32]:
-        - generic [ref=e33]: .
-        - generic [ref=e34]: .
-        - generic [ref=e35]: .
-  - alert [ref=e36]
+          - button "User" [ref=e14]:
+            - img
+            - generic [ref=e15]: User
+    - generic [ref=e16]:
+      - complementary [ref=e17]:
+        - navigation [ref=e18]:
+          - generic [ref=e19]:
+            - generic [ref=e20]: Operations
+            - generic [ref=e21]:
+              - generic [ref=e22]:
+                - generic [ref=e23]: Manage
+                - generic [ref=e24]:
+                  - generic [ref=e27] [cursor=pointer]:
+                    - button [ref=e28]:
+                      - img [ref=e29]
+                    - link "Workspaces" [ref=e31]:
+                      - /url: /operations/manage/workspaces
+                  - generic [ref=e34]:
+                    - button [ref=e35]:
+                      - img [ref=e36]
+                    - generic [ref=e38]: Workloads
+                  - link "Workflows" [ref=e41] [cursor=pointer]:
+                    - /url: /operations/manage/workflows
+                    - generic [ref=e42]: Workflows
+                  - link "SW Catalogs" [ref=e45] [cursor=pointer]:
+                    - /url: /operations/manage/swcatalogs
+                    - generic [ref=e46]: SW Catalogs
+                  - link "Data Migrations" [ref=e49] [cursor=pointer]:
+                    - /url: /operations/manage/datamigrations
+                    - generic [ref=e50]: Data Migrations
+              - generic [ref=e51]:
+                - generic [ref=e52]: Analytics
+                - generic [ref=e53]:
+                  - generic [ref=e56]:
+                    - button [ref=e57]:
+                      - img [ref=e58]
+                    - generic [ref=e60]: Monitorings
+                  - generic [ref=e63]:
+                    - button [ref=e64]:
+                      - img [ref=e65]
+                    - generic [ref=e67]: Events & Traces
+                  - link "Cost Analysis" [ref=e70] [cursor=pointer]:
+                    - /url: /operations/analytics/costanalysis
+                    - generic [ref=e71]: Cost Analysis
+          - generic [ref=e72]:
+            - generic [ref=e73]: Settings
+            - generic [ref=e74]:
+              - generic [ref=e75]:
+                - generic [ref=e76]: Account & Access
+                - generic [ref=e80]:
+                  - button [ref=e81]:
+                    - img [ref=e82]
+                  - generic [ref=e84]: Organizations
+              - generic [ref=e85]:
+                - generic [ref=e86]: Environment
+                - generic [ref=e87]:
+                  - generic [ref=e90]:
+                    - button [ref=e91]:
+                      - img [ref=e92]
+                    - generic [ref=e94]: Cloud SPs
+                  - generic [ref=e97]:
+                    - button [ref=e98]:
+                      - img [ref=e99]
+                    - generic [ref=e101]: Cloud Resources
+                  - generic [ref=e105]: Cloud Res Catalogs
+                  - generic [ref=e108]:
+                    - button [ref=e109]:
+                      - img [ref=e110]
+                    - generic [ref=e112]: Workspaces Settings
+      - main [ref=e113]:
+        - navigation [ref=e114]:
+          - link [ref=e115] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e116]
+          - generic [ref=e119]:
+            - img [ref=e120]
+            - link "Resources" [ref=e122] [cursor=pointer]:
+              - /url: /resources
+          - generic [ref=e123]:
+            - img [ref=e124]
+            - generic [ref=e126]: My Images
+        - generic [ref=e127]:
+          - generic [ref=e129]:
+            - generic [ref=e130]:
+              - generic [ref=e131]: Workspace *
+              - combobox [disabled] [ref=e132]:
+                - generic: Workspace 선택
+                - img
+              - paragraph [ref=e133]: Workspace 목록 조회 중...
+            - generic [ref=e134]:
+              - generic [ref=e135]: Project *
+              - combobox [disabled] [ref=e136]:
+                - generic: Workspace를 먼저 선택하세요
+                - img
+              - paragraph [ref=e137]: Workspace를 먼저 선택하세요
+          - generic [ref=e139]:
+            - generic [ref=e140]: "안내:"
+            - generic [ref=e141]: My Images를 조회하려면 Workspace를 선택하세요.
+    - contentinfo [ref=e142]:
+      - generic [ref=e143]:
+        - paragraph [ref=e145]: © 2026 MC Web Console. All rights reserved.
+        - paragraph [ref=e147]: Version 1.0.0
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e153] [cursor=pointer]:
+    - img [ref=e154]
+  - alert [ref=e157]
 ```

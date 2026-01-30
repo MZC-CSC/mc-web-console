@@ -15,9 +15,12 @@ interface WorkspaceProjectSelectorProps {
 }
 
 /**
- * MCI Workloads 화면용 Workspace/Project 선택 컴포넌트
+ * Workspace/Project 선택 컴포넌트
  * 사용자에게 할당된 워크스페이스 목록을 조회하고,
  * 워크스페이스 선택 시 해당 워크스페이스의 프로젝트 목록을 조회합니다.
+ * 
+ * 선택된 workspace와 project는 부모 컴포넌트에서 관리하며,
+ * 선택 시 onWorkspaceChange와 onProjectChange 콜백을 통해 전달됩니다.
  */
 export function WorkspaceProjectSelector({
   selectedWorkspaceId,

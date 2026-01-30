@@ -144,13 +144,12 @@ export default function WorkspaceRolesPage() {
     }
   };
 
-  const handleAssignUser = async (userId: string) => {
+  const handleAssignUser = async (userIds: string[]) => {
     if (!selectedRole) return;
     try {
       await assignUserMutation.mutateAsync({
-        workspaceId,
         roleId: selectedRole.id,
-        userId,
+        userIds,
       });
       setIsAssignUserModalOpen(false);
       refetch();

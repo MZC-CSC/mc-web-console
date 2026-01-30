@@ -1,235 +1,119 @@
+// hooks/api/useUsersManagement.ts
+
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  listUsers,
+  getUserByID,
+  createUser,
+  updateUser,
+  deleteUser,
+  updateUserStatus,
+} from '@/lib/api/usersApi';
+import type {
   User,
-  UserDetail,
-  UserCreateRequest,
-  UserUpdateRequest,
-  AddRoleMappingRequest,
-  RemoveRoleMappingRequest,
+  UserCreateData,
+  UserUpdateData,
+  ListUsersParams,
 } from '@/types/users';
-import { OPERATION_IDS } from '@/constants/api';
-import { apiPost } from '@/lib/api/client';
 import { toastSuccess, toastError } from '@/lib/utils/toast';
 
 /**
- * Users 목록 조회 Hook
+ * Users 목록 조회 Hook (Phase 1)
  */
-export function useUsers() {
-  const { data, isLoading, error, refetch } = useQuery<User[]>({
-    queryKey: ['users-management'],
-    queryFn: async () => {
-      // TODO: 실제 API 연동
-      // const response = await apiPost<User[]>(
-      //   OPERATION_IDS.GET_USERS_LIST,
-      //   {
-      //     request: {},
-      //   }
-      // );
-      // return response.responseData || [];
-
-      // 임시 더미 데이터
-      return [];
-    },
-    staleTime: 1000 * 60 * 2, // 2분
+export function useUsers(params: ListUsersParams = {}) {
+  return useQuery({
+    queryKey: ['users-management', params],
+    queryFn: () => listUsers(params),
+    staleTime: 1000 * 60 * 5, // 5분
   });
-
-  return {
-    users: data || [],
-    isLoading,
-    error,
-    refetch,
-  };
 }
 
 /**
- * User 상세 조회 Hook
+ * User 상세 조회 Hook (Phase 1)
  */
 export function useUser(userId: string | null) {
-  const { data, isLoading, error } = useQuery<UserDetail>({
+  return useQuery({
     queryKey: ['user-management', userId],
-    queryFn: async () => {
-      if (!userId) return null as unknown as UserDetail;
-
-      // TODO: 실제 API 연동
-      // const response = await apiPost<UserDetail>(
-      //   OPERATION_IDS.GET_USER_DETAIL,
-      //   {
-      //     request: {
-      //       id: userId,
-      //     },
-      //   }
-      // );
-      // return response.responseData!;
-
-      // 임시 더미 데이터
-      throw new Error('Not implemented');
-    },
+    queryFn: () => getUserByID(userId!),
     enabled: !!userId,
-    staleTime: 1000 * 60 * 1, // 1분
+    staleTime: 1000 * 60 * 5, // 5분
   });
-
-  return {
-    userDetail: data,
-    isLoading,
-    error,
-  };
 }
 
 /**
- * User 생성 Hook
+ * User 생성 Mutation Hook (Phase 1)
  */
 export function useCreateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (request: UserCreateRequest) => {
-      // TODO: 실제 API 연동
-      // const response = await apiPost<User>(
-      //   OPERATION_IDS.CREATE_USER,
-      //   {
-      //     request,
-      //   }
-      // );
-      // return response.responseData!;
-
-      // 임시 더미 데이터
-      throw new Error('Not implemented');
-    },
+    mutationFn: (data: UserCreateData) => createUser(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users-management'] });
       toastSuccess('사용자가 생성되었습니다.');
     },
-    onError: (error) => {
-      const errorMessage = error instanceof Error ? error.message : '사용자 생성에 실패했습니다.';
-      toastError(errorMessage);
+    onError: (error: Error) => {
+      toastError(`사용자 생성 실패: ${error.message}`);
     },
   });
 }
 
 /**
- * User 수정 Hook
+ * User 수정 Mutation Hook (Phase 1)
  */
 export function useUpdateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (request: UserUpdateRequest) => {
-      // TODO: 실제 API 연동
-      // const response = await apiPost<User>(
-      //   OPERATION_IDS.UPDATE_USER,
-      //   {
-      //     request,
-      //   }
-      // );
-      // return response.responseData!;
-
-      // 임시 더미 데이터
-      throw new Error('Not implemented');
-    },
-    onSuccess: () => {
+    mutationFn: ({ userId, data }: { userId: string; data: UserUpdateData }) =>
+      updateUser(userId, data),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users-management'] });
-      queryClient.invalidateQueries({ queryKey: ['user-management'] });
+      queryClient.invalidateQueries({ queryKey: ['user-management', variables.userId] });
       toastSuccess('사용자 정보가 수정되었습니다.');
     },
-    onError: (error) => {
-      const errorMessage = error instanceof Error ? error.message : '사용자 수정에 실패했습니다.';
-      toastError(errorMessage);
+    onError: (error: Error) => {
+      toastError(`사용자 수정 실패: ${error.message}`);
     },
   });
 }
 
 /**
- * User 삭제 Hook
+ * User 삭제 Mutation Hook (Phase 1)
  */
 export function useDeleteUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (userId: string) => {
-      // TODO: 실제 API 연동
-      // await apiPost(
-      //   OPERATION_IDS.DELETE_USER,
-      //   {
-      //     request: {
-      //       id: userId,
-      //     },
-      //   }
-      // );
-
-      // 임시 더미 데이터
-      throw new Error('Not implemented');
-    },
+    mutationFn: (userId: string) => deleteUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users-management'] });
       toastSuccess('사용자가 삭제되었습니다.');
     },
-    onError: (error) => {
-      const errorMessage = error instanceof Error ? error.message : '사용자 삭제에 실패했습니다.';
-      toastError(errorMessage);
+    onError: (error: Error) => {
+      toastError(`사용자 삭제 실패: ${error.message}`);
     },
   });
 }
 
 /**
- * Role 매핑 추가 Hook
+ * User 상태 변경 Mutation Hook (Phase 1)
  */
-export function useAddRoleMapping() {
+export function useUpdateUserStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (request: AddRoleMappingRequest) => {
-      // TODO: 실제 API 연동
-      // await apiPost(
-      //   OPERATION_IDS.ADD_USER_ROLE_MAPPING,
-      //   {
-      //     request,
-      //   }
-      // );
-
-      // 임시 더미 데이터
-      throw new Error('Not implemented');
-    },
+    mutationFn: ({ userId, enabled }: { userId: string; enabled: boolean }) =>
+      updateUserStatus(userId, enabled),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['user-management', variables.userId] });
       queryClient.invalidateQueries({ queryKey: ['users-management'] });
-      toastSuccess('Role 매핑이 추가되었습니다.');
-    },
-    onError: (error) => {
-      const errorMessage = error instanceof Error ? error.message : 'Role 매핑 추가에 실패했습니다.';
-      toastError(errorMessage);
-    },
-  });
-}
-
-/**
- * Role 매핑 삭제 Hook
- */
-export function useRemoveRoleMapping() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (request: RemoveRoleMappingRequest) => {
-      // TODO: 실제 API 연동
-      // await apiPost(
-      //   OPERATION_IDS.REMOVE_USER_ROLE_MAPPING,
-      //   {
-      //     request,
-      //   }
-      // );
-
-      // 임시 더미 데이터
-      throw new Error('Not implemented');
-    },
-    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user-management', variables.userId] });
-      queryClient.invalidateQueries({ queryKey: ['users-management'] });
-      toastSuccess('Role 매핑이 삭제되었습니다.');
+      toastSuccess('사용자 상태가 변경되었습니다.');
     },
-    onError: (error) => {
-      const errorMessage = error instanceof Error ? error.message : 'Role 매핑 삭제에 실패했습니다.';
-      toastError(errorMessage);
+    onError: (error: Error) => {
+      toastError(`상태 변경 실패: ${error.message}`);
     },
   });
 }

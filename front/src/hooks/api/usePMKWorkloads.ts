@@ -12,16 +12,23 @@ import { toastSuccess, toastError } from '@/lib/utils/toast';
 
 /**
  * PMK Cluster 목록 조회 Hook
+ * @param nsId - Project의 namespace ID (ns_id). 선택된 project가 있어야만 조회됨
  */
-export function usePMKClusters() {
+export function usePMKClusters(nsId?: string) {
   const { data, isLoading, error, refetch } = useQuery<PMKCluster[]>({
-    queryKey: ['pmk-clusters'],
+    queryKey: ['pmk-clusters', nsId],
     queryFn: async () => {
+      if (!nsId) {
+        return [];
+      }
+
       // TODO: 실제 API 연동
       // const response = await apiPost<PMKCluster[]>(
-      //   OPERATION_IDS.GET_PMK_CLUSTERS_LIST,
+      //   OPERATION_IDS.GET_ALL_K8S_CLUSTER,
       //   {
-      //     request: {},
+      //     pathParams: {
+      //       nsId,
+      //     },
       //   }
       // );
       // return response.responseData || [];
@@ -29,6 +36,7 @@ export function usePMKClusters() {
       // 임시 더미 데이터
       return [];
     },
+    enabled: !!nsId, // nsId가 있을 때만 조회
     staleTime: 1000 * 60 * 2, // 2분
   });
 

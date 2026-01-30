@@ -207,9 +207,9 @@ func generateJWT() (*UserLoginResponse, error) {
 
 	refreshExp := time.Now().Add(time.Minute * 30).Unix()
 	refreshClaims := CmigRefreshtokenClaims{
-		Exp: exp,
+		Exp: refreshExp,
 		MapClaims: &jwt.MapClaims{
-			"exp": exp,
+			"exp": refreshExp,
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
@@ -235,7 +235,7 @@ func GetUserToken(id string, password string) (*UserLoginResponse, error) {
 }
 
 func RefreshAccessToken(refreshToken string) (*UserLoginResponse, error) {
-	token, err := jwt.ParseWithClaims(refreshToken, &CmigAccesstokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(refreshToken, &CmigRefreshtokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -244,7 +244,7 @@ func RefreshAccessToken(refreshToken string) (*UserLoginResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("token is invalid : %s", err.Error())
 	}
-	if claims, ok := token.Claims.(*CmigAccesstokenClaims); ok && token.Valid {
+	if claims, ok := token.Claims.(*CmigRefreshtokenClaims); ok && token.Valid {
 		if time.Now().Unix() > claims.Exp {
 			return nil, fmt.Errorf("refresh token expired")
 		}

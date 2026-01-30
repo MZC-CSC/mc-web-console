@@ -5,11 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { cn } from '@/lib/utils';
+import { WorkspaceProjectSelector } from '@/components/common/WorkspaceProjectSelector';
+import { useWorkspaceProjectSelection } from '@/hooks/useWorkspaceProjectSelection';
 
 /**
  * Cloud Resources Overview 페이지
  */
 export default function CloudResourcesOverviewPage() {
+  // Workspace/Project 선택 및 복원 (공통 Hook 사용)
+  const {
+    selectedWorkspaceId,
+    selectedProjectId,
+    isWorkspaceProjectSelected,
+    handleWorkspaceChange,
+    handleProjectChange,
+  } = useWorkspaceProjectSelection();
+
   const { overview, isLoading, refetch } = useCloudResourcesOverview();
 
   const stats = [
@@ -23,6 +34,16 @@ export default function CloudResourcesOverviewPage() {
 
   return (
     <div className="space-y-6">
+      {/* Workspace/Project 선택 */}
+      <Card className="p-6">
+        <WorkspaceProjectSelector
+          selectedWorkspaceId={selectedWorkspaceId}
+          selectedProjectId={selectedProjectId}
+          onWorkspaceChange={handleWorkspaceChange}
+          onProjectChange={handleProjectChange}
+        />
+      </Card>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Cloud Resources Overview</h1>

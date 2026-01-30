@@ -7,7 +7,7 @@ import { API_PATHS, OPERATION_IDS } from '@/constants/api';
 import { apiPostByPath } from '@/lib/api/client';
 import { setAuthToken } from '@/lib/api/client';
 import { ROUTES } from '@/constants/routes';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { setAccessTokenCookie, deleteAccessTokenCookie } from '@/lib/utils/cookies';
 import { useEffect } from 'react';
 
@@ -157,7 +157,17 @@ export const useAuthStore = create<AuthStore>()(
         deleteAccessTokenCookie();
       },
 
+      /**
+       * @deprecated
+       * 이 함수는 더 이상 사용되지 않습니다.
+       * Backend middleware가 자동으로 token을 갱신합니다.
+       * 401 재시도 로직(client.ts)이 이를 처리합니다.
+       *
+       * 레거시 호환성을 위해 유지하지만 사용하지 마세요.
+       */
       refreshToken: async () => {
+        console.warn('[Auth] refreshToken() is deprecated. Backend handles refresh automatically.');
+
         const { refreshTokenValue: currentRefreshToken } = get();
         if (!currentRefreshToken) {
           throw new Error('Refresh token이 없습니다.');
@@ -176,7 +186,7 @@ export const useAuthStore = create<AuthStore>()(
 
           if (response.responseData) {
             const { access_token, refresh_token, expires_in } = response.responseData;
-            
+
             set({
               accessToken: access_token,
               refreshTokenValue: refresh_token,
@@ -214,23 +224,34 @@ export const useAuthStore = create<AuthStore>()(
  */
 export function useAuth() {
   const router = useRouter();
+  const pathname = usePathname();
   const store = useAuthStore();
-  
+
   // store에서 필요한 값들만 개별적으로 추출
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const storeLogout = useAuthStore((state) => state.logout);
 
   // 쿠키와 localStorage 동기화 체크
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    // 로그인/로그아웃 페이지에서는 자동 토큰 갱신을 하지 않음
+    const isAuthPage = pathname === ROUTES.LOGIN || pathname === ROUTES.LOGOUT;
+
+    if (typeof window !== 'undefined' && isAuthenticated && !isAuthPage) {
       const hasCookie = document.cookie.includes('access_token=');
-      if (!hasCookie && isAuthenticated) {
-        // 쿠키가 없는데 localStorage에는 인증 상태가 있으면 로그아웃 처리
-        console.log('Cookie expired or missing, clearing auth state...');
+      const refreshTokenValue = useAuthStore.getState().refreshTokenValue;
+
+      if (!hasCookie && refreshTokenValue) {
+        // 쿠키가 없지만 refresh token이 있으면 Backend Middleware가 자동으로 처리
+        console.log('[useAuth] Access token cookie expired, but refresh token exists in localStorage');
+        console.log('[useAuth] Backend middleware will auto-refresh on next API call');
+        // 명시적 refresh 호출 제거 - Backend가 자동 처리
+      } else if (!hasCookie && !refreshTokenValue) {
+        // 쿠키도 없고 refresh token도 없으면 로그아웃
+        console.log('[useAuth] No cookie and no refresh token, clearing auth state...');
         storeLogout();
       }
     }
-  }, [isAuthenticated, storeLogout]); // 의존성 배열에 필요한 값만 추가
+  }, [isAuthenticated, storeLogout, pathname]);
 
   const logout = () => {
     // 로그아웃 페이지로 이동 (로그아웃 페이지에서 실제 로그아웃 처리)

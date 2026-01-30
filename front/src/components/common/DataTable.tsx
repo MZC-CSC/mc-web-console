@@ -35,6 +35,9 @@ interface DataTableProps<TData> {
   // 필터 기능
   enableFiltering?: boolean;
   filterColumns?: string[]; // 필터를 적용할 컬럼 키 목록
+  // 선택된 항목 하이라이트
+  selectedItem?: TData | null;
+  getRowId?: (row: TData) => string; // 행 ID 추출 함수
 }
 
 export function DataTable<TData>({
@@ -46,6 +49,8 @@ export function DataTable<TData>({
   emptyMessage = '데이터가 없습니다.',
   enableFiltering = false,
   filterColumns = [],
+  selectedItem,
+  getRowId,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -142,19 +147,28 @@ export function DataTable<TData>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  onClick={() => onRowClick?.(row.original)}
-                  className={cn(onRowClick && 'cursor-pointer hover:bg-accent')}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const isSelected = selectedItem && getRowId
+                  ? getRowId(selectedItem) === getRowId(row.original)
+                  : selectedItem === row.original;
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    onClick={() => onRowClick?.(row.original)}
+                    className={cn(
+                      onRowClick && 'cursor-pointer hover:bg-accent',
+                      isSelected && 'bg-accent/50'
+                    )}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">

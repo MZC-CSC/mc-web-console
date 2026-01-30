@@ -87,7 +87,7 @@ export default function AlarmsHistoryPage() {
 
   return (
     <>
-      <CrudPageTemplate
+      <CrudPageTemplate<Alarm>
         data={alarms}
         columns={columns}
         selectedItem={selectedAlarm}
@@ -104,6 +104,7 @@ export default function AlarmsHistoryPage() {
         emptyMessage="Alarm이 없습니다."
         hideAddButton
         hideDeleteButton
+        hideRefreshButton
       />
     </>
   );

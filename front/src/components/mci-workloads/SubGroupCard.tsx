@@ -80,6 +80,52 @@ export function SubGroupCard({
     });
   };
 
+  const handleOpenSpecModal = (subGroupIndex: number, serverIndex: number) => {
+    setCurrentServerIndex(serverIndex);
+    setIsSpecModalOpen(true);
+  };
+
+  const handleOpenImageModal = (subGroupIndex: number, serverIndex: number) => {
+    setCurrentServerIndex(serverIndex);
+    setIsImageModalOpen(true);
+  };
+
+  const handleApplySpec = (spec: Spec) => {
+    if (currentServerIndex !== null) {
+      const updatedServers = [...servers];
+      updatedServers[currentServerIndex] = {
+        ...updatedServers[currentServerIndex],
+        specId: spec.id,
+      };
+      setServers(updatedServers);
+      onUpdate({
+        ...subGroup,
+        name,
+        servers: updatedServers,
+      });
+      setIsSpecModalOpen(false);
+      setCurrentServerIndex(null);
+    }
+  };
+
+  const handleApplyImage = (image: Image) => {
+    if (currentServerIndex !== null) {
+      const updatedServers = [...servers];
+      updatedServers[currentServerIndex] = {
+        ...updatedServers[currentServerIndex],
+        imageId: image.id,
+      };
+      setServers(updatedServers);
+      onUpdate({
+        ...subGroup,
+        name,
+        servers: updatedServers,
+      });
+      setIsImageModalOpen(false);
+      setCurrentServerIndex(null);
+    }
+  };
+
   return (
     <Card className="p-4">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>

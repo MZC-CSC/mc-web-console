@@ -13,10 +13,10 @@ export interface ApiResponse<T = unknown> {
 /**
  * API 요청 기본 구조
  */
-export interface ApiRequest {
+export interface ApiRequest<T = Record<string, unknown>> {
   pathParams?: Record<string, string>;
   queryParams?: Record<string, string | number | boolean>;
-  request?: Record<string, unknown>;
+  request?: T;
 }
 
 /**

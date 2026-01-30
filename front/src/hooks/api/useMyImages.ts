@@ -22,7 +22,7 @@ export function useMyImages(nsId: string | null) {
         OPERATION_IDS.GET_MY_IMAGE_LIST,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: {},
         }
@@ -57,8 +57,8 @@ export function useMyImage(nsId: string | null, customImageId: string | null) {
         OPERATION_IDS.GET_MY_IMAGE,
         {
           pathParams: {
-            nsId,
-            customImageId,
+            nsId: String(nsId),
+            customImageId: String(customImageId),
           },
           request: {},
         }
@@ -89,7 +89,7 @@ export function useCreateMyImage() {
         OPERATION_IDS.CREATE_MY_IMAGE,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: myImage,
         }
@@ -120,8 +120,8 @@ export function useDeleteMyImage() {
         OPERATION_IDS.DELETE_MY_IMAGE,
         {
           pathParams: {
-            nsId,
-            customImageId,
+            nsId: String(nsId),
+            customImageId: String(customImageId),
           },
           request: {},
         }

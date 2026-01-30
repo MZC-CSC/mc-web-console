@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { CrudPageTemplate } from '@/components/templates/CrudPageTemplate';
-import { MCIWorkload, MCICreateRequest } from '@/types/mci-workloads';
+import { MCIWorkload, MCICreateRequest, MciDynamicReq, MciInfo } from '@/types/mci-workloads';
 import {
   useMCIWorkloads,
   useMCIStatus,
@@ -13,8 +13,10 @@ import {
 } from '@/hooks/api/useMCIWorkloads';
 import { MCIDashboard } from '@/components/mci-workloads/MCIDashboard';
 import { MCICreateForm } from '@/components/mci-workloads/MCICreateForm';
-import { WorkspaceProjectSelector } from '@/components/mci-workloads/WorkspaceProjectSelector';
-import { useWorkspaceProjects } from '@/hooks/api/useProjects';
+import { MCICreateFormDynamic } from '@/components/mci-workloads/MCICreateFormDynamic';
+import { MCIDetailInfo } from '@/components/mci-workloads/MCIDetailInfo';
+import { WorkspaceProjectSelector } from '@/components/common/WorkspaceProjectSelector';
+import { useWorkspaceProjectSelection } from '@/hooks/useWorkspaceProjectSelection';
 import { Card } from '@/components/ui/card';
 
 /**
@@ -27,31 +29,49 @@ import { Card } from '@/components/ui/card';
  * 4. workspace/project 선택이 안 되어 있으면 사용자에게 알림
  */
 export default function MCIWorkloadsPage() {
+  // 렌더링 카운터 (디버깅용)
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+
   const [selectedWorkload, setSelectedWorkload] = useState<MCIWorkload | null>(null);
   const [isCreateMode, setIsCreateMode] = useState(false);
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>('');
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
-  // 선택된 project의 ns_id 조회
-  const { projects } = useWorkspaceProjects(selectedWorkspaceId);
-  const selectedProject = Array.isArray(projects)
-    ? projects.find((p) => p.id === selectedProjectId)
-    : undefined;
-  const nsId = selectedProject?.ns_id;
+  // Workspace/Project 선택 및 복원 (공통 Hook 사용)
+  const {
+    selectedWorkspaceId,
+    selectedProjectId,
+    selectedProject,
+    isWorkspaceProjectSelected,
+    isRestored, // 복원 완료 상태 추가
+    handleWorkspaceChange,
+    handleProjectChange,
+  } = useWorkspaceProjectSelection();
+
+  // 선택된 project의 nsid 조회
+  const nsId = selectedProject?.nsid;
+
+  // 디버깅: 개발 모드에서 렌더링 카운트 모니터링
+  if (renderCount.current === 1) {
+    console.log('[MCI Workloads Page] Page initialized');
+  }
+  if (renderCount.current > 20) {
+    console.warn('[MCI Workloads Page] High render count detected:', {
+      count: renderCount.current,
+      selectedWorkspaceId,
+      selectedProjectId,
+      nsId,
+      isRestored,
+      isWorkspaceProjectSelected,
+    });
+  }
 
   // Project가 선택되었을 때만 MCI 목록 조회
+  // nsId를 항상 전달하고, Hook 내부의 enabled 옵션으로 제어
   const { workloads, isLoading, refetch } = useMCIWorkloads(nsId);
   const { mciStatus, isLoading: isStatusLoading } = useMCIStatus(nsId);
   const { serverStatus, isLoading: isServerStatusLoading } = useServerStatus(nsId);
   const createMutation = useCreateMCIWorkload();
   const deleteMutation = useDeleteMCIWorkload();
-
-  // Workspace 변경 시 Project 선택 초기화
-  useEffect(() => {
-    if (selectedWorkspaceId) {
-      setSelectedProjectId('');
-    }
-  }, [selectedWorkspaceId]);
 
   // 테이블 컬럼 정의 (참조 HTML과 일치)
   const columns: ColumnDef<MCIWorkload>[] = [
@@ -192,9 +212,14 @@ export default function MCIWorkloadsPage() {
     setIsCreateMode(false);
   };
 
-  const handleCreateSubmit = async (data: MCICreateRequest) => {
+  const handleCreateSubmit = async (data: MciDynamicReq) => {
+    if (!nsId) {
+      console.error('nsId is required to create MCI');
+      return;
+    }
+
     try {
-      await createMutation.mutateAsync(data);
+      await createMutation.mutateAsync({ nsId, data });
       setIsCreateMode(false);
     } catch (error) {
       console.error('Create error:', error);
@@ -203,9 +228,14 @@ export default function MCIWorkloadsPage() {
   };
 
   const handleDelete = async (workload: MCIWorkload) => {
+    if (!nsId) {
+      console.error('nsId is required to delete MCI');
+      return;
+    }
+
     if (confirm(`정말로 "${workload.name}" MCI Workload를 삭제하시겠습니까?`)) {
       try {
-        await deleteMutation.mutateAsync(workload.id);
+        await deleteMutation.mutateAsync({ nsId, mciId: workload.id });
         if (selectedWorkload?.id === workload.id) {
           setSelectedWorkload(null);
         }
@@ -215,21 +245,11 @@ export default function MCIWorkloadsPage() {
     }
   };
 
-  const handleWorkspaceChange = (workspaceId: string) => {
-    setSelectedWorkspaceId(workspaceId);
-  };
-
-  const handleProjectChange = (projectId: string) => {
-    setSelectedProjectId(projectId);
-  };
-
-  // Workspace/Project 선택 여부 확인
-  const isWorkspaceProjectSelected = !!selectedWorkspaceId && !!selectedProjectId;
 
   return (
     <div className="space-y-6">
       {isCreateMode ? (
-        <MCICreateForm
+        <MCICreateFormDynamic
           onSubmit={handleCreateSubmit}
           onCancel={handleCancelCreate}
           isLoading={createMutation.isPending}
@@ -283,6 +303,20 @@ export default function MCIWorkloadsPage() {
                 title="MCI Workloads"
                 addButtonLabel="MCI Workload 추가"
                 emptyMessage="MCI Workload가 없습니다."
+                detailComponent={({ item }) => {
+                  // CrudDetail 대신 MCIDetailInfo 사용
+                  return (
+                    <MCIDetailInfo
+                      mciId={item.id}
+                      nsId={nsId || ''}
+                      selectedMciData={item as MciInfo}
+                      onTerminalClick={() => {
+                        // TODO: Terminal 모달 열기 기능 구현
+                        console.log('Terminal clicked for MCI:', item.id);
+                      }}
+                    />
+                  );
+                }}
               />
             </>
           )}

@@ -22,7 +22,7 @@ export function useNetworks(nsId: string | null) {
         OPERATION_IDS.GET_NETWORK_LIST,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: {},
         }
@@ -57,8 +57,8 @@ export function useNetwork(nsId: string | null, vNetId: string | null) {
         OPERATION_IDS.GET_NETWORK,
         {
           pathParams: {
-            nsId,
-            vNetId,
+            nsId: String(nsId),
+            vNetId: String(vNetId),
           },
           request: {},
         }
@@ -89,7 +89,7 @@ export function useCreateNetwork() {
         OPERATION_IDS.CREATE_NETWORK,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: network,
         }
@@ -120,8 +120,8 @@ export function useDeleteNetwork() {
         OPERATION_IDS.DELETE_NETWORK,
         {
           pathParams: {
-            nsId,
-            vNetId,
+            nsId: String(nsId),
+            vNetId: String(vNetId),
           },
           request: {},
         }

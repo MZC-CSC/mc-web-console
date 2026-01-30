@@ -14,7 +14,7 @@ interface UserDetailCardProps {
  * User 상세 정보 카드 컴포넌트
  */
 export function UserDetailCard({ item, onClose }: UserDetailCardProps) {
-  const { userDetail, isLoading } = useUser(item.id);
+  const { data: user, isLoading } = useUser(item.id);
 
   if (isLoading) {
     return (
@@ -24,15 +24,13 @@ export function UserDetailCard({ item, onClose }: UserDetailCardProps) {
     );
   }
 
-  if (!userDetail) {
+  if (!user) {
     return (
       <Card className="p-6">
         <div className="text-center text-muted-foreground">사용자 정보를 불러올 수 없습니다.</div>
       </Card>
     );
   }
-
-  const { user } = userDetail;
 
   return (
     <Card className="p-6">
@@ -82,9 +80,9 @@ export function UserDetailCard({ item, onClose }: UserDetailCardProps) {
             <h4 className="text-sm font-medium">Platform Roles</h4>
             <button className="text-sm text-primary hover:underline">Add Platform role</button>
           </div>
-          {userDetail.platformRoles && userDetail.platformRoles.length > 0 ? (
+          {user.platformRoles && user.platformRoles.length > 0 ? (
             <div className="space-y-2">
-              {userDetail.platformRoles.map((role) => (
+              {user.platformRoles.map((role) => (
                 <div key={role.id} className="p-2 border rounded">
                   <div className="font-medium">{role.name}</div>
                   {role.description && (
@@ -104,9 +102,9 @@ export function UserDetailCard({ item, onClose }: UserDetailCardProps) {
             <h4 className="text-sm font-medium">Workspace Roles</h4>
             <button className="text-sm text-primary hover:underline">Add Workspace role</button>
           </div>
-          {userDetail.workspaceRoles && userDetail.workspaceRoles.length > 0 ? (
+          {user.workspaceRoles && user.workspaceRoles.length > 0 ? (
             <div className="space-y-2">
-              {userDetail.workspaceRoles.map((role) => (
+              {user.workspaceRoles.map((role) => (
                 <div key={role.id} className="p-2 border rounded">
                   <div className="font-medium">{role.roleName || role.roleId}</div>
                   {role.workspaceName && (
@@ -129,9 +127,9 @@ export function UserDetailCard({ item, onClose }: UserDetailCardProps) {
             <h4 className="text-sm font-medium">CSP Roles</h4>
             <button className="text-sm text-primary hover:underline">Add CSP role</button>
           </div>
-          {userDetail.cspRoles && userDetail.cspRoles.length > 0 ? (
+          {user.cspRoles && user.cspRoles.length > 0 ? (
             <div className="space-y-2">
-              {userDetail.cspRoles.map((role) => (
+              {user.cspRoles.map((role) => (
                 <div key={role.id} className="p-2 border rounded">
                   <div className="font-medium">{role.cspRoleName || role.cspRoleId}</div>
                   {role.cspRoleDescription && (

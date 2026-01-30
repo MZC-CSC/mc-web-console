@@ -190,6 +190,8 @@ export async function getRecommendVmInfo() {
 	var acceleratorMemoryMin = $("#assist_gpu_memory_min").val()
 	var acceleratorMemoryMax = $("#assist_gpu_memory_max").val()
 
+	var architectureVal = $("#assist_architecture").val()
+
 	var policyArr = new Array();
 	//TODO type이 추가 정의되면 type별 분기 추가
 	if (acceleratorType != "") {
@@ -366,6 +368,19 @@ export async function getRecommendVmInfo() {
 				}
 			],
 			"metric": "costPerHour",
+		}
+		policyArr.push(filterPolicy)
+	}
+
+	// Architecture 필터 추가
+	if (architectureVal != "") {
+		var filterPolicy = {
+			"condition": [
+				{
+					"operand": architectureVal
+				}
+			],
+			"metric": "architecture"
 		}
 		policyArr.push(filterPolicy)
 	}

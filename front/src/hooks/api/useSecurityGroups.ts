@@ -22,7 +22,7 @@ export function useSecurityGroups(nsId: string | null) {
         OPERATION_IDS.GET_SECURITY_GROUP_LIST,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: {},
         }
@@ -57,8 +57,8 @@ export function useSecurityGroup(nsId: string | null, securityGroupId: string | 
         OPERATION_IDS.GET_SECURITY_GROUP,
         {
           pathParams: {
-            nsId,
-            securityGroupId,
+            nsId: String(nsId),
+            securityGroupId: String(securityGroupId),
           },
           request: {},
         }
@@ -89,7 +89,7 @@ export function useCreateSecurityGroup() {
         OPERATION_IDS.CREATE_SECURITY_GROUP,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: securityGroup,
         }
@@ -120,8 +120,8 @@ export function useDeleteSecurityGroup() {
         OPERATION_IDS.DELETE_SECURITY_GROUP,
         {
           pathParams: {
-            nsId,
-            securityGroupId,
+            nsId: String(nsId),
+            securityGroupId: String(securityGroupId),
           },
           request: {},
         }

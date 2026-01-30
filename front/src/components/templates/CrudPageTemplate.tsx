@@ -21,7 +21,7 @@ interface CrudPageTemplateProps<TData> {
   isLoading?: boolean;
 
   // Actions
-  onAdd: () => void;
+  onAdd?: () => void;
   onUpdate?: (item: TData) => void;
   onDelete?: (item: TData) => void;
 
@@ -32,6 +32,9 @@ interface CrudPageTemplateProps<TData> {
   title?: string;
   addButtonLabel?: string;
   emptyMessage?: string;
+  hideAddButton?: boolean;
+  hideDeleteButton?: boolean;
+  hideRefreshButton?: boolean; // DataTable의 새로고침 버튼을 사용할 경우 true
 
   // Filter
   enableFiltering?: boolean;
@@ -52,6 +55,9 @@ export function CrudPageTemplate<TData>({
   title,
   addButtonLabel = '추가',
   emptyMessage = '데이터가 없습니다.',
+  hideAddButton = false,
+  hideDeleteButton = false,
+  hideRefreshButton = false,
   enableFiltering = false,
   filterColumns = [],
 }: CrudPageTemplateProps<TData>) {
@@ -77,14 +83,18 @@ export function CrudPageTemplate<TData>({
       <div className="flex items-center justify-between">
         {title && <h1 className="text-2xl font-bold">{title}</h1>}
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onRefresh} disabled={isLoading}>
-            <RefreshCw className={cn('mr-2 h-4 w-4', isLoading && 'animate-spin')} />
-            새로고침
-          </Button>
-          <Button onClick={onAdd}>
-            <Plus className="mr-2 h-4 w-4" />
-            {addButtonLabel}
-          </Button>
+          {!hideRefreshButton && (
+            <Button variant="outline" onClick={onRefresh} disabled={isLoading}>
+              <RefreshCw className={cn('mr-2 h-4 w-4', isLoading && 'animate-spin')} />
+              새로고침
+            </Button>
+          )}
+          {!hideAddButton && onAdd && (
+            <Button onClick={onAdd}>
+              <Plus className="mr-2 h-4 w-4" />
+              {addButtonLabel}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -99,6 +109,15 @@ export function CrudPageTemplate<TData>({
           emptyMessage={emptyMessage}
           enableFiltering={enableFiltering}
           filterColumns={filterColumns}
+          selectedItem={selectedItem}
+          getRowId={(row) => {
+            // MCIWorkload의 경우 id 필드 사용
+            const rowObj = row as Record<string, any>;
+            if ('id' in rowObj && typeof rowObj.id === 'string') {
+              return rowObj.id;
+            }
+            return String(row);
+          }}
         />
       </div>
 
@@ -114,7 +133,7 @@ export function CrudPageTemplate<TData>({
             <CrudActions
               item={selectedItem}
               onUpdate={onUpdate}
-              onDelete={onDelete}
+              onDelete={hideDeleteButton ? undefined : onDelete}
             />
           )}
         </div>

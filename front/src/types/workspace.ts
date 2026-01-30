@@ -13,7 +13,7 @@ export interface Workspace {
 export interface Project {
   id: string;
   name: string;
-  ns_id?: string;
+  nsid?: string;
   description?: string;
 }
 

@@ -1,0 +1,184 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - generic [ref=e4]:
+        - link "MC MC Web Console" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard
+          - generic [ref=e7]:
+            - generic [ref=e9]: MC
+            - generic [ref=e10]: MC Web Console
+        - generic [ref=e11]:
+          - button [ref=e12]:
+            - img
+          - button "User" [ref=e14]:
+            - img
+            - generic [ref=e15]: User
+    - generic [ref=e16]:
+      - complementary [ref=e17]:
+        - navigation [ref=e18]:
+          - generic [ref=e19]:
+            - generic [ref=e20]: Operations
+            - generic [ref=e21]:
+              - generic [ref=e22]:
+                - generic [ref=e23]: Manage
+                - generic [ref=e24]:
+                  - generic [ref=e27]:
+                    - button [ref=e28]:
+                      - img [ref=e29]
+                    - link "Workspaces" [ref=e31] [cursor=pointer]:
+                      - /url: /operations/manage/workspaces
+                  - generic [ref=e34]:
+                    - button [ref=e35]:
+                      - img [ref=e36]
+                    - generic [ref=e38]: Workloads
+                  - link "SW Catalogs" [ref=e41] [cursor=pointer]:
+                    - /url: /operations/manage/swcatalogs
+                    - generic [ref=e42]: SW Catalogs
+                  - link "Workflows" [ref=e45] [cursor=pointer]:
+                    - /url: /operations/manage/workflows
+                    - generic [ref=e46]: Workflows
+                  - link "Data Migrations" [ref=e49] [cursor=pointer]:
+                    - /url: /operations/manage/datamigrations
+                    - generic [ref=e50]: Data Migrations
+              - generic [ref=e51]:
+                - generic [ref=e52]: Analytics
+                - generic [ref=e53]:
+                  - generic [ref=e56]:
+                    - button [ref=e57]:
+                      - img [ref=e58]
+                    - generic [ref=e60]: Monitorings
+                  - generic [ref=e63]:
+                    - button [ref=e64]:
+                      - img [ref=e65]
+                    - generic [ref=e67]: Events & Traces
+                  - link "Cost Analysis" [ref=e70] [cursor=pointer]:
+                    - /url: /operations/analytics/costanalysis
+                    - generic [ref=e71]: Cost Analysis
+          - generic [ref=e72]:
+            - generic [ref=e73]: Settings
+            - generic [ref=e74]:
+              - generic [ref=e75]:
+                - generic [ref=e76]: Account & Access
+                - generic [ref=e80]:
+                  - button [ref=e81]:
+                    - img [ref=e82]
+                  - generic [ref=e84]: Organizations
+              - generic [ref=e85]:
+                - generic [ref=e86]: Environment
+                - generic [ref=e87]:
+                  - generic [ref=e90]:
+                    - button [ref=e91]:
+                      - img [ref=e92]
+                    - generic [ref=e94]: Cloud SPs
+                  - generic [ref=e97]:
+                    - button [ref=e98]:
+                      - img [ref=e99]
+                    - generic [ref=e101]: Cloud Resources
+                  - generic [ref=e105]: Cloud Res Catalogs
+                  - generic [ref=e108]:
+                    - button [ref=e109]:
+                      - img [ref=e110]
+                    - generic [ref=e112]: Workspaces Settings
+      - main [ref=e113]:
+        - navigation [ref=e114]:
+          - link [ref=e115] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e116]
+          - generic [ref=e119]:
+            - img [ref=e120]
+            - link "Operations" [ref=e122] [cursor=pointer]:
+              - /url: /operations
+          - generic [ref=e123]:
+            - img [ref=e124]
+            - link "Manage" [ref=e126] [cursor=pointer]:
+              - /url: /operations/manage
+          - generic [ref=e127]:
+            - img [ref=e128]
+            - generic [ref=e130]: Workspaces
+        - generic [ref=e131]:
+          - generic [ref=e132]:
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - paragraph [ref=e136]: Workspaces
+                - paragraph [ref=e137]: "0"
+              - generic [ref=e138]: 📁
+            - generic [ref=e140]:
+              - generic [ref=e141]:
+                - paragraph [ref=e142]: Projects
+                - paragraph [ref=e143]: "0"
+              - generic [ref=e144]: 📦
+            - generic [ref=e146]:
+              - generic [ref=e147]:
+                - paragraph [ref=e148]: Groups / Members
+                - paragraph [ref=e149]: "0"
+              - generic [ref=e150]: 👥
+          - generic [ref=e151]:
+            - generic [ref=e152]:
+              - heading "워크스페이스 관리" [level=1] [ref=e153]
+              - generic [ref=e154]:
+                - button "새로고침" [ref=e155]:
+                  - img
+                  - text: 새로고침
+                - button "워크스페이스 추가" [ref=e156]:
+                  - img
+                  - text: 워크스페이스 추가
+            - generic [ref=e158]:
+              - generic [ref=e160]:
+                - generic [ref=e161]:
+                  - text: 이름
+                  - textbox "이름 검색..." [ref=e162]
+                - generic [ref=e163]:
+                  - text: 설명
+                  - textbox "설명 검색..." [ref=e164]
+              - button "새로고침" [ref=e166]:
+                - img
+                - text: 새로고침
+              - table [ref=e169]:
+                - rowgroup [ref=e170]:
+                  - row "이름 설명 작업" [ref=e171]:
+                    - columnheader "이름" [ref=e172]
+                    - columnheader "설명" [ref=e173]
+                    - columnheader "작업" [ref=e174]
+                - rowgroup [ref=e175]:
+                  - row "ws01 Default Workspace" [ref=e176] [cursor=pointer]:
+                    - cell "ws01" [ref=e177]:
+                      - generic [ref=e178]: ws01
+                    - cell "Default Workspace" [ref=e179]:
+                      - generic [ref=e180]: Default Workspace
+                    - cell [ref=e181]:
+                      - generic [ref=e182]:
+                        - button "수정" [ref=e183]:
+                          - img
+                        - button "삭제" [ref=e184]:
+                          - img
+                  - row "ai-ws -" [ref=e185] [cursor=pointer]:
+                    - cell "ai-ws" [ref=e186]:
+                      - generic [ref=e187]: ai-ws
+                    - cell "-" [ref=e188]:
+                      - generic [ref=e189]: "-"
+                    - cell [ref=e190]:
+                      - generic [ref=e191]:
+                        - button "수정" [ref=e192]:
+                          - img
+                        - button "삭제" [ref=e193]:
+                          - img
+              - generic [ref=e194]:
+                - generic [ref=e195]: 총 2개 항목
+                - generic [ref=e196]:
+                  - button [disabled]:
+                    - img
+                  - generic [ref=e197]: 1 / 1
+                  - button [disabled]:
+                    - img
+    - contentinfo [ref=e198]:
+      - generic [ref=e199]:
+        - paragraph [ref=e201]: © 2026 MC Web Console. All rights reserved.
+        - paragraph [ref=e203]: Version 1.0.0
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e209] [cursor=pointer]:
+    - img [ref=e210]
+  - alert [ref=e213]
+```

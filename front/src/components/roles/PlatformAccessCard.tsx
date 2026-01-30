@@ -35,7 +35,7 @@ export function PlatformAccessCard({
 
   // Platform Access 트리 데이터 조회 (Create/Edit 모드)
   const { treeData: fetchedTreeData, isLoading: isTreeLoading } = usePlatformAccessTree(
-    !isViewMode ? workspaceId : null
+    !isViewMode ? (workspaceId ?? null) : null
   );
 
   // View 모드에서는 platformAccess.treeData 사용, Create/Edit 모드에서는 조회한 데이터 사용

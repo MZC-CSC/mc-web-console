@@ -180,9 +180,9 @@ export function ProjectSelectModal({
                             {project.description}
                           </p>
                         )}
-                        {project.ns_id && (
+                        {project.nsid && (
                           <p className="text-xs text-muted-foreground mt-1">
-                            Namespace: {project.ns_id}
+                            Namespace: {project.nsid}
                           </p>
                         )}
                       </div>

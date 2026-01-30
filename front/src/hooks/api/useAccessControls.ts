@@ -56,8 +56,8 @@ export function useAccessControl(operationId: string | null, framework: string =
         OPERATION_IDS.GET_PERMISSION,
         {
           pathParams: {
-            framework,
-            operationId,
+            framework: String(framework),
+            operationId: String(operationId),
           },
           request: {},
         }
@@ -88,8 +88,8 @@ export function useAppendAccessControlPolicy(workspaceId: string | null, framewo
         OPERATION_IDS.APPEND_PERMISSION,
         {
           pathParams: {
-            framework,
-            operationId,
+            framework: String(framework),
+            operationId: String(operationId),
           },
           request: {
             workspaceId,
@@ -124,8 +124,8 @@ export function useUpdateAccessControlPolicy(framework: string = 'mciam') {
         OPERATION_IDS.UPDATE_PERMISSION,
         {
           pathParams: {
-            framework,
-            operationId,
+            framework: String(framework),
+            operationId: String(operationId),
           },
           request: {
             policy,
@@ -159,8 +159,8 @@ export function useDeleteAccessControlPolicy(framework: string = 'mciam') {
         OPERATION_IDS.DELETE_PERMISSION,
         {
           pathParams: {
-            framework,
-            operationId,
+            framework: String(framework),
+            operationId: String(operationId),
           },
           request: {
             policyId,

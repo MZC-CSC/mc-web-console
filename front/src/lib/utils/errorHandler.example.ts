@@ -7,6 +7,10 @@
 
 import { handleError, isAuthError, isNetworkError, isRetryableError } from './errorHandler';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useMutation } from '@tanstack/react-query';
+import { apiPost } from '@/lib/api/client';
+import { toastSuccess } from './toast';
+import { useRouter } from 'next/navigation';
 
 // ============================================
 // 1. 기본 에러 처리 (함수에서 직접 사용)
@@ -64,7 +68,7 @@ async function exampleErrorTypeHandling() {
 
     // 인증 에러 처리
     if (isAuthError(appError)) {
-      router.push('/login');
+      window.location.href = '/login';
       return;
     }
 

@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { CrudPageTemplate } from '@/components/templates/CrudPageTemplate';
-import { Workspace } from '@/types/workspace';
+import { Workspace, Project } from '@/types/workspace';
 import {
   useWorkspaces,
   useCreateWorkspace,
   useUpdateWorkspace,
   useDeleteWorkspace,
 } from '@/hooks/api/useWorkspaces';
+import { useAddProjectToWorkspace } from '@/hooks/api/useProjects';
 import { WorkspaceDetail } from '@/components/workspaces/WorkspaceDetail';
 import { WorkspaceModal } from '@/components/workspaces/WorkspaceModal';
 import { WorkspacesSummary } from '@/components/workspaces/WorkspacesSummary';
@@ -28,6 +29,7 @@ export default function WorkspacesPage() {
   const createMutation = useCreateWorkspace();
   const updateMutation = useUpdateWorkspace();
   const deleteMutation = useDeleteWorkspace();
+  const addProjectMutation = useAddProjectToWorkspace();
 
   // 테이블 컬럼 정의
   const columns: ColumnDef<Workspace>[] = [
@@ -107,10 +109,22 @@ export default function WorkspacesPage() {
     }
   };
 
-  const handleModalSubmit = async (workspaceData: Omit<Workspace, 'id'> | Workspace) => {
+  const handleModalSubmit = async (
+    workspaceData: Omit<Workspace, 'id'> | Workspace,
+    selectedProjects?: Project[]
+  ) => {
     try {
       if (modalMode === 'create') {
-        await createMutation.mutateAsync(workspaceData as Omit<Workspace, 'id'>);
+        // 워크스페이스 생성
+        const createdWorkspace = await createMutation.mutateAsync(workspaceData as Omit<Workspace, 'id'>);
+
+        // 선택된 프로젝트가 있으면 한 번에 할당
+        if (selectedProjects && selectedProjects.length > 0 && createdWorkspace?.id) {
+          await addProjectMutation.mutateAsync({
+            workspaceId: createdWorkspace.id,
+            projectIds: selectedProjects.map((p) => p.id),
+          });
+        }
       } else {
         await updateMutation.mutateAsync(workspaceData as Workspace);
       }
@@ -118,6 +132,7 @@ export default function WorkspacesPage() {
       setSelectedWorkspace(null);
     } catch (error) {
       console.error('Submit error:', error);
+      throw error; // 에러를 다시 throw하여 모달에서 처리하도록 함
     }
   };
 
@@ -152,7 +167,7 @@ export default function WorkspacesPage() {
           mode={modalMode}
           workspace={modalMode === 'edit' ? selectedWorkspace : undefined}
           onSubmit={handleModalSubmit}
-          isLoading={createMutation.isPending || updateMutation.isPending}
+          isLoading={createMutation.isPending || updateMutation.isPending || addProjectMutation.isPending}
         />
       )}
     </>

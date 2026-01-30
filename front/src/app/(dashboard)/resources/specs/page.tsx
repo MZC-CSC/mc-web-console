@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import { CrudPageTemplate } from '@/components/templates/CrudPageTemplate';
-import { WorkspaceSelector } from '@/components/common/WorkspaceSelector';
-import { ProjectSelector } from '@/components/common/ProjectSelector';
+import { WorkspaceProjectSelector } from '@/components/common/WorkspaceProjectSelector';
+import { useWorkspaceProjectSelection } from '@/hooks/useWorkspaceProjectSelection';
+import { Card } from '@/components/ui/card';
 import { ServerSpec } from '@/types/resources';
 import {
   useSpecs,
@@ -12,7 +13,6 @@ import {
   useUpdateSpec,
   useDeleteSpec,
 } from '@/hooks/api/useSpecs';
-import { useProject } from '@/hooks/useProject';
 import { SpecModal } from '@/components/specs/SpecModal';
 import { SpecDetail } from '@/components/specs/SpecDetail';
 
@@ -20,13 +20,24 @@ import { SpecDetail } from '@/components/specs/SpecDetail';
  * Server Specs 관리 페이지
  */
 export default function ServerSpecsPage() {
-  const { currentProject } = useProject();
-  const nsId = currentProject?.ns_id || null;
   const [selectedSpec, setSelectedSpec] = useState<ServerSpec | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
 
-  const { specs, isLoading, refetch } = useSpecs(nsId);
+  // Workspace/Project 선택 및 복원 (공통 Hook 사용)
+  const {
+    selectedWorkspaceId,
+    selectedProjectId,
+    selectedProject,
+    isWorkspaceProjectSelected,
+    handleWorkspaceChange,
+    handleProjectChange,
+  } = useWorkspaceProjectSelection();
+
+  // 선택된 project의 ns_id 조회
+  const nsId = selectedProject?.nsid;
+
+  const { specs, isLoading, refetch } = useSpecs(nsId || null);
   const createMutation = useCreateSpec();
   const updateMutation = useUpdateSpec();
   const deleteMutation = useDeleteSpec();
@@ -56,8 +67,8 @@ export default function ServerSpecsPage() {
   ];
 
   const handleAdd = () => {
-    if (!nsId) {
-      alert('Namespace를 선택해주세요.');
+    if (!isWorkspaceProjectSelected || !nsId) {
+      alert('Workspace와 Project를 선택해주세요.');
       return;
     }
     setModalMode('create');
@@ -65,8 +76,8 @@ export default function ServerSpecsPage() {
   };
 
   const handleUpdate = (spec: ServerSpec) => {
-    if (!nsId) {
-      alert('Namespace를 선택해주세요.');
+    if (!isWorkspaceProjectSelected || !nsId) {
+      alert('Workspace와 Project를 선택해주세요.');
       return;
     }
     setSelectedSpec(spec);
@@ -75,8 +86,8 @@ export default function ServerSpecsPage() {
   };
 
   const handleDelete = async (spec: ServerSpec) => {
-    if (!nsId) {
-      alert('Namespace를 선택해주세요.');
+    if (!isWorkspaceProjectSelected || !nsId) {
+      alert('Workspace와 Project를 선택해주세요.');
       return;
     }
     if (confirm(`정말로 "${spec.name}" Server Spec을 삭제하시겠습니까?`)) {
@@ -112,37 +123,61 @@ export default function ServerSpecsPage() {
   return (
     <div className="space-y-6">
       {/* Workspace/Project 선택 */}
-      <div className="flex gap-4">
-        <WorkspaceSelector />
-        <ProjectSelector />
-      </div>
-
-      {/* Server Specs 목록 */}
-      <CrudPageTemplate
-        data={specs}
-        columns={columns}
-        selectedItem={selectedSpec}
-        onItemSelect={setSelectedSpec}
-        onRefresh={refetch}
-        isLoading={isLoading}
-        onAdd={handleAdd}
-        onUpdate={handleUpdate}
-        onDelete={handleDelete}
-        detailComponent={SpecDetail}
-        title="Server Specs"
-        addButtonLabel="Server Spec 추가"
-        emptyMessage="Server Spec이 없습니다."
-      />
-
-      {isModalOpen && (
-        <SpecModal
-          open={isModalOpen}
-          onOpenChange={setIsModalOpen}
-          mode={modalMode}
-          spec={modalMode === 'edit' ? selectedSpec : undefined}
-          onSubmit={handleModalSubmit}
-          isLoading={createMutation.isPending || updateMutation.isPending}
+      <Card className="p-6">
+        <WorkspaceProjectSelector
+          selectedWorkspaceId={selectedWorkspaceId}
+          selectedProjectId={selectedProjectId}
+          onWorkspaceChange={handleWorkspaceChange}
+          onProjectChange={handleProjectChange}
         />
+      </Card>
+
+      {/* Workspace/Project 선택 안내 */}
+      {!isWorkspaceProjectSelected && (
+        <Card className="p-4 bg-muted/50">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="font-medium">안내:</span>
+            <span>
+              {!selectedWorkspaceId
+                ? 'Server Specs를 조회하려면 Workspace를 선택하세요.'
+                : !selectedProjectId
+                  ? 'Server Specs를 조회하려면 Project를 선택하세요.'
+                  : ''}
+            </span>
+          </div>
+        </Card>
+      )}
+
+      {/* Server Specs 목록 (Project 선택 시에만 표시) */}
+      {isWorkspaceProjectSelected && (
+        <>
+          <CrudPageTemplate
+            data={specs}
+            columns={columns}
+            selectedItem={selectedSpec}
+            onItemSelect={setSelectedSpec}
+            onRefresh={refetch}
+            isLoading={isLoading}
+            onAdd={handleAdd}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            detailComponent={(props) => <SpecDetail spec={props.item} />}
+            title="Server Specs"
+            addButtonLabel="Server Spec 추가"
+            emptyMessage="Server Spec이 없습니다."
+          />
+
+          {isModalOpen && (
+            <SpecModal
+              open={isModalOpen}
+              onOpenChange={setIsModalOpen}
+              mode={modalMode}
+              spec={modalMode === 'edit' ? selectedSpec : undefined}
+              onSubmit={handleModalSubmit}
+              isLoading={createMutation.isPending || updateMutation.isPending}
+            />
+          )}
+        </>
       )}
     </div>
   );

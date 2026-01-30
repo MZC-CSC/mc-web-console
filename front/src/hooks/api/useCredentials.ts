@@ -15,7 +15,7 @@ export function useCredentials() {
     queryKey: ['credentials'],
     queryFn: async () => {
       const response = await apiPost<Credential[]>(
-        OPERATION_IDS.GET_CREDENTIAL_LIST,
+        OPERATION_IDS.MCIAM_LIST_CREDENTIALS,
         {
           request: {},
         }
@@ -46,10 +46,10 @@ export function useCredential(connConfigName: string | null) {
       }
 
       const response = await apiPost<ConnectionConfig>(
-        OPERATION_IDS.GET_CREDENTIAL,
+        OPERATION_IDS.MCIAM_GET_CREDENTIAL_BY_I_D,
         {
           pathParams: {
-            connConfigName,
+            credentialId: String(connConfigName),
           },
           request: {},
         }
@@ -82,7 +82,6 @@ export function useRegisterCredential() {
           request: credential,
         }
       );
-
       return response.responseData!;
     },
     onSuccess: () => {

@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 interface MonitorSettingFormProps {
   selectedWorkload: string | null;
   onWorkloadChange: (workloadId: string | null) => void;
+  nsId?: string;
 }
 
 /**
@@ -18,8 +19,9 @@ interface MonitorSettingFormProps {
 export function MonitorSettingForm({
   selectedWorkload,
   onWorkloadChange,
+  nsId,
 }: MonitorSettingFormProps) {
-  const { workloads, isLoading } = useMonitoringWorkloads();
+  const { workloads, isLoading } = useMonitoringWorkloads(nsId);
 
   const workloadOptions = workloads.map((w) => ({
     value: w.id,
@@ -34,7 +36,7 @@ export function MonitorSettingForm({
           <FormSelect
             label="Workload"
             value={selectedWorkload || ''}
-            onChange={(e) => onWorkloadChange(e.target.value || null)}
+            onChange={(value) => onWorkloadChange(value || null)}
             options={workloadOptions}
             placeholder="Workload 선택"
             disabled={isLoading}

@@ -57,7 +57,7 @@ export function LoginForm({ onSubmit, isLoading = false, error }: LoginFormProps
   const displayError = error || formError;
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">로그인</CardTitle>
         <CardDescription className="text-center">
@@ -105,7 +105,7 @@ export function LoginForm({ onSubmit, isLoading = false, error }: LoginFormProps
             forgotPasswordLinkText="비밀번호를 잊으셨나요?"
           />
         </CardContent>
-        <CardFooter className="flex flex-col space-y-2">
+        <CardFooter className="flex flex-col space-y-2 pt-4">
           <Button
             type="submit"
             className="w-full"

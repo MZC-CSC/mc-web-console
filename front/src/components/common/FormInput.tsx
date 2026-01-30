@@ -7,7 +7,7 @@ interface FormInputProps {
   label: string;
   type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url';
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   placeholder?: string;
   autoComplete?: string;
@@ -15,6 +15,7 @@ interface FormInputProps {
   error?: string;
   helperText?: string;
   disabled?: boolean;
+  readOnly?: boolean;
   className?: string;
 }
 
@@ -30,6 +31,7 @@ export function FormInput({
   error,
   helperText,
   disabled = false,
+  readOnly = false,
   className,
 }: FormInputProps) {
   return (
@@ -47,6 +49,7 @@ export function FormInput({
         autoComplete={autoComplete}
         required={required}
         disabled={disabled}
+        readOnly={readOnly}
         className={cn(error && 'border-destructive')}
       />
       {error && (

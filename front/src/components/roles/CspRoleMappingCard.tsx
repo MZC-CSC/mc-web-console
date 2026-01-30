@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CspRoleMapping } from '@/types/workspace';
+import { useCSPRoles } from '@/hooks/api/useCSPRoles';
+import { FormSelect } from '@/components/common/FormSelect';
+import { Button } from '@/components/common/Button';
 import {
   Table,
   TableBody,
@@ -44,7 +47,7 @@ export function CspRoleMappingCard({
 
   // CSP Role 목록 조회 (Provider 선택 시)
   const { cspRoles: availableRoles, isLoading } = useCSPRoles(
-    workspaceId,
+    workspaceId ?? null,
     selectedProvider || undefined
   );
 

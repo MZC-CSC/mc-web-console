@@ -155,3 +155,18 @@ export interface ConnectionConfig {
   regionName?: string;
   config?: Record<string, unknown>;
 }
+
+/**
+ * Cloud Provider 타입
+ */
+export type CloudProvider = 'aws' | 'azure' | 'gcp' | 'alibaba' | 'tencent' | 'ncpvpc' | 'mcmp';
+
+/**
+ * Server Status 타입
+ */
+export type ServerStatus = 'running' | 'stop' | 'terminate' | 'off';
+
+/**
+ * Workflow Icon 타입
+ */
+export type WorkflowIconType = 'save' | 'text' | 'filter' | 'if' | 'loop' | 'task';

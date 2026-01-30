@@ -22,7 +22,7 @@ export function useSpecs(nsId: string | null) {
         OPERATION_IDS.GET_SPEC_LIST,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: {},
         }
@@ -57,8 +57,8 @@ export function useSpec(nsId: string | null, specId: string | null) {
         OPERATION_IDS.GET_SPEC,
         {
           pathParams: {
-            nsId,
-            specId,
+            nsId: String(nsId),
+            specId: String(specId),
           },
           request: {},
         }
@@ -89,7 +89,7 @@ export function useCreateSpec() {
         OPERATION_IDS.CREATE_SPEC,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: spec,
         }
@@ -120,8 +120,8 @@ export function useUpdateSpec() {
         OPERATION_IDS.UPDATE_SPEC,
         {
           pathParams: {
-            nsId,
-            specId,
+            nsId: String(nsId),
+            specId: String(specId),
           },
           request: spec,
         }
@@ -153,8 +153,8 @@ export function useDeleteSpec() {
         OPERATION_IDS.DELETE_SPEC,
         {
           pathParams: {
-            nsId,
-            specId,
+            nsId: String(nsId),
+            specId: String(specId),
           },
           request: {},
         }

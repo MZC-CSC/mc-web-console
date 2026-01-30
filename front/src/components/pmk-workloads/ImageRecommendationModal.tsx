@@ -136,7 +136,6 @@ export function ImageRecommendationModal({
               value={osType}
               onChange={(value) => setOsType(value)}
               options={[
-                { value: '', label: '전체' },
                 { value: 'ubuntu', label: 'Ubuntu' },
                 { value: 'centos', label: 'CentOS' },
                 { value: 'windows', label: 'Windows' },
@@ -188,7 +187,7 @@ export function ImageRecommendationModal({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {images.map((image) => (
+                  {images.map((image: Image) => (
                     <TableRow
                       key={image.id}
                       className={selectedImage?.id === image.id ? 'bg-muted' : ''}

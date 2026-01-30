@@ -22,7 +22,7 @@ export function useSSHKeys(nsId: string | null) {
         OPERATION_IDS.GET_SSH_KEY_LIST,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: {},
         }
@@ -57,8 +57,8 @@ export function useSSHKey(nsId: string | null, sshKeyId: string | null) {
         OPERATION_IDS.GET_SSH_KEY,
         {
           pathParams: {
-            nsId,
-            sshKeyId,
+            nsId: String(nsId),
+            sshKeyId: String(sshKeyId),
           },
           request: {},
         }
@@ -89,7 +89,7 @@ export function useCreateSSHKey() {
         OPERATION_IDS.CREATE_SSH_KEY,
         {
           pathParams: {
-            nsId,
+            nsId: String(nsId),
           },
           request: sshKey,
         }
@@ -120,8 +120,8 @@ export function useUpdateSSHKey() {
         OPERATION_IDS.UPDATE_SSH_KEY,
         {
           pathParams: {
-            nsId,
-            sshKeyId,
+            nsId: String(nsId),
+            sshKeyId: String(sshKeyId),
           },
           request: sshKey,
         }
@@ -153,8 +153,8 @@ export function useDeleteSSHKey() {
         OPERATION_IDS.DELETE_SSH_KEY,
         {
           pathParams: {
-            nsId,
-            sshKeyId,
+            nsId: String(nsId),
+            sshKeyId: String(sshKeyId),
           },
           request: {},
         }
