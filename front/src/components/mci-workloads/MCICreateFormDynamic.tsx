@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { FormInput } from '@/components/common/FormInput';
 import { FormNumberInput } from '@/components/common/FormNumberInput';
 import { FormTextarea } from '@/components/common/FormTextarea';
 import { Button } from '@/components/common/Button';
 import { MciDynamicReq, CreateSubGroupDynamicReq, Spec, Image } from '@/types/mci-workloads';
-import { Plus, Trash2, Search, CheckCircle, DollarSign } from 'lucide-react';
+import { Plus, Trash2, Search, CheckCircle, DollarSign, Check, Edit } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { SpecRecommendationModal } from './SpecRecommendationModal';
 import { ImageRecommendationModal } from './ImageRecommendationModal';
 import { MCICostEstimationModal } from './MCICostEstimationModal';
@@ -41,6 +42,12 @@ export function MCICreateFormDynamic({
   // SubGroups
   const [subGroups, setSubGroups] = useState<CreateSubGroupDynamicReq[]>([]);
 
+  // 선택된 Spec 정보 저장 (SubGroup index를 key로 사용)
+  const [selectedSpecs, setSelectedSpecs] = useState<Record<number, Spec>>({});
+
+  // 펼쳐진 SubGroup 인덱스 관리
+  const [expandedSubGroups, setExpandedSubGroups] = useState<Set<number>>(new Set());
+
   // 모달 상태
   const [specModalOpen, setSpecModalOpen] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -57,8 +64,9 @@ export function MCICreateFormDynamic({
 
   // SubGroup 추가
   const handleAddSubGroup = () => {
+    const newIndex = subGroups.length;
     const newSubGroup: CreateSubGroupDynamicReq = {
-      name: `subgroup-${subGroups.length + 1}`,
+      name: `subgroup-${newIndex + 1}`,
       subGroupSize: '1',
       specId: '',
       imageId: '',
@@ -66,18 +74,89 @@ export function MCICreateFormDynamic({
       rootDiskType: 'default',
     };
     setSubGroups([...subGroups, newSubGroup]);
+    // 새로 추가된 SubGroup을 자동으로 편집 모드로
+    setExpandedSubGroups(prev => new Set([...prev, newIndex]));
   };
 
   // SubGroup 삭제
   const handleDeleteSubGroup = (index: number) => {
     setSubGroups(subGroups.filter((_, i) => i !== index));
+    // expandedSubGroups에서도 제거
+    setExpandedSubGroups(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      // 삭제된 인덱스보다 큰 인덱스들을 1씩 감소
+      const updated = new Set<number>();
+      next.forEach(idx => {
+        if (idx > index) {
+          updated.add(idx - 1);
+        } else if (idx < index) {
+          updated.add(idx);
+        }
+      });
+      return updated;
+    });
+    // selectedSpecs에서도 제거 및 인덱스 조정
+    setSelectedSpecs(prev => {
+      const updated: Record<number, Spec> = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        const idx = parseInt(key);
+        if (idx < index) {
+          updated[idx] = value;
+        } else if (idx > index) {
+          updated[idx - 1] = value;
+        }
+      });
+      return updated;
+    });
+  };
+
+  // SubGroup 편집 완료
+  const handleDoneSubGroup = (index: number) => {
+    const sg = subGroups[index];
+
+    // 필수 항목 검증
+    if (!sg.name.trim()) {
+      setError(`SubGroup ${index + 1}: 이름을 입력해주세요.`);
+      return;
+    }
+    if (!sg.specId) {
+      setError(`SubGroup ${index + 1}: Spec을 선택해주세요.`);
+      return;
+    }
+    if (!sg.imageId) {
+      setError(`SubGroup ${index + 1}: Image를 선택해주세요.`);
+      return;
+    }
+    const size = parseInt(sg.subGroupSize || '0');
+    if (isNaN(size) || size < 1 || size > 100) {
+      setError(`SubGroup ${index + 1}: 서버 개수는 1-100 사이여야 합니다.`);
+      return;
+    }
+
+    // 에러 초기화 및 collapsed 상태로 변경
+    setError(null);
+    setExpandedSubGroups(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+  };
+
+  // SubGroup 편집 모드로 전환
+  const handleEditSubGroup = (index: number) => {
+    setExpandedSubGroups(prev => new Set([...prev, index]));
   };
 
   // SubGroup 필드 업데이트
   const handleUpdateSubGroup = (index: number, field: keyof CreateSubGroupDynamicReq, value: string) => {
-    const updated = [...subGroups];
-    updated[index] = { ...updated[index], [field]: value };
-    setSubGroups(updated);
+    console.log('[MCICreateFormDynamic] handleUpdateSubGroup - index:', index, 'field:', field, 'value:', value);
+    setSubGroups(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      console.log('[MCICreateFormDynamic] Updated subGroup:', updated[index]);
+      return updated;
+    });
   };
 
   // Spec 선택 모달 열기
@@ -88,15 +167,48 @@ export function MCICreateFormDynamic({
 
   // Spec 선택 완료
   const handleSelectSpec = (spec: Spec) => {
+    console.log('[MCICreateFormDynamic] handleSelectSpec called');
+    console.log('[MCICreateFormDynamic] currentSubGroupIndex:', currentSubGroupIndex);
+    console.log('[MCICreateFormDynamic] spec:', spec);
+    console.log('[MCICreateFormDynamic] spec.id:', spec.id);
+    console.log('[MCICreateFormDynamic] spec.connectionName:', spec.connectionName);
+
     if (currentSubGroupIndex !== null) {
-      handleUpdateSubGroup(currentSubGroupIndex, 'specId', spec.id);
-      // connectionName도 함께 설정
-      if (spec.connectionName) {
-        handleUpdateSubGroup(currentSubGroupIndex, 'connectionName', spec.connectionName);
-      }
+      // 한 번에 두 필드를 모두 업데이트 (state batching 문제 방지)
+      setSubGroups(prev => {
+        const updated = [...prev];
+        updated[currentSubGroupIndex] = {
+          ...updated[currentSubGroupIndex],
+          specId: spec.id,
+          ...(spec.connectionName && { connectionName: spec.connectionName })
+        };
+        console.log('[MCICreateFormDynamic] Updated subGroup (combined):', updated[currentSubGroupIndex]);
+        return updated;
+      });
+
+      // 선택된 Spec 정보 저장 (Image 모달에서 사용)
+      setSelectedSpecs(prev => ({
+        ...prev,
+        [currentSubGroupIndex]: spec
+      }));
+    } else {
+      console.error('[MCICreateFormDynamic] currentSubGroupIndex is null!');
     }
     setSpecModalOpen(false);
     setCurrentSubGroupIndex(null);
+  };
+
+  // ConnectionName 파싱 (예: "azure-koreacentral" -> {provider: "azure", region: "koreacentral"})
+  const parseConnectionName = (connectionName?: string): { provider?: string; region?: string } => {
+    if (!connectionName) return {};
+
+    const parts = connectionName.split('-');
+    if (parts.length < 2) return {};
+
+    const provider = parts[0];
+    const region = parts.slice(1).join('-');
+
+    return { provider, region };
   };
 
   // Image 선택 모달 열기
@@ -107,8 +219,19 @@ export function MCICreateFormDynamic({
 
   // Image 선택 완료
   const handleSelectImage = (image: Image) => {
+    console.log('[MCICreateFormDynamic] handleSelectImage called');
+    console.log('[MCICreateFormDynamic] image:', image);
+
     if (currentSubGroupIndex !== null) {
-      handleUpdateSubGroup(currentSubGroupIndex, 'imageId', image.id);
+      setSubGroups(prev => {
+        const updated = [...prev];
+        updated[currentSubGroupIndex] = {
+          ...updated[currentSubGroupIndex],
+          imageId: image.id,
+        };
+        console.log('[MCICreateFormDynamic] Updated subGroup (image):', updated[currentSubGroupIndex]);
+        return updated;
+      });
     }
     setImageModalOpen(false);
     setCurrentSubGroupIndex(null);
@@ -197,6 +320,9 @@ export function MCICreateFormDynamic({
       // 에러는 Hook의 onError에서 처리됨
     }
   };
+
+  // 모든 SubGroup이 완료되었는지 확인
+  const allSubGroupsCompleted = subGroups.length > 0 && expandedSubGroups.size === 0;
 
   // 폼 제출
   const handleSubmit = async (e: React.FormEvent) => {
@@ -305,20 +431,40 @@ export function MCICreateFormDynamic({
               </div>
             ) : (
               <div className="space-y-4">
-                {subGroups.map((sg, index) => (
+                {subGroups.map((sg, index) => {
+                  console.log(`[MCICreateFormDynamic] Rendering SubGroup ${index}:`, sg);
+                  console.log(`[MCICreateFormDynamic] SubGroup ${index} specId:`, sg.specId);
+                  const isExpanded = expandedSubGroups.has(index);
+
+                  return (
                   <Card key={index} className="p-4 border-2">
-                    <div className="flex items-start justify-between mb-4">
-                      <h4 className="font-medium">SubGroup {index + 1}</h4>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteSubGroup(index)}
-                        disabled={isLoading}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
+                    {isExpanded ? (
+                      // 편집 모드: 전체 폼 표시
+                      <>
+                        <div className="flex items-start justify-between mb-4">
+                          <h4 className="font-medium">SubGroup {index + 1}</h4>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleDoneSubGroup(index)}
+                              disabled={isLoading}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Done
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteSubGroup(index)}
+                              disabled={isLoading}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
 
                     <div className="space-y-3">
                       {/* SubGroup Name */}
@@ -352,7 +498,12 @@ export function MCICreateFormDynamic({
                         <div className="flex gap-2">
                           <input
                             type="text"
-                            value={sg.specId}
+                            value={
+                              selectedSpecs[index]?.cspSpecName ||
+                              selectedSpecs[index]?.name ||
+                              sg.specId ||
+                              ''
+                            }
                             readOnly
                             placeholder="Spec을 선택하세요"
                             className="flex-1 px-3 py-2 border rounded-md bg-muted text-sm"
@@ -414,20 +565,110 @@ export function MCICreateFormDynamic({
                         />
                       </div>
                     </div>
+                    </>
+                    ) : (
+                      // 완료 모드: 요약 정보만 표시
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <Badge variant="outline" className="text-base">
+                              SubGroup {index + 1}
+                            </Badge>
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-lg">{sg.name}</span>
+                              <span className="text-sm text-muted-foreground">
+                                ({sg.subGroupSize} VMs)
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditSubGroup(index)}
+                              disabled={isLoading}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteSubGroup(index)}
+                              disabled={isLoading}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">Spec:</span>
+                            <span className="font-medium">
+                              {selectedSpecs[index]?.cspSpecName || selectedSpecs[index]?.name || sg.specId}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground">Image:</span>
+                            <span className="font-medium truncate">{sg.imageId}</span>
+                          </div>
+                          {sg.rootDiskSize && sg.rootDiskSize !== 'default' && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Root Disk Size:</span>
+                              <span className="font-medium">{sg.rootDiskSize}</span>
+                            </div>
+                          )}
+                          {sg.rootDiskType && sg.rootDiskType !== 'default' && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">Root Disk Type:</span>
+                              <span className="font-medium">{sg.rootDiskType}</span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
           {/* 폼 액션 버튼 */}
           <div className="flex justify-between items-center pt-4 border-t">
-            <div className="flex gap-3">
+            {/* 안내 메시지 - 우선순위 순서대로 표시 */}
+            {!name.trim() ? (
+              <div className="text-sm text-amber-600 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                <span>MCI 이름을 입력해주세요.</span>
+              </div>
+            ) : subGroups.length === 0 ? (
+              <div className="text-sm text-amber-600 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                <span>SubGroup을 추가해주세요.</span>
+              </div>
+            ) : subGroups.length > 0 && expandedSubGroups.size > 0 ? (
+              <div className="text-sm text-amber-600 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                <span>
+                  편집 중인 SubGroup이 있습니다. Done 버튼을 눌러 완료해주세요.
+                  ({expandedSubGroups.size}개 편집 중)
+                </span>
+              </div>
+            ) : allSubGroupsCompleted ? (
+              <div className="text-sm text-green-600 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                <span>모든 SubGroup이 완료되었습니다.</span>
+              </div>
+            ) : null}
+            <div className="flex gap-3 ml-auto">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleValidate}
-                disabled={isLoading || validateMutation.isPending || !name.trim() || subGroups.length === 0}
+                disabled={isLoading || validateMutation.isPending || !name.trim() || !allSubGroupsCompleted}
               >
                 {validateMutation.isPending ? (
                   <>검증 중...</>
@@ -442,7 +683,7 @@ export function MCICreateFormDynamic({
                 type="button"
                 variant="outline"
                 onClick={handleCostEstimation}
-                disabled={isLoading || costEstimationMutation.isPending || !name.trim() || subGroups.length === 0}
+                disabled={isLoading || costEstimationMutation.isPending || !name.trim() || !allSubGroupsCompleted}
               >
                 {costEstimationMutation.isPending ? (
                   <>예상 중...</>
@@ -465,7 +706,7 @@ export function MCICreateFormDynamic({
               </Button>
               <Button
                 type="submit"
-                disabled={isLoading || !name.trim() || subGroups.length === 0}
+                disabled={isLoading || !name.trim() || !allSubGroupsCompleted}
               >
                 {isLoading ? '생성 중...' : 'MCI 생성'}
               </Button>
@@ -492,6 +733,19 @@ export function MCICreateFormDynamic({
           setCurrentSubGroupIndex(null);
         }}
         onApply={handleSelectImage}
+        specInfo={
+          currentSubGroupIndex !== null && selectedSpecs[currentSubGroupIndex]
+            ? (() => {
+                const spec = selectedSpecs[currentSubGroupIndex];
+                const { provider, region } = parseConnectionName(spec.connectionName);
+                return {
+                  provider: provider || spec.provider,
+                  region: region || spec.region,
+                  osArchitecture: spec.architecture,
+                };
+              })()
+            : undefined
+        }
       />
 
       {/* 비용 예상 모달 */}
