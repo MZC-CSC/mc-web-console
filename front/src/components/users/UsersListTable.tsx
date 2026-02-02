@@ -21,17 +21,15 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination';
 import { UsersTableFilters } from './UsersTableFilters';
-import { UsersTableActions } from './UsersTableActions';
 import { FormSelect } from '@/components/common/FormSelect';
 import { useUsers } from '@/hooks/api/useUsersManagement';
 import type { User, Filter, Sort } from '@/types/users';
 
 interface UsersListTableProps {
   onUserSelect: (user: User) => void;
-  onAddUser: () => void;
 }
 
-export function UsersListTable({ onUserSelect, onAddUser }: UsersListTableProps) {
+export function UsersListTable({ onUserSelect }: UsersListTableProps) {
   // State
   const [filter, setFilter] = useState<Filter | undefined>();
   const [sort, setSort] = useState<Sort>({ field: 'name', order: 'asc' });
@@ -121,10 +119,9 @@ export function UsersListTable({ onUserSelect, onAddUser }: UsersListTableProps)
 
   return (
     <div className="space-y-4">
-      {/* Filters and Actions */}
+      {/* Filters */}
       <div className="flex items-center justify-between gap-4">
         <UsersTableFilters onFilterChange={handleFilterChange} />
-        <UsersTableActions onAddUser={onAddUser} />
       </div>
 
       {/* Results summary and page size */}

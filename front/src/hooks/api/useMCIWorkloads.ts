@@ -334,29 +334,52 @@ export function useSpecRecommendations(request: SpecRecommendationRequest) {
  * Image Recommendation 조회 Hook
  */
 export function useImageRecommendations(request: ImageRecommendationRequest) {
-  const { data, isLoading, error, refetch } = useQuery<ApiResponse<{ image: Image[] }>>({
+  const { data, isLoading, error, refetch } = useQuery<ApiResponse<{ imageCount: number; imageList: Image[] }>>({
     queryKey: ['image-recommendations', request],
     queryFn: async () => {
       try {
         // Image는 system namespace 사용 (또는 request에서 nsId 전달)
         const nsId = 'system';
 
+        // API 스펙에 맞춰 request body 구성
+        const requestBody: Record<string, any> = {
+          maxResults: 100,
+        };
+
+        // Provider, Region (API 파라미터 이름: providerName, regionName)
+        if (request.provider) {
+          requestBody.providerName = request.provider;
+        }
+        if (request.region) {
+          requestBody.regionName = request.region;
+        }
+
+        // 선택적 필터 조건
+        if (request.osArchitecture) {
+          requestBody.osArchitecture = request.osArchitecture;
+        }
+        if (request.osType) {
+          requestBody.osType = request.osType;
+        }
+        if (request.gpuImage !== undefined) {
+          requestBody.isGPUImage = request.gpuImage;
+        }
+
+        console.log('[useImageRecommendations] Request body:', requestBody);
+
         const response = await apiPost<{ image: Image[] }>(
-          OPERATION_IDS.GET_ALL_IMAGE,
+          OPERATION_IDS.SEARCH_IMAGE,
           {
             pathParams: {
               nsId,
             },
-            queryParams: {
-              ...(request.osType && {
-                filterKey: 'guestOS',
-                filterVal: request.osType,
-              }),
-            },
+            request: requestBody,
           }
         );
 
-        console.log('[useImageRecommendations] Fetched', response.responseData?.image?.length || 0, 'images');
+        console.log('[useImageRecommendations] Response:', response);
+        console.log('[useImageRecommendations] Image count:', response.responseData?.imageCount || 0);
+        console.log('[useImageRecommendations] Image list length:', response.responseData?.imageList?.length || 0);
         return response;
       } catch (error) {
         console.error('[useImageRecommendations] API error:', error);
@@ -368,7 +391,7 @@ export function useImageRecommendations(request: ImageRecommendationRequest) {
   });
 
   return {
-    images: data?.responseData?.image || [],
+    images: data?.responseData?.imageList || [],
     isLoading,
     error,
     refetch,

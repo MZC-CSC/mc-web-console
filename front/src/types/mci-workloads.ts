@@ -489,6 +489,9 @@ export interface CreateSubGroupDynamicReq {
   zone?: string;
   description?: string;
   label?: Record<string, string>;
+  // UI 표시용 필드 (API 요청 시 제외)
+  specName?: string;
+  imageName?: string;
 }
 
 /**

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { MenuItem } from '@/types/menu';
 import { useMenu } from '@/hooks/useMenu';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SidebarProps {
   className?: string;
@@ -16,6 +16,11 @@ export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const { menuItems, isLoading } = useMenu();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const toggleExpand = (itemId: string) => {
     setExpandedItems((prev) => {
@@ -147,7 +152,12 @@ export function Sidebar({ className }: SidebarProps) {
                   <span>{item.name}</span>
                 </Link>
               ) : (
-                <span className="flex-1">{item.name}</span>
+                <span
+                  className="flex-1 cursor-pointer"
+                  onClick={() => toggleExpand(item.id)}
+                >
+                  {item.name}
+                </span>
               )}
             </div>
           ) : hasChildren && !isCollapsible ? (
@@ -180,12 +190,15 @@ export function Sidebar({ className }: SidebarProps) {
     );
   };
 
-  if (isLoading) {
+  // Prevent hydration mismatch by ensuring consistent rendering on server and client
+  if (!isMounted || isLoading) {
     return (
       <aside className={cn('w-64 border-r bg-background p-4', className)}>
         <nav className="space-y-1">
-          <div className="px-3 py-2 text-sm text-muted-foreground">
-            메뉴를 불러오는 중...
+          <div className="mt-4 first:mt-0">
+            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Loading...
+            </div>
           </div>
         </nav>
       </aside>
@@ -196,8 +209,10 @@ export function Sidebar({ className }: SidebarProps) {
     return (
       <aside className={cn('w-64 border-r bg-background p-4', className)}>
         <nav className="space-y-1">
-          <div className="px-3 py-2 text-sm text-muted-foreground">
-            메뉴가 없습니다.
+          <div className="mt-4 first:mt-0">
+            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              No Menu
+            </div>
           </div>
         </nav>
       </aside>

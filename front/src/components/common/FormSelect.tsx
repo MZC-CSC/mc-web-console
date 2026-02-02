@@ -28,6 +28,8 @@ interface FormSelectProps {
   className?: string;
   showDefaultOption?: boolean; // 기본 "Select" 옵션 표시 여부 (기본값: true)
   defaultOptionLabel?: string; // 기본 옵션 라벨 (기본값: 'Select')
+  horizontal?: boolean; // 가로 배치 여부 (기본값: false)
+  fullWidth?: boolean; // horizontal 모드에서 select가 전체 폭을 사용할지 여부 (기본값: false)
 }
 
 // Select 컴포넌트는 빈 문자열을 허용하지 않으므로, 빈 값을 '__all__'로 변환
@@ -46,6 +48,8 @@ export function FormSelect({
   className,
   showDefaultOption = true, // 기본값: true
   defaultOptionLabel = 'Select', // 기본값: 'Select'
+  horizontal = false, // 기본값: false (세로 배치)
+  fullWidth = false, // 기본값: false (w-40 고정 폭)
 }: FormSelectProps) {
   // 빈 문자열을 '__all__'로 변환하여 Select에 전달
   const selectValue = value === '' ? ALL_VALUE : value;
@@ -73,42 +77,50 @@ export function FormSelect({
     : transformedOptions;
 
   return (
-    <div className={cn('space-y-2', className)}>
-      <Label className={required ? "after:content-['*'] after:ml-0.5 after:text-destructive" : ''}>
+    <div className={cn(horizontal ? 'flex items-center gap-4 flex-nowrap' : 'space-y-2', className)}>
+      <Label
+        className={cn(
+          'text-sm font-medium',
+          required ? "after:content-['*'] after:ml-0.5 after:text-destructive" : '',
+          horizontal ? 'whitespace-nowrap flex-shrink-0 w-20 text-right' : ''
+        )}
+      >
         {label}
       </Label>
-      <Select value={selectValue} onValueChange={handleValueChange} disabled={disabled}>
-        <SelectTrigger className={cn(error && 'border-destructive')}>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {finalOptions
-            .sort((a, b) => {
-              // '__all__' 값을 맨 위로 정렬
-              if (a.value === ALL_VALUE) return -1;
-              if (b.value === ALL_VALUE) return 1;
-              return 0;
-            })
-            .map((option) => (
-              <SelectItem
-                key={option.value}
-                value={option.value}
-                disabled={option.disabled}
-              >
-                {option.label}
-              </SelectItem>
-            ))}
-        </SelectContent>
-      </Select>
-      {error && (
-        <div className="flex items-center gap-1 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4" />
-          <span>{error}</span>
-        </div>
-      )}
-      {helperText && !error && (
-        <p className="text-sm text-muted-foreground">{helperText}</p>
-      )}
+      <div className={cn(horizontal ? (fullWidth ? 'flex-1' : 'w-40') : '', 'space-y-2')}>
+        <Select value={selectValue} onValueChange={handleValueChange} disabled={disabled}>
+          <SelectTrigger className={cn(error && 'border-destructive')}>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {finalOptions
+              .sort((a, b) => {
+                // '__all__' 값을 맨 위로 정렬
+                if (a.value === ALL_VALUE) return -1;
+                if (b.value === ALL_VALUE) return 1;
+                return 0;
+              })
+              .map((option) => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  disabled={option.disabled}
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+        {error && (
+          <div className="flex items-center gap-1 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </div>
+        )}
+        {helperText && !error && (
+          <p className="text-sm text-muted-foreground">{helperText}</p>
+        )}
+      </div>
     </div>
   );
 }

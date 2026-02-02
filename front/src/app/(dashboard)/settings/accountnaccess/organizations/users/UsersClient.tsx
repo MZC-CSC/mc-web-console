@@ -3,87 +3,73 @@
 'use client';
 
 import { useState } from 'react';
-import { UsersListTable } from '@/components/users/UsersListTable';
-import { UserDetailCard } from '@/components/users-management/UserDetailCard';
+import { UsersTable } from '@/components/users/UsersTable';
 import { UserCreateForm } from '@/components/users-management/UserCreateForm';
 import { Button } from '@/components/common/Button';
-import type { User, UserMode } from '@/types/users';
+import { useUsers, useDeleteUser } from '@/hooks/api/useUsersManagement';
+import type { User } from '@/types/users';
 
+/**
+ * Users 관리 클라이언트 컴포넌트
+ * 데이터 조회 및 상태 관리만 담당
+ */
 export function UsersClient() {
-  // 모드 관리
-  const [mode, setMode] = useState<UserMode>('list');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isCreateMode, setIsCreateMode] = useState(false);
 
-  // Handlers
-  const handleUserSelect = (user: User) => {
-    setSelectedUser(user);
-    setMode('view');
+  // Data fetching - 데이터 조회만 수행
+  const { data, isLoading, refetch } = useUsers();
+  const deleteMutation = useDeleteUser();
+
+  const handleAdd = () => {
+    setIsCreateMode(true);
   };
 
-  const handleAddUser = () => {
-    setMode('create');
+  const handleCancelCreate = () => {
+    setIsCreateMode(false);
   };
 
-  const handleCloseViewMode = () => {
-    setSelectedUser(null);
-    setMode('list');
-  };
-
-  const handleCloseCreateMode = () => {
-    setMode('list');
+  const handleDelete = async (user: User) => {
+    if (confirm(`정말로 "${user.username}" 사용자를 삭제하시겠습니까?`)) {
+      try {
+        await deleteMutation.mutateAsync(user.id);
+        if (selectedUser?.id === user.id) {
+          setSelectedUser(null);
+        }
+      } catch (error) {
+        console.error('Delete error:', error);
+      }
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground">Manage users and their roles</p>
-        </div>
-        {mode === 'list' && (
-          <Button onClick={handleAddUser}>
-            Add User
-          </Button>
-        )}
-      </div>
-
-      {/* List Mode */}
-      {mode === 'list' && (
-        <UsersListTable
-          onUserSelect={handleUserSelect}
-          onAddUser={handleAddUser}
-        />
-      )}
-
-      {/* View Mode */}
-      {mode === 'view' && selectedUser && (
+      {isCreateMode ? (
         <div className="space-y-4">
-          <Button variant="outline" onClick={handleCloseViewMode}>
-            ← Back to List
-          </Button>
-          <UserDetailCard
-            item={selectedUser}
-            onClose={handleCloseViewMode}
-          />
-        </div>
-      )}
-
-      {/* Create Mode */}
-      {mode === 'create' && (
-        <div className="space-y-4">
-          <Button variant="outline" onClick={handleCloseCreateMode}>
+          <Button variant="outline" onClick={handleCancelCreate}>
             ← Back to List
           </Button>
           <UserCreateForm
             onSubmit={async (data) => {
-              // Create user logic will be handled by the form component
-              setMode('list');
+              setIsCreateMode(false);
             }}
-            onCancel={handleCloseCreateMode}
+            onCancel={handleCancelCreate}
             isLoading={false}
           />
         </div>
+      ) : (
+        <>
+          {/* Users Table - 데이터만 전달 */}
+          <UsersTable
+            users={data?.users || []}
+            isLoading={isLoading}
+            selectedUser={selectedUser}
+            onUserSelect={setSelectedUser}
+            onRefresh={refetch}
+            onAdd={handleAdd}
+            onDelete={handleDelete}
+          />
+        </>
       )}
     </div>
   );

@@ -8,6 +8,12 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
   - 컴포넌트 및 Hook 네이밍 규칙
   - API 관련 네이밍 규칙
 
+- **[UI_COMPONENT_GUIDELINES.md](./UI_COMPONENT_GUIDELINES.md)** - UI 컴포넌트 개발 가이드라인
+  - 팝업(Modal/Dialog) 구조화 규칙
+  - Form 컴포넌트 레이아웃
+  - 반응형 디자인 규칙
+  - 코드 예시 및 체크리스트
+
 ## Getting Started
 
 First, run the development server:

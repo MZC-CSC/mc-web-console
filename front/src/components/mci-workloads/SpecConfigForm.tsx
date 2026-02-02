@@ -21,41 +21,58 @@ export function SpecConfigForm({ value, onChange }: SpecConfigFormProps) {
 
   return (
     <div className="space-y-4">
-      {/* Memory (GB) */}
-      <FormRangeInput
-        label="Memory (GB)"
-        minValue={value.memoryMin || ''}
-        maxValue={value.memoryMax || ''}
-        onMinChange={(val) => handleChange('memoryMin', val)}
-        onMaxChange={(val) => handleChange('memoryMax', val)}
-      />
+      {/* 첫 번째 줄: Memory, vCPU, Cost */}
+      <div className="flex gap-4">
+        <div className="flex-1 min-w-0">
+          {/* Memory (GB) */}
+          <FormRangeInput
+            label="Memory (GB)"
+            minValue={value.memoryMin || ''}
+            maxValue={value.memoryMax || ''}
+            onMinChange={(val) => handleChange('memoryMin', val)}
+            onMaxChange={(val) => handleChange('memoryMax', val)}
+          />
+        </div>
 
-      {/* vCPU */}
-      <FormRangeInput
-        label="vCPU"
-        minValue={value.cpuMin || ''}
-        maxValue={value.cpuMax || ''}
-        onMinChange={(val) => handleChange('cpuMin', val)}
-        onMaxChange={(val) => handleChange('cpuMax', val)}
-      />
+        <div className="flex-1 min-w-0">
+          {/* vCPU */}
+          <FormRangeInput
+            label="vCPU"
+            minValue={value.cpuMin || ''}
+            maxValue={value.cpuMax || ''}
+            onMinChange={(val) => handleChange('cpuMin', val)}
+            onMaxChange={(val) => handleChange('cpuMax', val)}
+          />
+        </div>
 
-      {/* Cost (Hour) */}
-      <FormRangeInput
-        label="Cost (Hour)"
-        minValue={value.costMin || ''}
-        maxValue={value.costMax || ''}
-        onMinChange={(val) => handleChange('costMin', val)}
-        onMaxChange={(val) => handleChange('costMax', val)}
-      />
+        <div className="flex-1 min-w-0">
+          {/* Cost (Hour) */}
+          <FormRangeInput
+            label="Cost (Hour)"
+            minValue={value.costMin || ''}
+            maxValue={value.costMax || ''}
+            onMinChange={(val) => handleChange('costMin', val)}
+            onMaxChange={(val) => handleChange('costMax', val)}
+          />
+        </div>
+      </div>
 
-      {/* Architecture ✨ */}
-      <div>
-        <FormSelect
-          label="Architecture"
-          value={value.architecture || ''}
-          onChange={(newValue) => handleChange('architecture', newValue)}
-          options={ARCHITECTURE_OPTIONS}
-        />
+      {/* 두 번째 줄: Architecture, 빈 공간, 빈 공간 */}
+      <div className="flex gap-4">
+        <div className="flex-1 min-w-0">
+          {/* Architecture */}
+          <FormSelect
+            label="Architecture"
+            value={value.architecture || ''}
+            onChange={(newValue) => handleChange('architecture', newValue)}
+            options={ARCHITECTURE_OPTIONS}
+            horizontal
+          />
+        </div>
+
+        <div className="flex-1 min-w-0"></div>
+
+        <div className="flex-1 min-w-0"></div>
       </div>
     </div>
   );

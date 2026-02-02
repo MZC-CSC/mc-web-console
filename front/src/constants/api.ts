@@ -248,6 +248,7 @@ export const OPERATION_IDS = {
 
   // Image 조회
   GET_ALL_IMAGE: 'GetAllImage', // [GET] Get all images for a namespace
+  SEARCH_IMAGE: 'SearchImage', // [POST] Search images with filters
 
   // ==================== mc-iam-manager (179 operations) ====================
   UPDATE_FRAMEWORK_SERVICE: 'UpdateFrameworkService', // [PUT] Updates specific fields (e.g., BaseURL, Auth info) of an MCMP API service definition identified by its name. Cannot update name or version.
@@ -686,6 +687,7 @@ export const OPERATION_ID_TO_SUBSYSTEM: Record<string, string> = {
   [OPERATION_IDS.RECOMMEND_SPEC]: 'mc-infra-manager',
   [OPERATION_IDS.RECOMMEND_SPEC_OPTIONS]: 'mc-infra-manager',
   [OPERATION_IDS.GET_ALL_IMAGE]: 'mc-infra-manager',
+  [OPERATION_IDS.SEARCH_IMAGE]: 'mc-infra-manager',
 
   // mc-cost-optimizer (14 operations)
   [OPERATION_IDS.GET_ABRNORMAL_RCMD]: 'mc-cost-optimizer',

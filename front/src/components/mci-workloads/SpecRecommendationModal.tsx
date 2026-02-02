@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
+import { ColumnDef } from '@tanstack/react-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   Accordion,
@@ -11,25 +12,9 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/common/Button';
 import { FormSelect } from '@/components/common/FormSelect';
+import { DataTable } from '@/components/common/DataTable';
 import { SpecConfigForm } from './SpecConfigForm';
 import { AcceleratorConfigForm } from './AcceleratorConfigForm';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
 import type { Spec, SpecConfig, AcceleratorConfig, RecommendVmRequest } from '@/types/mci-workloads';
 import { useServerRecommendation } from '@/hooks/api/useMCIWorkloads';
 import {
@@ -73,12 +58,99 @@ export function SpecRecommendationModal({
   // 선택된 Spec
   const [selectedSpec, setSelectedSpec] = useState<Spec | null>(null);
 
-  // Pagination 상태
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
-
   // API Hook
   const { mutate, data, isPending } = useServerRecommendation();
+
+  // 테이블 컬럼 정의
+  const columns = useMemo<ColumnDef<Spec>[]>(
+    () => [
+      {
+        id: 'select',
+        header: '선택',
+        cell: ({ row }) => {
+          const spec = row.original;
+          return (
+            <input
+              type="radio"
+              checked={selectedSpec?.id === spec.id}
+              onChange={() => {
+                console.log('[SpecRecommendationModal] Radio selected:', spec);
+                setSelectedSpec(spec);
+              }}
+              className="cursor-pointer"
+              onClick={(e) => e.stopPropagation()}
+            />
+          );
+        },
+        size: 50,
+      },
+      {
+        accessorKey: 'providerName',
+        header: 'Provider',
+        cell: ({ row }) => {
+          const provider = row.original.providerName || row.original.provider || '-';
+          return (
+            <div className="max-w-[10ch] truncate cursor-help" title={provider}>
+              {provider}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'regionName',
+        header: 'Region',
+        cell: ({ row }) => {
+          const region = row.original.regionName || row.original.region || '-';
+          return (
+            <div className="max-w-[15ch] truncate cursor-help" title={region}>
+              {region}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'cspSpecName',
+        header: 'Spec Name',
+        cell: ({ row }) => {
+          const specName = row.original.cspSpecName || row.original.name;
+          return (
+            <div className="font-medium max-w-[20ch] truncate cursor-help" title={specName}>
+              {specName}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'costPerHour',
+        header: 'Price',
+        cell: ({ row }) => <div>{row.getValue('costPerHour') || '-'}</div>,
+      },
+      {
+        accessorKey: 'memoryGiB',
+        header: 'Memory (GB)',
+        cell: ({ row }) => (
+          <div>{row.original.memoryGiB || row.original.memory || '-'}</div>
+        ),
+      },
+      {
+        accessorKey: 'vCPU',
+        header: 'vCPU',
+        cell: ({ row }) => (
+          <div>{row.original.vCPU || row.original.cpu || '-'}</div>
+        ),
+      },
+      {
+        accessorKey: 'architecture',
+        header: 'Architecture',
+        cell: ({ row }) => (
+          <div className="font-semibold text-primary">
+            {row.getValue('architecture') || '-'}
+          </div>
+        ),
+      },
+    ],
+    [selectedSpec]
+  );
 
   /**
    * 검색 실행
@@ -118,9 +190,6 @@ export function SpecRecommendationModal({
 
     console.log('[SpecRecommendationModal] Search request:', request);
 
-    // 검색 시 페이지 리셋
-    setCurrentPage(1);
-
     mutate(request);
   };
 
@@ -133,6 +202,7 @@ export function SpecRecommendationModal({
       return;
     }
 
+    console.log('[SpecRecommendationModal] Apply - selectedSpec:', selectedSpec);
     onApply(selectedSpec);
     handleClose();
   };
@@ -146,8 +216,6 @@ export function SpecRecommendationModal({
     setAcceleratorConfig({});
     setProviderFilter('');
     setSelectedSpec(null);
-    setCurrentPage(1);
-    setPageSize(20);
     onClose();
   };
 
@@ -162,89 +230,66 @@ export function SpecRecommendationModal({
       : data.responseData
     : [];
 
-  // Pagination 계산
-  const totalPages = Math.ceil(filteredSpecs.length / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const currentData = filteredSpecs.slice(startIndex, endIndex);
-
-  /**
-   * 페이지 변경
-   */
-  const handlePageChange = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-  };
-
-  /**
-   * 페이지 크기 변경
-   */
-  const handlePageSizeChange = (size: string) => {
-    setPageSize(Number(size));
-    setCurrentPage(1); // 첫 페이지로 리셋
-  };
-
-  /**
-   * 페이지 번호 목록 생성
-   */
-  const getPageNumbers = () => {
-    const pages: (number | 'ellipsis')[] = [];
-    const maxVisible = 5;
-
-    if (totalPages <= maxVisible) {
-      // 전체 페이지가 maxVisible 이하면 모두 표시
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // 현재 페이지 주변만 표시
-      const half = Math.floor(maxVisible / 2);
-      let start = Math.max(1, currentPage - half);
-      let end = Math.min(totalPages, start + maxVisible - 1);
-
-      if (end - start < maxVisible - 1) {
-        start = Math.max(1, end - maxVisible + 1);
-      }
-
-      if (start > 1) {
-        pages.push(1);
-        if (start > 2) pages.push('ellipsis');
-      }
-
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-
-      if (end < totalPages) {
-        if (end < totalPages - 1) pages.push('ellipsis');
-        pages.push(totalPages);
-      }
-    }
-
-    return pages;
-  };
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="!w-[90vw] !max-w-[calc(100%-2rem)] sm:!max-w-[90vw] md:!max-w-[90vw] lg:!max-w-[1400px] !max-w-[1400px] max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="!w-[90vw] !max-w-[calc(100%-2rem)] sm:!max-w-[90vw] md:!max-w-[90vw] lg:!max-w-[1400px] !max-w-[1400px] max-h-[90vh] flex flex-col p-0">
+        {/* Title 영역 - 고정 */}
+        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <DialogTitle>Server Recommendation</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Region Selection & Search Button */}
+        {/* 본문 영역 - 스크롤 가능 */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="space-y-4">
+          {/* 조회 조건 영역 (좌측) + Search 버튼 (우측) */}
           <div className="flex gap-4">
-            <div className="flex-1">
+            {/* 좌측: 조회 조건 */}
+            <div className="flex-1 space-y-4">
+              {/* Region Selection */}
               <FormSelect
-                label="Select Region"
+                label="Region"
                 value={region}
                 onChange={(value) => setRegion(value as RegionKey | '')}
                 options={Object.entries(REGIONS).map(([key, { label }]) => ({
                   value: key,
                   label,
                 }))}
+                horizontal
+                fullWidth
+              />
+
+              {/* Spec & Accelerator Config (Accordion) */}
+              <Accordion type="multiple" defaultValue={['spec']} className="w-full">
+                {/* Spec Config */}
+                <AccordionItem value="spec">
+                  <AccordionTrigger>Spec Config</AccordionTrigger>
+                  <AccordionContent>
+                    <SpecConfigForm value={specConfig} onChange={setSpecConfig} />
+                  </AccordionContent>
+                </AccordionItem>
+
+                {/* Accelerator Config */}
+                <AccordionItem value="accelerator">
+                  <AccordionTrigger>Accelerator Config</AccordionTrigger>
+                  <AccordionContent>
+                    <AcceleratorConfigForm value={acceleratorConfig} onChange={setAcceleratorConfig} />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Provider Filter */}
+              <FormSelect
+                label="Provider"
+                value={providerFilter}
+                onChange={setProviderFilter}
+                options={PROVIDER_OPTIONS}
+                defaultOptionLabel="All"
+                horizontal
               />
             </div>
-            <div className="flex items-end">
+
+            {/* 우측: Search 버튼 */}
+            <div className="flex-shrink-0 flex items-start pt-6">
               <Button onClick={handleSearch} disabled={isPending}>
                 {isPending ? (
                   <>Loading...</>
@@ -258,166 +303,28 @@ export function SpecRecommendationModal({
             </div>
           </div>
 
-          {/* Spec & Accelerator Config (Accordion) */}
-          <Accordion type="multiple" defaultValue={['spec']} className="w-full">
-            {/* Spec Config */}
-            <AccordionItem value="spec">
-              <AccordionTrigger>Spec Config</AccordionTrigger>
-              <AccordionContent>
-                <SpecConfigForm value={specConfig} onChange={setSpecConfig} />
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Accelerator Config */}
-            <AccordionItem value="accelerator">
-              <AccordionTrigger>Accelerator Config</AccordionTrigger>
-              <AccordionContent>
-                <AcceleratorConfigForm value={acceleratorConfig} onChange={setAcceleratorConfig} />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-
-          {/* Provider Filter */}
-          <div className="grid grid-cols-4 gap-4">
-            <FormSelect
-              label="Cloud Provider Filter"
-              value={providerFilter}
-              onChange={setProviderFilter}
-              options={PROVIDER_OPTIONS}
-              defaultOptionLabel="All"
-            />
-          </div>
-
           {/* Results Table */}
-          {isPending ? (
-            <div className="text-center py-8 text-muted-foreground">검색 중...</div>
-          ) : filteredSpecs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {data ? '검색 결과가 없습니다.' : 'Region을 선택하고 Search를 클릭하세요.'}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {/* 결과 요약 및 페이지 크기 선택 */}
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredSpecs.length)} of{' '}
-                  {filteredSpecs.length} results
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Rows per page:</span>
-                  <FormSelect
-                    label=""
-                    value={String(pageSize)}
-                    onChange={handlePageSizeChange}
-                    options={[
-                      { value: '10', label: '10' },
-                      { value: '20', label: '20' },
-                      { value: '50', label: '50' },
-                      { value: '100', label: '100' },
-                    ]}
-                    className="w-20"
-                  />
-                </div>
-              </div>
-
-              {/* 테이블 - 고정 높이 with 스크롤 */}
-              <div className="border rounded-lg overflow-hidden">
-                <div className="max-h-[500px] overflow-y-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-background z-10">
-                      <TableRow>
-                        <TableHead className="w-12 bg-background">선택</TableHead>
-                        <TableHead className="bg-background">Provider</TableHead>
-                        <TableHead className="bg-background">Region</TableHead>
-                        <TableHead className="bg-background">Spec Name</TableHead>
-                        <TableHead className="bg-background">Price</TableHead>
-                        <TableHead className="bg-background">Memory (GB)</TableHead>
-                        <TableHead className="bg-background">vCPU</TableHead>
-                        <TableHead className="bg-background">Architecture ✨</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {currentData.map((spec) => (
-                        <TableRow
-                          key={spec.id}
-                          className={`cursor-pointer hover:bg-muted/50 ${
-                            selectedSpec?.id === spec.id ? 'bg-muted' : ''
-                          }`}
-                          onClick={() => setSelectedSpec(spec)}
-                        >
-                          <TableCell>
-                            <input
-                              type="radio"
-                              checked={selectedSpec?.id === spec.id}
-                              onChange={() => setSelectedSpec(spec)}
-                              className="cursor-pointer"
-                            />
-                          </TableCell>
-                          <TableCell>{spec.providerName || spec.provider || '-'}</TableCell>
-                          <TableCell>{spec.regionName || spec.region || '-'}</TableCell>
-                          <TableCell className="font-medium">
-                            {spec.cspSpecName || spec.name}
-                          </TableCell>
-                          <TableCell>{spec.costPerHour || '-'}</TableCell>
-                          <TableCell>{spec.memoryGiB || spec.memory || '-'}</TableCell>
-                          <TableCell>{spec.vCPU || spec.cpu || '-'}</TableCell>
-                          <TableCell className="font-semibold text-primary">
-                            {spec.architecture || '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        className={
-                          currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                        }
-                      />
-                    </PaginationItem>
-
-                    {getPageNumbers().map((page, index) => (
-                      <PaginationItem key={index}>
-                        {page === 'ellipsis' ? (
-                          <PaginationEllipsis />
-                        ) : (
-                          <PaginationLink
-                            onClick={() => handlePageChange(page)}
-                            isActive={currentPage === page}
-                            className="cursor-pointer"
-                          >
-                            {page}
-                          </PaginationLink>
-                        )}
-                      </PaginationItem>
-                    ))}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        className={
-                          currentPage === totalPages
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              )}
-            </div>
-          )}
+          <DataTable
+            data={filteredSpecs}
+            columns={columns}
+            onRowClick={(spec) => {
+              console.log('[SpecRecommendationModal] Row clicked:', spec);
+              setSelectedSpec(spec);
+            }}
+            isLoading={isPending}
+            emptyMessage={
+              !data
+                ? 'Region을 선택하고 Search를 클릭하세요.'
+                : '검색 결과가 없습니다.'
+            }
+            selectedItem={selectedSpec}
+            getRowId={(row) => row.id}
+          />
+          </div>
         </div>
 
-        <DialogFooter>
+        {/* Footer 영역 - 고정 */}
+        <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>

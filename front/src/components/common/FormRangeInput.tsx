@@ -54,7 +54,7 @@ export function FormRangeInput({
         <Label
           htmlFor={minInputId}
           className={cn(
-            'text-sm font-medium whitespace-nowrap flex-shrink-0 min-w-[120px]',
+            'text-sm font-medium whitespace-nowrap flex-shrink-0 w-20 text-right',
             required ? "after:content-['*'] after:ml-0.5 after:text-destructive" : ''
           )}
         >
@@ -71,7 +71,7 @@ export function FormRangeInput({
             min={min}
             max={max}
             step={step}
-            className={cn(error && 'border-destructive', 'w-20')}
+            className={cn(error && 'border-destructive', 'w-16')}
             aria-label={`${label} - Minimum`}
           />
           <span className="text-muted-foreground flex-shrink-0">~</span>
@@ -85,7 +85,7 @@ export function FormRangeInput({
             min={min}
             max={max}
             step={step}
-            className={cn(error && 'border-destructive', 'w-20')}
+            className={cn(error && 'border-destructive', 'w-16')}
             aria-label={`${label} - Maximum`}
           />
         </div>

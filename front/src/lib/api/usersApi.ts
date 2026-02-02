@@ -14,15 +14,18 @@ import type {
  * Users 목록 조회
  */
 export async function listUsers(params: ListUsersParams = {}): Promise<ListUsersResponse> {
-  const response = await apiPost<ListUsersResponse>(
+  const response = await apiPost<User[]>(
     OPERATION_IDS.LIST_USERS,
     {
       request: params,
     }
   );
+
+  const users = response.responseData || [];
+
   return {
-    users: response.responseData?.users || [],
-    total: response.responseData?.total || 0,
+    users: users,
+    total: users.length,
   };
 }
 
@@ -33,7 +36,7 @@ export async function getUserByID(userId: string): Promise<User> {
   const response = await apiPost<User>(
     OPERATION_IDS.GET_USER_BY_I_D,
     {
-      request: { userId },
+      request: { id: userId },
     }
   );
   return response.responseData!;
