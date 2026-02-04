@@ -5,7 +5,12 @@ import { handleApiError } from '@/lib/utils/errorHandler';
 import { API_PATHS, OPERATION_IDS, OPERATION_ID_TO_SUBSYSTEM } from '@/constants/api';
 import type { OperationId } from '@/constants/api';
 import { LoginResponse } from '@/types/auth';
-import { setAccessTokenCookie } from '@/lib/utils/cookies';
+import { 
+  setAccessTokenCookie,
+  setRefreshTokenCookie,
+  isTokenExpired,
+  isTokenExpiringSoon,
+} from '@/lib/utils/cookies';
 import { parseApiError, AppError } from '@/types/error';
 
 /**
@@ -30,21 +35,97 @@ export function setAuthToken(token: string | null) {
 }
 
 /**
- * 참고: Backend Middleware가 자동으로 token을 갱신하므로
- * Frontend에서는 단순히 401 에러 시 재시도만 수행합니다.
+ * Refresh Token 갱신 중인지 추적하는 플래그
+ * 여러 요청이 동시에 refresh를 호출하지 않도록 방지
  */
+let isRefreshing = false;
+let refreshPromise: Promise<void> | null = null;
 
 /**
- * 참고: Backend Middleware가 만료된 token을 자동으로 갱신하므로
- * Frontend에서는 별도의 token refresh 로직이 불필요합니다.
- * 401 에러 발생 시 단순히 재시도만 하면 Backend에서 자동 처리합니다.
+ * Access Token을 가져오는 헬퍼 함수
  */
+function getAccessTokenFromStorage(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const authStorage = localStorage.getItem('auth-storage');
+  if (!authStorage) {
+    return null;
+  }
+
+  try {
+    const authData = JSON.parse(authStorage);
+    return authData?.state?.accessToken || null;
+  } catch (error) {
+    console.error('[Token] Failed to parse auth storage:', error);
+    return null;
+  }
+}
+
+/**
+ * Refresh Token을 사용하여 Access Token 갱신
+ */
+async function refreshAccessToken(): Promise<void> {
+  // 이미 refresh 중이면 기존 Promise 반환
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const { useAuthStore } = await import('@/hooks/useAuth');
+      const store = useAuthStore.getState();
+      
+      if (!store.refreshTokenValue) {
+        throw new Error('Refresh token이 없습니다.');
+      }
+
+      console.log('[Token Refresh] Refreshing access token...');
+      
+      await store.refreshToken();
+      
+      console.log('[Token Refresh] ✅ Access token refreshed successfully');
+    } catch (error) {
+      console.error('[Token Refresh] ❌ Failed to refresh token:', error);
+      
+      // 에러 메시지 추출
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : '토큰 갱신에 실패했습니다. 다시 로그인해주세요.';
+      
+      console.error('[Token Refresh] Error details:', {
+        message: errorMessage,
+        error,
+      });
+      
+      // Refresh 실패 시 로그아웃
+      const { useAuthStore } = await import('@/hooks/useAuth');
+      useAuthStore.getState().logout();
+      
+      // 로그인 페이지로 리다이렉트 (사용자에게 명확한 안내)
+      if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        window.location.href = `/login?expired=true&reason=refresh_failed&message=${encodeURIComponent(errorMessage)}&redirect=${encodeURIComponent(currentPath)}`;
+      }
+      
+      throw error;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
 
 /**
  * API 요청 인터셉터
+ * Access token 만료 감지 및 자동 refresh 로직 포함
  */
 apiClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
     // 요청 전 처리 (로깅 등)
     if (process.env.NODE_ENV === 'development') {
       console.log('API Request:', {
@@ -54,18 +135,59 @@ apiClient.interceptors.request.use(
       });
     }
 
-    // 클라이언트 사이드에서 localStorage에서 토큰 가져와서 헤더에 설정
+    // Refresh API 호출 시에는 토큰 갱신 로직을 건너뜀 (무한 루프 방지)
+    const isRefreshRequest = config.url?.includes('/auth/refresh') || 
+                            (config.data && typeof config.data === 'object' && 
+                             (config.data.operationId === 'Webloginrefresh' || 
+                              config.data.operationId === OPERATION_IDS.LOGIN_REFRESH));
+    
+    if (isRefreshRequest) {
+      // Refresh API 호출 시에는 refresh token을 사용하므로 access token 검사를 건너뜀
+      console.log('[Token] Refresh API request detected, skipping token refresh check');
+      return config;
+    }
+
+    // 클라이언트 사이드에서 토큰 확인 및 만료 감지
     if (typeof window !== 'undefined') {
       const authStorage = localStorage.getItem('auth-storage');
       if (authStorage) {
         try {
           const authData = JSON.parse(authStorage);
           const token = authData?.state?.accessToken;
-          if (token && !config.headers['Authorization']) {
-            config.headers['Authorization'] = `Bearer ${token}`;
+          
+          if (token) {
+            // Access token 만료 확인
+            if (isTokenExpired(token) || isTokenExpiringSoon(token, 60)) {
+              console.log('[Token] Access token expired or expiring soon, refreshing...');
+              
+              try {
+                // Refresh 호출 (동시 호출 방지 메커니즘 포함)
+                await refreshAccessToken();
+                
+                // Refresh 후 새 토큰으로 헤더 업데이트
+                const newAuthStorage = localStorage.getItem('auth-storage');
+                if (newAuthStorage) {
+                  const newAuthData = JSON.parse(newAuthStorage);
+                  const newToken = newAuthData?.state?.accessToken;
+                  if (newToken) {
+                    config.headers['Authorization'] = `Bearer ${newToken}`;
+                    console.log('[Token] ✅ Token refreshed, request will proceed with new token');
+                  }
+                }
+              } catch (refreshError) {
+                console.error('[Token] ❌ Failed to refresh token:', refreshError);
+                // Refresh 실패 시 요청을 중단하지 않고 진행
+                // (에러 응답 인터셉터에서 처리)
+              }
+            } else {
+              // 토큰이 유효하면 헤더에 설정
+              if (!config.headers['Authorization']) {
+                config.headers['Authorization'] = `Bearer ${token}`;
+              }
+            }
           }
         } catch (error) {
-          console.error('Failed to parse auth storage:', error);
+          console.error('[Token] Failed to parse auth storage:', error);
         }
       }
     }
@@ -128,10 +250,17 @@ apiClient.interceptors.response.use(
       }
 
       // Cookie 업데이트
-      import('@/lib/utils/cookies').then(({ setAccessTokenCookie }) => {
+      import('@/lib/utils/cookies').then(({ setAccessTokenCookie, setRefreshTokenCookie }) => {
         // expires_in은 기본값 사용 (300초)
         setAccessTokenCookie(newAccessToken, 300);
-        console.log('[Token Update] Cookie updated');
+        console.log('[Token Update] Access token cookie updated');
+        
+        // Refresh token도 업데이트 (있는 경우)
+        if (newRefreshToken) {
+          // refresh_expires_in은 기본값 사용 (1800초 = 30분)
+          setRefreshTokenCookie(newRefreshToken, 1800);
+          console.log('[Token Update] Refresh token cookie updated');
+        }
       }).catch(error => {
         console.error('[Token Update] Failed to update cookie:', error);
       });
@@ -170,13 +299,13 @@ apiClient.interceptors.response.use(
       } catch (retryError) {
         console.error('[API Interceptor] ❌ Retry failed - Refresh token likely expired');
 
-        // 재시도도 실패하면 로그인 필요 (refresh token도 만료됨)
+        // 재시도도 실패하면 로그아웃 및 로그인 페이지로 리다이렉트
         if (typeof window !== 'undefined') {
           const { useAuthStore } = await import('@/hooks/useAuth');
           useAuthStore.getState().logout();
 
           const currentPath = window.location.pathname;
-          // 더 명확한 expired 파라미터
+          // 사용자에게 명확한 안내를 위한 파라미터
           window.location.href = `/login?expired=true&reason=refresh_token_expired&redirect=${encodeURIComponent(currentPath)}`;
         }
 
@@ -259,15 +388,81 @@ export async function apiPost<T = unknown, R = Record<string, unknown>>(
 ): Promise<ApiResponse<T>> {
   const subsystemName = getSubsystemName(operationId);
   // subsystemName이 있으면 /api/{subsystemName}/{operationId}, 없으면 /api/{operationId}
-  const path = subsystemName 
+  const path = subsystemName
     ? `/api/${subsystemName}/${operationId}`
     : `/api/${operationId}`;
-  
+
+  // FormData가 있으면 multipart/form-data로 전송
+  if (data?.formData) {
+    // FormData에 operationId와 기타 메타데이터 추가
+    const formData = data.formData;
+    formData.append('operationId', operationId);
+
+    // pathParams를 FormData에 추가 (Buffalo 서버가 처리)
+    if (data.pathParams) {
+      Object.entries(data.pathParams).forEach(([key, value]) => {
+        formData.append(`pathParams[${key}]`, value);
+      });
+    }
+
+    // queryParams를 FormData에 추가
+    if (data.queryParams) {
+      Object.entries(data.queryParams).forEach(([key, value]) => {
+        formData.append(`queryParams[${key}]`, String(value));
+      });
+    }
+
+    try {
+      const response = await apiClient.post<ApiResponse<T>>(
+        path,
+        formData,
+        {
+          ...config,
+          headers: {
+            ...config?.headers,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      // 에러 처리 (기존과 동일)
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw handleApiError({
+            status: error.response.status,
+            data: error.response.data,
+            config: {
+              url: path,
+              method: 'POST',
+            },
+          });
+        } else {
+          const apiError = parseApiError(error);
+          throw new AppError(
+            apiError.code,
+            apiError.message,
+            apiError.status,
+            {
+              operationId,
+              path,
+              subsystemName,
+            },
+            error
+          );
+        }
+      }
+      throw error;
+    }
+  }
+
+  // 일반 JSON 요청
   const requestBody = {
     operationId,
     ...data,
   };
-  
+
   try {
     const response = await apiClient.post<ApiResponse<T>>(
       path,

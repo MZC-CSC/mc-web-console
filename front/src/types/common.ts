@@ -17,6 +17,7 @@ export interface ApiRequest<T = Record<string, unknown>> {
   pathParams?: Record<string, string>;
   queryParams?: Record<string, string | number | boolean>;
   request?: T;
+  formData?: FormData; // 파일 업로드용 FormData
 }
 
 /**

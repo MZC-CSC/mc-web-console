@@ -226,6 +226,9 @@ export const OPERATION_IDS = {
   GET_ALL_MCI: 'GetAllMci', // [GET] Get all MCI workloads for a namespace
   GET_MCI: 'GetMci', // [GET] Get specific MCI details
   GET_CONTROL_MCI: 'GetControlMci', // [GET] Control MCI (suspend/resume/reboot/terminate/refine)
+  GET_CONTROL_MCI_VM: 'GetControlMciVm', // [GET] Control VM lifecycle (suspend/resume/reboot/terminate)
+  POST_CMD_MCI: 'PostcmdMci', // [POST] Execute remote command on MCI VM
+  POST_FILE_TO_MCI: 'PostFileToMci', // [POST] Transfer file to MCI VM
   DEL_MCI: 'DelMci', // [DELETE] Delete MCI
 
   // MCI Policy 조회 및 관리
@@ -238,6 +241,7 @@ export const OPERATION_IDS = {
   POST_MCI_DYNAMIC_REVIEW: 'PostMciDynamicReview', // [POST] Review MCI creation (cost estimation)
   POST_MCI_SUBGROUP_DYNAMIC: 'PostMciSubGroupDynamic', // [POST] Add VM SubGroup to existing MCI (Dynamic)
   POST_MCI_DYNAMIC_SUBGROUP_VM_REVIEW: 'PostMciDynamicSubGroupVmReview', // [POST] Review SubGroup VM creation (cost estimation)
+  POST_MCI_SUBGROUP_SCALE_OUT: 'PostMciSubGroupScaleOut', // [POST] Scale out SubGroup by adding VMs
 
   // MCI 생성 (Expert Mode)
   POST_MCI_VM: 'PostMciVm', // [POST] Add Homogeneous VM SubGroup to Existing MCI (Expert)
@@ -671,16 +675,20 @@ export const OPERATION_ID_TO_SUBSYSTEM: Record<string, string> = {
   [OPERATION_IDS.UPDATE_REPOSITORY_USING_P_U_T_1]: 'mc-application-manager',
   [OPERATION_IDS.UPLOAD_FILES_USING_P_O_S_T]: 'mc-application-manager',
 
-  // mc-infra-manager (13 operations)
+  // mc-infra-manager (14 operations)
   [OPERATION_IDS.GET_ALL_MCI]: 'mc-infra-manager',
   [OPERATION_IDS.GET_MCI]: 'mc-infra-manager',
   [OPERATION_IDS.GET_CONTROL_MCI]: 'mc-infra-manager',
+  [OPERATION_IDS.GET_CONTROL_MCI_VM]: 'mc-infra-manager',
+  [OPERATION_IDS.POST_CMD_MCI]: 'mc-infra-manager',
+  [OPERATION_IDS.POST_FILE_TO_MCI]: 'mc-infra-manager',
   [OPERATION_IDS.DEL_MCI]: 'mc-infra-manager',
   [OPERATION_IDS.POST_MCI_DYNAMIC]: 'mc-infra-manager',
   [OPERATION_IDS.POST_MCI_DYNAMIC_CHECK_REQUEST]: 'mc-infra-manager',
   [OPERATION_IDS.POST_MCI_DYNAMIC_REVIEW]: 'mc-infra-manager',
   [OPERATION_IDS.POST_MCI_SUBGROUP_DYNAMIC]: 'mc-infra-manager',
   [OPERATION_IDS.POST_MCI_DYNAMIC_SUBGROUP_VM_REVIEW]: 'mc-infra-manager',
+  [OPERATION_IDS.POST_MCI_SUBGROUP_SCALE_OUT]: 'mc-infra-manager',
   [OPERATION_IDS.POST_MCI_VM]: 'mc-infra-manager',
   [OPERATION_IDS.GET_MCI_POLICY]: 'mc-infra-manager',
   [OPERATION_IDS.POST_MCI_POLICY]: 'mc-infra-manager',
