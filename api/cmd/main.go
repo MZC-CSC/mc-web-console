@@ -108,6 +108,15 @@ func main() {
 	adminBFF := api.Group("/admin")
 	adminBFF.GET("/setup-yaml-check", handler.GetSetupYamlCheck)
 
+	// mc-costopti-ui SPA의 same-origin API 호출 프록시
+	// SPA가 window.location.origin 기반으로 /api/costopti/* 를 호출할 때 백엔드로 전달
+	api.Any("/costopti/*", handler.CostOptiProxy)
+
+	// iframe 리버스 프록시 (same-origin 임베딩을 위한 프론트엔드 서비스 프록시)
+	// GET /api/iframe/:service/* → api.yaml Services[service].BaseURL 로 프록시
+	api.Any("/iframe/:service", handler.IframeProxy)
+	api.Any("/iframe/:service/*", handler.IframeProxy)
+
 	// 서브시스템 프록시 라우트 (Buffalo SubsystemAnyController 호환)
 	// POST /api/:subsystemName/:operationId → conf/api.yaml 기반으로 백엔드 서비스에 프록시
 	api.Any("/:subsystemName/:operationId", handler.SubsystemAnyController)

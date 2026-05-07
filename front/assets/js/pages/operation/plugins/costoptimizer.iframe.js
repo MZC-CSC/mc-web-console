@@ -39,19 +39,10 @@ async function loadCostOptimizer() {
         return;
     }
 
-    var host = await webconsolejs["common/iframe/iframe"].GetApiHosts("mc-cost-optimizer-fe");
-    if (!host) {
-        document.getElementById("costIframe").innerHTML =
-            '<div class="alert alert-warning m-3">mc-cost-optimizer-fe 서비스 URL을 찾을 수 없습니다.<br>' +
-            'Settings &gt; Environment &gt; Cloud SPs &gt; Cloud Overview 에서 mc-cost-optimizer-fe URL을 등록해 주세요.</div>';
-        return;
-    }
-    // IFRAME_TARGET_IS_HOST=true 환경에서 :port 형식으로 오던 값에 browser origin을 붙이던 로직.
-    // GetApiHosts가 DB full URL을 그대로 전달하도록 변경되어 비활성화.
-    // const domain = window.location.protocol + '//' + window.location.hostname;
-    // if (host.startsWith(":")) {
-    //     host = `${domain}${host}`;
-    // }
+    // mc-web-console-api의 iframe 프록시를 통해 same-origin으로 접근
+    // (X-Frame-Options SAMEORIGIN 및 mixed content 문제 해결)
+    const origin = window.location.origin;
+    const host = `${origin}/api/iframe/mc-cost-optimizer-fe`;
     const data = getCostOptimizerData();
 
     webconsolejs["common/iframe/iframe"].addIframe("costIframe", host, data);
