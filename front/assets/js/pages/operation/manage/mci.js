@@ -1100,8 +1100,8 @@ export async function vmDetailInfo(vmId) {
   var operatingSystem = "Ubuntu";
 
   // Architecture 정보만 추출
-  var architecture = ""
-  if (data.addtionalDetails && Array.isArray(data.addtionalDetails)) {
+  var architecture = data.image?.osType || data.image?.osArchitecture || ""
+  if (!architecture && data.addtionalDetails && Array.isArray(data.addtionalDetails)) {
     var archDetail = data.addtionalDetails.find(detail => detail.key === "Architecture")
     if (archDetail) {
       architecture = archDetail.value
@@ -1137,8 +1137,8 @@ export async function vmDetailInfo(vmId) {
   $("#server_info_csp").text(providerName)
 
   // Row 2: Region, Zone, Config Name
-  var region = data.region.Region
-  var zone = data.region.Zone
+  var region = data.region?.region ?? data.region?.Region ?? ''
+  var zone = data.region?.zone ?? data.region?.Zone ?? ''
   var connectionName = data.connectionName
   $("#server_info_region").text(region)
   $("#server_info_zone").text(zone)
@@ -1177,11 +1177,11 @@ export async function vmDetailInfo(vmId) {
   // $("#server_detail_view_private_ip").text(data.privateIP)
   $("#server_detail_view_image_id").text(imageId)
   $("#server_detail_view_os").text(operatingSystem);
-  $("#server_detail_view_user_id_pass").text(data.vmUserAccount + "/ *** ")
+  $("#server_detail_view_user_id_pass").text(data.nodeUserName ? data.nodeUserName + ' / ***' : (data.vmUserAccount ? data.vmUserAccount + ' / ***' : '-'))
 
-  var region = data.region.Region
+  var region = data.region?.region ?? data.region?.Region ?? ''
 
-  var zone = data.region.Zone
+  var zone = data.region?.zone ?? data.region?.Zone ?? ''
 
   // connection tab
   var connectionName = data.connectionName
@@ -1212,11 +1212,11 @@ export async function vmDetailInfo(vmId) {
   var vmDetail = data.cspViewVmDetail;
   // var vmDetailKeyValueList = vmDetail.KeyValueList
   var addtionalDetails = data.addtionalDetails
-  var architecture = "";
+  var architecture = data.image?.osType || data.image?.osArchitecture || "";
   var vpcId = ""
   var subnetId = ""
 
-  if (addtionalDetails) {
+  if (!architecture && addtionalDetails) {
     for (var i = 0; i < addtionalDetails.length; i++) {
       if (addtionalDetails[i].key === "Architecture") {
         architecture = addtionalDetails[i].value;
@@ -1239,9 +1239,9 @@ export async function vmDetailInfo(vmId) {
   $("#server_detail_view_subnet_id").text(subnetId + "(" + subnetSystemId + ")")
   $("#server_detail_view_eth").text(eth)
   $("#server_detail_view_root_device_type").text(data.rootDiskType);
-  $("#server_detail_view_root_device").text(data.rootDeviceName);
+  $("#server_detail_view_root_device").text(data.RootDeviceName ?? data.rootDeviceName ?? '');
   $("#server_detail_view_keypair_name").text(data.sshKeyId)
-  $("#server_detail_view_access_id_pass").text(data.vmUserName + "/ *** ")
+  $("#server_detail_view_access_id_pass").text(data.vmUserName ? data.vmUserName + ' / ***' : '-')
 
 
   // server spec
@@ -1391,11 +1391,11 @@ export async function subGroup_vmDetailInfo(vmId) {
   // $("#server_detail_view_private_ip").text(data.privateIP)
   $("#subgroup_server_detail_view_image_id").text(imageId)
   $("#subgroup_server_detail_view_os").text(operatingSystem);
-  $("#subgroup_server_detail_view_user_id_pass").text(data.vmUserAccount + "/ *** ")
+  $("#subgroup_server_detail_view_user_id_pass").text(data.nodeUserName ? data.nodeUserName + ' / ***' : (data.vmUserAccount ? data.vmUserAccount + ' / ***' : '-'))
 
-  var region = data.region.Region
+  var region = data.region?.region ?? data.region?.Region ?? ''
 
-  var zone = data.region.Zone
+  var zone = data.region?.zone ?? data.region?.Zone ?? ''
 
   // connection tab
   var connectionName = data.connectionName
@@ -1426,11 +1426,11 @@ export async function subGroup_vmDetailInfo(vmId) {
   var vmDetail = data.cspViewVmDetail;
   // var vmDetailKeyValueList = vmDetail.KeyValueList
   var addtionalDetails = data.addtionalDetails
-  var architecture = "";
+  var architecture = data.image?.osType || data.image?.osArchitecture || "";
   var vpcId = ""
   var subnetId = ""
 
-  if (addtionalDetails) {
+  if (!architecture && addtionalDetails) {
     for (var i = 0; i < addtionalDetails.length; i++) {
       if (addtionalDetails[i].key === "Architecture") {
         architecture = addtionalDetails[i].value;
@@ -1453,9 +1453,9 @@ export async function subGroup_vmDetailInfo(vmId) {
   $("#subgroup_server_detail_view_subnet_id").text(subnetId + "(" + subnetSystemId + ")")
   $("#subgroup_server_detail_view_eth").text(eth)
   $("#subgroup_server_detail_view_root_device_type").text(data.rootDiskType);
-  $("#subgroup_server_detail_view_root_device").text(data.rootDeviceName);
+  $("#subgroup_server_detail_view_root_device").text(data.RootDeviceName ?? data.rootDeviceName ?? '');
   $("#subgroup_server_detail_view_keypair_name").text(data.sshKeyId)
-  $("#subgroup_server_detail_view_access_id_pass").text(data.vmUserName + "/ *** ")
+  $("#subgroup_server_detail_view_access_id_pass").text(data.vmUserName ? data.vmUserName + ' / ***' : '-')
 
 
   // server spec
