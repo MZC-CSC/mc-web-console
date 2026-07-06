@@ -2607,7 +2607,7 @@ function transformPolicyResponse(resp) {
         actionType = '',
         placementAlgo = '',
         postCommand = {},
-        vmDynamicReq = {}
+        nodeGroupDynamicReq = {}
       } = autoAction;
 
       const {
@@ -2621,8 +2621,8 @@ function transformPolicyResponse(resp) {
         description: vmDescription = '',
         label = {},
         name: vmName = '',
-        subGroupSize = ''
-      } = vmDynamicReq;
+        nodeGroupSize: subGroupSize = ''
+      } = nodeGroupDynamicReq;
       
       // API 응답에 없는 필드들은 기본값으로 설정
       const connectionName = '';
@@ -3020,7 +3020,7 @@ function buildPolicyRequestData(data) {
           command: data.command ? [data.command] : [],
           userName: data.userName
         },
-        subGroupDynamicReq: {
+        nodeGroupDynamicReq: {
           imageId: data.commonImage,
           specId: data.commonSpec,
           connectionName: data.connectionName,
@@ -3032,7 +3032,7 @@ function buildPolicyRequestData(data) {
           name: data.name,
           rootDiskSize: data.rootDiskSize,
           rootDiskType: data.rootDiskType,
-          subGroupSize: data.subGroupSize,
+          nodeGroupSize: data.subGroupSize,
           vmUserPassword: ""
         }
       },
