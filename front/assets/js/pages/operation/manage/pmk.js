@@ -1644,24 +1644,17 @@ export async function deployPmkDynamic() {
                 k8sVersion = versions[0].id || "";
             }
 
-            // provider 컨텍스트용 specId: RecommendK8sNode 조회 → 없으면 CSP별 하드코딩 fallback
+            // provider 컨텍스트용 specId: RecommendK8sNode를 connectionName으로 서버 사이드 필터링하여 조회
             commonSpec = await webconsolejs["common/api/services/pmk_api"]
                 .getRecommendedK8sSpecId(clusterData.connection);
             if (!commonSpec) {
-                const K8S_DEFAULT_SPEC = {
-                    'aws':     't3.medium',
-                    'azure':   'Standard_B2s',
-                    'gcp':     'n1-standard-2',
-                    'alibaba': 'ecs.c1.small',
-                    'ncp':     'SVR.VSVR.STAND.C002.M004.NET.SSD.B050.G002',
-                    'nhncloud': 'm2.c4m8',
-                    'ibm':     'cx2-4x8',
-                };
-                const sepIdx = clusterData.connection.indexOf('-');
-                const csp = clusterData.connection.substring(0, sepIdx).toLowerCase();
-                const region = clusterData.connection.substring(sepIdx + 1);
-                const instanceType = K8S_DEFAULT_SPEC[csp] || 't3.medium';
-                commonSpec = `${csp}+${region}+${instanceType}`;
+                // 하드코딩된 fallback 스펙은 리전마다 유효성이 달라 항상 실패할 수 있으므로 사용하지 않는다.
+                // 대신 실패 원인을 명확히 알리고 중단한다.
+                webconsolejs['common/util'].showToast(
+                    `No available spec found for connection '${clusterData.connection}'. Please check if specs are registered/synced for this connection.`,
+                    'error'
+                );
+                return;
             }
 
             commonImage = "default";
