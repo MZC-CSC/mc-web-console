@@ -496,11 +496,21 @@ export async function getAvailablek8sClusterNodeImage(providerName, regionName) 
 }
 
 // connectionName에 맞는 K8s 노드 spec을 동적 조회 (RecommendK8sNode)
-// connectionName이 일치하는 첫 번째 specId를 반환; 없거나 오류 시 ""
+// tumblebug가 connectionName을 서버 사이드 필터로 지원하므로(FilterSpecsByRangeRequest.ConnectionName),
+// 클라이언트에서 결과를 사후 필터링하지 않고 요청 단계에서 정확히 필터링한다.
+// 일치하는 첫 번째 specId를 반환; 없거나 오류 시 ""
 export async function getRecommendedK8sSpecId(connectionName) {
   const data = {
     request: {
-      limit: 200
+      filter: {
+        policy: [
+          {
+            metric: "connectionName",
+            condition: [{ operator: "==", operand: connectionName }]
+          }
+        ]
+      },
+      limit: 50
     }
   };
 
@@ -516,10 +526,9 @@ export async function getRecommendedK8sSpecId(connectionName) {
     }
 
     const specs = response.data.responseData;
-    if (!Array.isArray(specs)) return "";
+    if (!Array.isArray(specs) || specs.length === 0) return "";
 
-    const matched = specs.find(spec => spec.connectionName === connectionName);
-    return matched ? (matched.id || "") : "";
+    return specs[0].id || "";
   } catch (e) {
     return "";
   }
