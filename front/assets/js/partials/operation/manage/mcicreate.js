@@ -1192,7 +1192,7 @@ function initTemplateDeploySelect() {
 		}
 		const mciName = ($("#mci_name").val() || "").trim();
 		if (!mciName) {
-			alert("Please input MCI Name first");
+			webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please input MCI Name first");
 			this.value = "express";
 			mciDeployAlgorithmPrev = "express";
 			return;
@@ -1205,7 +1205,7 @@ export async function openTemplateSelectModal() {
 	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
 	var nsId = selectedWorkspaceProject.nsId;
 	if (!nsId) {
-		alert("Please select a project first");
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please select a project first");
 		revertDeployAlgorithmSelect();
 		return;
 	}
@@ -1266,7 +1266,7 @@ export async function openTemplateSelectModal() {
 export async function deployFromSelectedTemplate() {
 	const selected = templateSelectTable ? templateSelectTable.getSelectedData() : [];
 	if (selected.length === 0) {
-		alert("Please select a template");
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please select a template");
 		return;
 	}
 	const template = selected[0];
@@ -1278,7 +1278,7 @@ export async function deployFromSelectedTemplate() {
 	var mciDesc = $("#mci_desc").val();
 
 	if (!mciName) {
-		alert("MCI Name is required");
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "MCI Name is required");
 		return;
 	}
 
@@ -1289,9 +1289,10 @@ export async function deployFromSelectedTemplate() {
 		await webconsolejs["common/api/services/infratemplate_api"].deployFromTemplate(nsId, template.id, applyReq);
 		templateDeploySucceeded = true;
 		bootstrap.Modal.getInstance(document.getElementById("infra-template-select-modal"))?.hide();
-		alert("MCI creation request completed.");
-		window.location.href = "/webconsole/operations/manage/workloads/mciworkloads";
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.SUCCESS, "MCI creation request completed.");
+		// Toast가 보이도록 잠시 후 이동
+		setTimeout(() => { window.location.href = "/webconsole/operations/manage/workloads/mciworkloads"; }, 1500);
 	} catch (e) {
-		alert("Failed to deploy from template: " + (e?.response?.data?.message || e.message));
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Failed to deploy from template: " + (e?.response?.data?.message || e.message));
 	}
 }
