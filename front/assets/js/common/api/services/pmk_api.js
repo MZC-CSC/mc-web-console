@@ -382,7 +382,40 @@ export function calculateConnectionCount(clusterList) {
   return clusterCloudConnectionCountMap;
 }
 
-export async function createNode(k8sClusterId, nsId, Create_Node_Config_Arr) {
+// CSP별 NodeGroup 동시 추가 수용 여부 — 실증으로 확인된 CSP만 true
+// (gcp: 2026-07-14 실증 — 3초 간격 2건 요청 모두 201 수용, 둘 다 Active 도달.
+//  tumblebug이 클러스터 단위로 직렬 처리하므로 클라이언트는 응답을 기다릴 필요 없음)
+// 미실증 CSP는 순차 전송(각 응답 확인 후 다음 전송)으로 동작한다.
+var K8S_NODEGROUP_CONCURRENT = {
+  "gcp": true,
+  "default": false
+};
+
+// 동시 dispatch 시 다음 전송까지의 간격 — 전송 직후 즉시 오류(네트워크/즉시 4xx) 감시 창
+var NODEGROUP_DISPATCH_DELAY_MS = 3000;
+
+function buildNodeGroupRequest(k8sClusterId, nsId, obj) {
+  return {
+    pathParams: {
+      nsId: nsId,
+      k8sClusterId: k8sClusterId,
+    },
+    request: {
+      "desiredNodeSize": parseInt(obj.desiredNodeSize) || 1,
+      "imageId": obj.imageId,
+      "maxNodeSize": parseInt(obj.maxNodeSize) || parseInt(obj.desiredNodeSize) || 1,
+      "minNodeSize": parseInt(obj.minNodeSize) || parseInt(obj.desiredNodeSize) || 1,
+      "name": obj.name,
+      "onAutoScaling": obj.onAutoScaling || "false",
+      "rootDiskSize": parseInt(obj.rootDiskSize) || 0,
+      "rootDiskType": obj.rootDiskType || "",
+      "specId": obj.specId,
+      "sshKeyId": obj.sshKeyId
+    }
+  };
+}
+
+export async function createNode(k8sClusterId, nsId, Create_Node_Config_Arr, provider) {
   // 1. 배열 검증
   if (!Create_Node_Config_Arr || Create_Node_Config_Arr.length === 0) {
     console.error('No node configuration provided');
@@ -390,42 +423,91 @@ export async function createNode(k8sClusterId, nsId, Create_Node_Config_Arr) {
     return;
   }
 
-  // 2. 누적된 NodeGroup 전체를 순서대로 전송 (첫 항목만 보내면 나머지가 조용히 유실된다)
   var controller = "/api/" + "mc-infra-manager/" + "Postk8snodegroup";
+
+  // 2. 필수 필드 사전 검증 (min/maxNodeSize는 autoScaling OFF 시 없을 수 있으므로 제외)
+  for (var v = 0; v < Create_Node_Config_Arr.length; v++) {
+    var chk = Create_Node_Config_Arr[v];
+    if (!chk.name || !chk.specId || !chk.imageId) {
+      console.error('Missing required fields:', chk);
+      webconsolejs["common/util"].showToast('Missing required fields for node creation: ' + (chk.name || '(no name)'), 'error');
+      return false;
+    }
+  }
+
+  var providerKey = (provider || "").toLowerCase();
+  var concurrent = K8S_NODEGROUP_CONCURRENT[providerKey];
+  if (concurrent === undefined) concurrent = K8S_NODEGROUP_CONCURRENT["default"];
+
+  if (concurrent && Create_Node_Config_Arr.length > 1) {
+    return await dispatchNodeGroupsConcurrently(controller, k8sClusterId, nsId, Create_Node_Config_Arr);
+  }
+  return await sendNodeGroupsSequentially(controller, k8sClusterId, nsId, Create_Node_Config_Arr);
+}
+
+// 동시 수용 CSP: 응답을 기다리지 않고 3초 간격으로 전송(fire) — 3초 내 즉시 오류만 감시하고
+// 전체 결과는 백그라운드에서 수집해 완료 시 토스트로 보고한다 (tumblebug 응답은 건당 40~47초 소요)
+async function dispatchNodeGroupsConcurrently(controller, k8sClusterId, nsId, configArr) {
+  var pending = [];
+
+  for (var i = 0; i < configArr.length; i++) {
+    var obj = configArr[i];
+    var data = buildNodeGroupRequest(k8sClusterId, nsId, obj);
+
+    var reqPromise = webconsolejs["common/api/http"].commonAPIPost(
+      controller,
+      data,
+      undefined,
+      { loaderType: 'toast', progressLabel: 'NodeGroup ' + obj.name }
+    );
+    pending.push({ name: obj.name, promise: reqPromise });
+
+    // 다음 전송 전 3초 대기 — 이 창에서 즉시 오류(네트워크 거부·즉시 4xx)가 나면 실패로 기록하되
+    // 나머지 항목 전송은 계속한다
+    if (i < configArr.length - 1) {
+      var raced = await Promise.race([
+        reqPromise.then(function () { return { settled: true }; }, function (e) { return { error: e }; }),
+        new Promise(function (resolve) { setTimeout(function () { resolve({ pending: true }); }, NODEGROUP_DISPATCH_DELAY_MS); })
+      ]);
+      if (raced.error) {
+        console.error('Node creation dispatch failed early:', obj.name, raced.error);
+      }
+    }
+  }
+
+  // 전체 결과는 백그라운드 수집 — UI는 붙잡지 않는다
+  Promise.allSettled(pending.map(function (p) { return p.promise; })).then(function (results) {
+    var failedNames = [];
+    for (var r = 0; r < results.length; r++) {
+      var res = results[r];
+      var ok = res.status === 'fulfilled' && res.value && (res.value.status === 200 || res.value.status === 201);
+      if (!ok) failedNames.push(pending[r].name);
+    }
+    if (failedNames.length === 0) {
+      webconsolejs["common/util"].showToast('Node group creation request completed successfully (' + results.length + ')', 'success');
+    } else {
+      webconsolejs["common/util"].showToast('Failed to create node group: ' + failedNames.join(', '), 'error');
+    }
+    // 결과 수신 시점에 목록 갱신 (생성 접수 반영)
+    if (webconsolejs["pages/operation/manage/pmk"] &&
+        typeof webconsolejs["pages/operation/manage/pmk"].refreshPmkList === 'function') {
+      webconsolejs["pages/operation/manage/pmk"].refreshPmkList();
+    }
+  });
+
+  webconsolejs["common/util"].showToast('NodeGroup creation requests dispatched (' + configArr.length + ') — processing in background', 'info');
+  return { dispatched: configArr.length };
+}
+
+// 미실증/제한 CSP: 각 응답 확인 후 다음 전송 (기존 동작 — 한 건 실패해도 나머지는 계속)
+async function sendNodeGroupsSequentially(controller, k8sClusterId, nsId, configArr) {
   var responses = [];
   var failedNames = [];
 
-  for (var i = 0; i < Create_Node_Config_Arr.length; i++) {
-    var obj = Create_Node_Config_Arr[i];
+  for (var i = 0; i < configArr.length; i++) {
+    var obj = configArr[i];
+    var data = buildNodeGroupRequest(k8sClusterId, nsId, obj);
 
-    // 필수 필드 검증 (min/maxNodeSize는 autoScaling OFF 시 없을 수 있으므로 제외)
-    if (!obj.name || !obj.specId || !obj.imageId) {
-      console.error('Missing required fields:', obj);
-      webconsolejs["common/util"].showToast('Missing required fields for node creation: ' + (obj.name || '(no name)'), 'error');
-      return false;
-    }
-
-    // 데이터 준비 (기본값 포함)
-    const data = {
-      pathParams: {
-        nsId: nsId,
-        k8sClusterId: k8sClusterId,
-      },
-      request: {
-        "desiredNodeSize": parseInt(obj.desiredNodeSize) || 1,
-        "imageId": obj.imageId,
-        "maxNodeSize": parseInt(obj.maxNodeSize) || parseInt(obj.desiredNodeSize) || 1,
-        "minNodeSize": parseInt(obj.minNodeSize) || parseInt(obj.desiredNodeSize) || 1,
-        "name": obj.name,
-        "onAutoScaling": obj.onAutoScaling || "false",
-        "rootDiskSize": parseInt(obj.rootDiskSize) || 0,
-        "rootDiskType": obj.rootDiskType || "",
-        "specId": obj.specId,
-        "sshKeyId": obj.sshKeyId
-      }
-    };
-
-    // API 호출 및 에러 처리
     try {
       const response = await webconsolejs["common/api/http"].commonAPIPost(
         controller,
@@ -448,7 +530,7 @@ export async function createNode(k8sClusterId, nsId, Create_Node_Config_Arr) {
   }
 
   if (failedNames.length === 0) {
-    webconsolejs["common/util"].showToast('Node group creation request completed successfully (' + Create_Node_Config_Arr.length + ')', 'success');
+    webconsolejs["common/util"].showToast('Node group creation request completed successfully (' + configArr.length + ')', 'success');
   } else {
     webconsolejs["common/util"].showToast('Failed to create node group: ' + failedNames.join(', '), 'error');
   }
