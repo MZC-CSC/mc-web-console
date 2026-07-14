@@ -390,59 +390,68 @@ export async function createNode(k8sClusterId, nsId, Create_Node_Config_Arr) {
     return;
   }
 
-  var obj = Create_Node_Config_Arr[0];
-  
-  // 2. 필수 필드 검증 (min/maxNodeSize는 autoScaling OFF 시 없을 수 있으므로 제외)
-  if (!obj.name || !obj.specId || !obj.imageId) {
-    console.error('Missing required fields:', obj);
-    webconsolejs["common/util"].showToast('Missing required fields for node creation', 'error');
-    return false;
-  }
-
-  // 3. 데이터 준비 (기본값 포함)
-  const data = {
-    pathParams: {
-      nsId: nsId,
-      k8sClusterId: k8sClusterId,
-    },
-    request: {
-      "desiredNodeSize": parseInt(obj.desiredNodeSize) || 1,
-      "imageId": obj.imageId,
-      "maxNodeSize": parseInt(obj.maxNodeSize) || parseInt(obj.desiredNodeSize) || 1,
-      "minNodeSize": parseInt(obj.minNodeSize) || parseInt(obj.desiredNodeSize) || 1,
-      "name": obj.name,
-      "onAutoScaling": obj.onAutoScaling || "false",
-      "rootDiskSize": parseInt(obj.rootDiskSize) || 0,
-      "rootDiskType": obj.rootDiskType || "",
-      "specId": obj.specId,
-      "sshKeyId": obj.sshKeyId
-    }
-  };
-
+  // 2. 누적된 NodeGroup 전체를 순서대로 전송 (첫 항목만 보내면 나머지가 조용히 유실된다)
   var controller = "/api/" + "mc-infra-manager/" + "Postk8snodegroup";
-  
-  // 4. API 호출 및 에러 처리
-  try {
-    const response = await webconsolejs["common/api/http"].commonAPIPost(
-      controller,
-      data
-    );
-    
-    // 성공 처리 (200 OK 또는 201 Created)
-    if (response && (response.status === 200 || response.status === 201)) {
-      webconsolejs["common/util"].showToast('Node group creation request completed successfully', 'success');
-      return response;
-    } else {
-      console.error('Node creation failed:', response);
-      console.error('Response status:', response?.status, 'Type:', typeof response?.status);
-      webconsolejs["common/util"].showToast('Failed to create node group', 'error');
-      return response;
+  var responses = [];
+  var failedNames = [];
+
+  for (var i = 0; i < Create_Node_Config_Arr.length; i++) {
+    var obj = Create_Node_Config_Arr[i];
+
+    // 필수 필드 검증 (min/maxNodeSize는 autoScaling OFF 시 없을 수 있으므로 제외)
+    if (!obj.name || !obj.specId || !obj.imageId) {
+      console.error('Missing required fields:', obj);
+      webconsolejs["common/util"].showToast('Missing required fields for node creation: ' + (obj.name || '(no name)'), 'error');
+      return false;
     }
-  } catch (error) {
-    console.error('Error creating node:', error);
-    webconsolejs["common/util"].showToast('Error creating node group: ' + (error.message || 'Unknown error'), 'error');
-    throw error;
+
+    // 데이터 준비 (기본값 포함)
+    const data = {
+      pathParams: {
+        nsId: nsId,
+        k8sClusterId: k8sClusterId,
+      },
+      request: {
+        "desiredNodeSize": parseInt(obj.desiredNodeSize) || 1,
+        "imageId": obj.imageId,
+        "maxNodeSize": parseInt(obj.maxNodeSize) || parseInt(obj.desiredNodeSize) || 1,
+        "minNodeSize": parseInt(obj.minNodeSize) || parseInt(obj.desiredNodeSize) || 1,
+        "name": obj.name,
+        "onAutoScaling": obj.onAutoScaling || "false",
+        "rootDiskSize": parseInt(obj.rootDiskSize) || 0,
+        "rootDiskType": obj.rootDiskType || "",
+        "specId": obj.specId,
+        "sshKeyId": obj.sshKeyId
+      }
+    };
+
+    // API 호출 및 에러 처리
+    try {
+      const response = await webconsolejs["common/api/http"].commonAPIPost(
+        controller,
+        data
+      );
+
+      if (response && (response.status === 200 || response.status === 201)) {
+        responses.push(response);
+      } else {
+        console.error('Node creation failed:', obj.name, response);
+        failedNames.push(obj.name);
+        responses.push(response);
+      }
+    } catch (error) {
+      console.error('Error creating node:', obj.name, error);
+      webconsolejs["common/util"].showToast('Error creating node group ' + obj.name + ': ' + (error.message || 'Unknown error'), 'error');
+      throw error;
+    }
   }
+
+  if (failedNames.length === 0) {
+    webconsolejs["common/util"].showToast('Node group creation request completed successfully (' + Create_Node_Config_Arr.length + ')', 'success');
+  } else {
+    webconsolejs["common/util"].showToast('Failed to create node group: ' + failedNames.join(', '), 'error');
+  }
+  return responses;
 }
 
 export async function getSshKey(nsId, providerName) {
