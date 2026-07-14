@@ -29,6 +29,8 @@ export function initMciCreate() {
 	
 	// 이미지 선택 콜백 함수 설정
 	webconsolejs["partials/operation/manage/imagerecommendation"].setImageSelectionCallback(webconsolejs["partials/operation/manage/mcicreate"].callbackImageRecommendation);
+
+	initTemplateDeploySelect(); // Deployment Algorithm의 Template 선택 처리
 }
 
 // callback PopupData
@@ -1114,3 +1116,195 @@ export function clearExpressForm() {
 	// 5. 폼은 그대로 유지 (토글하지 않음)
 }
 
+
+// ─── Infra Template으로 MCI 배포 ─────────────────────────────────────────
+
+let templateSelectTable = null;
+let mciDeployAlgorithmPrev = "express";
+let templateDeploySucceeded = false;
+let templateDeployInFlight = false;
+
+function revertDeployAlgorithmSelect() {
+	const sel = document.getElementById("mci_deploy_algorithm");
+	if (sel && sel.value === "template") sel.value = mciDeployAlgorithmPrev;
+}
+
+// 템플릿 미리보기 초기화 (선택 없음 → 안내문구 표시)
+function resetTemplateSelectDetail() {
+	const hint = document.getElementById("template-select-detail-hint");
+	const content = document.getElementById("template-select-detail-content");
+	if (hint) hint.classList.remove("d-none");
+	if (content) content.classList.add("d-none");
+}
+
+// 선택한 템플릿 내용을 읽기 전용으로 렌더링
+function renderTemplateSelectDetail(template) {
+	const hint = document.getElementById("template-select-detail-hint");
+	const content = document.getElementById("template-select-detail-content");
+	if (!content) return;
+	if (hint) hint.classList.add("d-none");
+	content.classList.remove("d-none");
+
+	const req = template.infraDynamicReq || {};
+	document.getElementById("template-select-detail-desc").textContent = template.description || "-";
+
+	const tbody = document.getElementById("template-select-nodegroup-rows");
+	tbody.innerHTML = "";
+	const groups = req.nodeGroups || [];
+	if (groups.length === 0) {
+		const tr = document.createElement("tr");
+		const td = document.createElement("td");
+		td.colSpan = 7;
+		td.className = "text-muted";
+		td.textContent = "-";
+		tr.appendChild(td);
+		tbody.appendChild(tr);
+	} else {
+		groups.forEach(g => {
+			const tr = document.createElement("tr");
+			const rootDisk = [g.rootDiskType, g.rootDiskSize].filter(v => v !== undefined && v !== "" && v !== 0).join(" / ");
+			[g.name, g.specId, g.imageId, g.nodeGroupSize, g.connectionName, rootDisk, g.zone].forEach(val => {
+				const td = document.createElement("td");
+				td.textContent = (val === undefined || val === null || val === "") ? "-" : String(val);
+				tr.appendChild(td);
+			});
+			tbody.appendChild(tr);
+		});
+	}
+
+	const block = document.getElementById("template-select-postcommand-block");
+	const commands = req.postCommand?.command || [];
+	if (commands.length > 0) {
+		block.classList.remove("d-none");
+		document.getElementById("template-select-postcommand").textContent = commands.join("\n");
+	} else {
+		block.classList.add("d-none");
+	}
+}
+
+function initTemplateDeploySelect() {
+	const sel = document.getElementById("mci_deploy_algorithm");
+	if (!sel) return;
+	mciDeployAlgorithmPrev = sel.value;
+	sel.addEventListener("change", async function () {
+		if (this.value !== "template") {
+			mciDeployAlgorithmPrev = this.value;
+			return;
+		}
+		const mciName = ($("#mci_name").val() || "").trim();
+		if (!mciName) {
+			webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please input MCI Name first");
+			this.value = "express";
+			mciDeployAlgorithmPrev = "express";
+			return;
+		}
+		await openTemplateSelectModal();
+	});
+}
+
+export async function openTemplateSelectModal() {
+	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
+	var nsId = selectedWorkspaceProject.nsId;
+	if (!nsId) {
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please select a project first");
+		revertDeployAlgorithmSelect();
+		return;
+	}
+
+	let templates = [];
+	try {
+		const data = await webconsolejs["common/api/services/infratemplate_api"].list(nsId);
+		templates = data?.templates || [];
+	} catch (e) {
+		if (e?.response?.status !== 404) console.error("Failed to load infra templates", e);
+	}
+
+	if (templateSelectTable) {
+		templateSelectTable.replaceData(templates);
+		templateSelectTable.deselectRow();
+	} else {
+		templateSelectTable = new Tabulator("#template-select-table", {
+			data: templates,
+			layout: "fitColumns",
+			placeholder: "No infra templates found.",
+			selectableRows: 1,
+			columns: [
+				{ title: "Name", field: "name", sorter: "string" },
+				{ title: "Description", field: "description", sorter: "string" },
+				{
+					title: "NodeGroups", field: "infraDynamicReq", headerSort: false,
+					formatter: function (cell) {
+						const groups = cell.getValue()?.nodeGroups || [];
+						const total = groups.reduce((sum, g) => sum + (Number(g.nodeGroupSize) || 0), 0);
+						return `${groups.length} group(s) / ${total} node(s)`;
+					}
+				},
+				{ title: "Created", field: "createdAt", sorter: "string", width: 180 }
+			]
+		});
+
+		// 선택 변경 시 템플릿 미리보기 갱신
+		templateSelectTable.on("rowSelectionChanged", function (data) {
+			if (data.length > 0) renderTemplateSelectDetail(data[0]);
+			else resetTemplateSelectDetail();
+		});
+	}
+
+	const modalEl = document.getElementById("infra-template-select-modal");
+	modalEl.addEventListener("shown.bs.modal", function () {
+		if (templateSelectTable) templateSelectTable.redraw(true);
+	}, { once: true });
+	// 배포 없이 닫히면 Deployment Algorithm을 이전 값으로 되돌린다
+	// (displayNewServerForm이 select 값으로 분기하므로 'template'으로 남겨두지 않음)
+	templateDeploySucceeded = false;
+	modalEl.addEventListener("hidden.bs.modal", function () {
+		if (!templateDeploySucceeded) revertDeployAlgorithmSelect();
+	}, { once: true });
+	resetTemplateSelectDetail();
+	new bootstrap.Modal(modalEl).show();
+}
+
+export async function deployFromSelectedTemplate() {
+	if (templateDeployInFlight) return; // 요청 진행 중 중복 호출 방지
+
+	const selected = templateSelectTable ? templateSelectTable.getSelectedData() : [];
+	if (selected.length === 0) {
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please select a template");
+		return;
+	}
+	const template = selected[0];
+
+	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
+	var nsId = selectedWorkspaceProject.nsId;
+
+	var mciName = ($("#mci_name").val() || "").trim();
+	var mciDesc = $("#mci_desc").val();
+
+	if (!mciName) {
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "MCI Name is required");
+		return;
+	}
+
+	const applyReq = { name: mciName };
+	if (mciDesc) applyReq.description = mciDesc;
+
+	const deployBtn = document.getElementById("btn-deploy-from-template");
+	templateDeployInFlight = true;
+	if (deployBtn) deployBtn.disabled = true;
+
+	try {
+		// mciDynamic과 동일한 비동기 방식 — 생성 요청만 보내고 결과를 기다리지 않는다
+		webconsolejs["common/api/services/infratemplate_api"]
+			.deployFromTemplate(nsId, template.id, applyReq, undefined, { loaderType: "none" })
+			.catch(() => {});
+		templateDeploySucceeded = true;
+		bootstrap.Modal.getInstance(document.getElementById("infra-template-select-modal"))?.hide();
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.SUCCESS, "MCI creation request completed.");
+		// Toast가 보이도록 잠시 후 이동
+		setTimeout(() => { window.location.href = "/webconsole/operations/manage/workloads/mciworkloads"; }, 1500);
+	} catch (e) {
+		templateDeployInFlight = false;
+		if (deployBtn) deployBtn.disabled = false;
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Failed to deploy from template: " + (e?.message || e));
+	}
+}
