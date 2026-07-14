@@ -485,12 +485,15 @@ export async function createNode() {
 
 	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
 	var selectedNsId = selectedWorkspaceProject.nsId;
-	var k8sClusterId = webconsolejs["pages/operation/manage/pmk"].selectedPmkObj[0].id
-	
+	var selectedPmk = webconsolejs["pages/operation/manage/pmk"].selectedPmkObj[0];
+	var k8sClusterId = selectedPmk.id;
+	var provider = selectedPmk.provider; // CSP별 동시 전송 정책 판단용
+
 	const result = await webconsolejs["common/api/services/pmk_api"].createNode(
 		k8sClusterId,
 		selectedNsId,
-		Create_Node_Config_Arr
+		Create_Node_Config_Arr,
+		provider
 	);
 
 	if (result === false) return;
