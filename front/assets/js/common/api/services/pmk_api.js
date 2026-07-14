@@ -265,30 +265,36 @@ export async function vmDynamic(pmkId, nsId, Express_Server_Config_Arr) {
 
   var obj = {}
   obj = Express_Server_Config_Arr[0]
+
+  var desiredNodeSize = parseInt(obj.desiredNodeSize || obj.subGroupSize) || 1
+
+  // K8sNodeGroupDynamicReq: specId/imageId 필수, 노드 수는 desired/min/maxNodeSize 체계
   const data = {
     pathParams: {
       nsId: nsId,
-      pmkId: pmkId,
+      k8sClusterId: pmkId,
     },
     request: {
-      "commonImage": obj.commonImage,
-      "commonSpec": obj.commonSpec,
-      "connectionName": obj.connectionName,
-      "description": obj.description,
-      // "label": "",
       "name": obj.name,
-      "subGroupSize": obj.subGroupSize,
-      "rootDiskSize": obj.rootDiskSize,
-      "rootDiskType": obj.rootDiskType,
+      "description": obj.description,
+      "specId": obj.specId || obj.commonSpec,
+      "imageId": obj.imageId || obj.commonImage,
+      "desiredNodeSize": desiredNodeSize,
+      "minNodeSize": parseInt(obj.minNodeSize) || desiredNodeSize,
+      "maxNodeSize": parseInt(obj.maxNodeSize) || desiredNodeSize,
+      "onAutoScaling": obj.onAutoScaling || "false",
+      "rootDiskSize": parseInt(obj.rootDiskSize) || 0,
+      "rootDiskType": obj.rootDiskType || "",
     }
   }
 
-
-  var controller = "/api/" + "PostPmkVmDynamic";
+  var controller = "/api/" + "mc-infra-manager/" + "PostK8sNodeGroupDynamic";
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data
   )
+
+  return response
 }
 
 // export async function pmkRecommendVm(data) {
