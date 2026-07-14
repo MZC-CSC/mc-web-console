@@ -156,6 +156,12 @@ const UIManager = {
         document.getElementById('detail-menu-isaction').textContent = menu.isAction ? 'Yes' : 'No';
         document.getElementById('detail-menu-priority').textContent = menu.priority != null ? menu.priority : '-';
         document.getElementById('detail-menu-menunumber').textContent = menu.menuNumber != null ? menu.menuNumber : '-';
+        const vt = document.getElementById('detail-menu-viewtype');
+        const fw = document.getElementById('detail-menu-frameworkservice');
+        const ph = document.getElementById('detail-menu-path');
+        if (vt) vt.textContent = menu.viewType || 'local';
+        if (fw) fw.textContent = menu.frameworkService || '-';
+        if (ph) ph.textContent = menu.path != null && menu.path !== '' ? menu.path : '-';
 
         const panel = document.getElementById('menu-detail-panel');
         if (panel.classList.contains('d-none')) {
@@ -226,6 +232,12 @@ const ModalManager = {
         document.getElementById('create-menu-isaction').checked = false;
         document.getElementById('create-menu-priority').value = '2';
         document.getElementById('create-menu-menunumber').value = '';
+        const cv = document.getElementById('create-menu-viewtype');
+        if (cv) cv.value = 'local';
+        const cf = document.getElementById('create-menu-frameworkservice');
+        if (cf) cf.value = '';
+        const cp = document.getElementById('create-menu-path');
+        if (cp) cp.value = '';
 
         // ParentID select 채우기
         UIManager.populateParentSelect('create-menu-parentid', parentId || '');
@@ -245,6 +257,12 @@ const ModalManager = {
         document.getElementById('edit-menu-isaction').checked = !!menu.isAction;
         document.getElementById('edit-menu-priority').value = menu.priority != null ? menu.priority : '';
         document.getElementById('edit-menu-menunumber').value = menu.menuNumber != null ? menu.menuNumber : '';
+        const ev = document.getElementById('edit-menu-viewtype');
+        if (ev) ev.value = menu.viewType || 'local';
+        const ef = document.getElementById('edit-menu-frameworkservice');
+        if (ef) ef.value = menu.frameworkService || '';
+        const ep = document.getElementById('edit-menu-path');
+        if (ep) ep.value = menu.path != null ? menu.path : '';
 
         UIManager.populateParentSelect('edit-menu-parentid', menu.parentId || '');
 
@@ -290,6 +308,13 @@ window.saveCreateMenu = async function () {
     }
 
     const parentId = document.getElementById('create-menu-parentid').value;
+    const viewType = document.getElementById('create-menu-viewtype')?.value || 'local';
+    const frameworkService = document.getElementById('create-menu-frameworkservice')?.value.trim() || '';
+    const path = document.getElementById('create-menu-path')?.value.trim() || '';
+    if ((viewType === 'iframe' || viewType === 'popup') && !frameworkService) {
+        alert('frameworkService is required for iframe/popup viewType.');
+        return;
+    }
     const data = {
         id: id,
         displayName: displayName,
@@ -298,6 +323,9 @@ window.saveCreateMenu = async function () {
         isAction: document.getElementById('create-menu-isaction').checked,
         priority: String(parseInt(document.getElementById('create-menu-priority').value) || 2),
         menuNumber: String(parseInt(document.getElementById('create-menu-menunumber').value) || 0),
+        viewType: viewType,
+        frameworkService: frameworkService,
+        path: path,
         roleIds: UIManager.getCheckedRoleIds('create-menu-roles')
     };
 
@@ -325,6 +353,13 @@ window.saveEditMenu = async function () {
         return;
     }
 
+    const viewType = document.getElementById('edit-menu-viewtype')?.value || 'local';
+    const frameworkService = document.getElementById('edit-menu-frameworkservice')?.value.trim() || '';
+    const path = document.getElementById('edit-menu-path')?.value.trim() || '';
+    if ((viewType === 'iframe' || viewType === 'popup') && !frameworkService) {
+        alert('frameworkService is required for iframe/popup viewType.');
+        return;
+    }
     const data = {
         displayName: displayName,
         parentId: document.getElementById('edit-menu-parentid').value,
@@ -332,6 +367,9 @@ window.saveEditMenu = async function () {
         isAction: document.getElementById('edit-menu-isaction').checked,
         priority: String(parseInt(document.getElementById('edit-menu-priority').value) || 2),
         menuNumber: String(parseInt(document.getElementById('edit-menu-menunumber').value) || 0),
+        viewType: viewType,
+        frameworkService: frameworkService,
+        path: path,
         roleIds: UIManager.getCheckedRoleIds('edit-menu-roles')
     };
 
