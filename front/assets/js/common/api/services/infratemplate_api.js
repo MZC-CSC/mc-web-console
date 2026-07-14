@@ -51,14 +51,15 @@ export async function deleteAll(ns) {
 }
 
 // 저장된 template 형상 그대로 MCI 생성 (name/description override만 전달)
-export async function deployFromTemplate(ns, templateId, applyReq, option) {
+// options는 commonAPIPost의 loader 옵션 ({ loaderType, progressLabel } 등)
+export async function deployFromTemplate(ns, templateId, applyReq, option, options) {
   const controller = '/api/mc-infra-manager/PostInfraDynamicFromTemplate';
   const params = {
     pathParams: { nsId: ns, templateId },
     request: applyReq
   };
   if (option) params.queryParams = { option };
-  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, params);
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, params, undefined, options);
   return response;
 }
 

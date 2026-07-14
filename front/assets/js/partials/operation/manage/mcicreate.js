@@ -1122,6 +1122,7 @@ export function clearExpressForm() {
 let templateSelectTable = null;
 let mciDeployAlgorithmPrev = "express";
 let templateDeploySucceeded = false;
+let templateDeployInFlight = false;
 
 function revertDeployAlgorithmSelect() {
 	const sel = document.getElementById("mci_deploy_algorithm");
@@ -1264,6 +1265,8 @@ export async function openTemplateSelectModal() {
 }
 
 export async function deployFromSelectedTemplate() {
+	if (templateDeployInFlight) return; // 요청 진행 중 중복 호출 방지
+
 	const selected = templateSelectTable ? templateSelectTable.getSelectedData() : [];
 	if (selected.length === 0) {
 		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please select a template");
@@ -1285,14 +1288,31 @@ export async function deployFromSelectedTemplate() {
 	const applyReq = { name: mciName };
 	if (mciDesc) applyReq.description = mciDesc;
 
+	const deployBtn = document.getElementById("btn-deploy-from-template");
+	templateDeployInFlight = true;
+	if (deployBtn) deployBtn.disabled = true;
+
 	try {
-		await webconsolejs["common/api/services/infratemplate_api"].deployFromTemplate(nsId, template.id, applyReq);
+		const response = await webconsolejs["common/api/services/infratemplate_api"].deployFromTemplate(
+			nsId, template.id, applyReq, undefined,
+			{ loaderType: "toast", progressLabel: "Deploying MCI from template..." }
+		);
+		// commonAPIPost는 HTTP 오류 시 throw하지 않고 error 객체를 반환하므로 status로 성공 판정
+		if (response?.status !== 200) {
+			// 오류 toast는 commonAPIPost가 이미 표시. 모달을 유지해 재시도 가능하게 함
+			templateDeployInFlight = false;
+			if (deployBtn) deployBtn.disabled = false;
+			return;
+		}
 		templateDeploySucceeded = true;
 		bootstrap.Modal.getInstance(document.getElementById("infra-template-select-modal"))?.hide();
 		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.SUCCESS, "MCI creation request completed.");
 		// Toast가 보이도록 잠시 후 이동
 		setTimeout(() => { window.location.href = "/webconsole/operations/manage/workloads/mciworkloads"; }, 1500);
 	} catch (e) {
-		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Failed to deploy from template: " + (e?.response?.data?.message || e.message));
+		// HTTP 오류는 위에서 처리되므로 여기는 예기치 못한 예외만 도달
+		templateDeployInFlight = false;
+		if (deployBtn) deployBtn.disabled = false;
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Failed to deploy from template: " + (e?.message || e));
 	}
 }
