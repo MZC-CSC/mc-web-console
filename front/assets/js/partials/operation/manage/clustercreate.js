@@ -485,12 +485,15 @@ export async function createNode() {
 
 	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
 	var selectedNsId = selectedWorkspaceProject.nsId;
-	var k8sClusterId = webconsolejs["pages/operation/manage/pmk"].selectedPmkObj[0].id
-	
+	var selectedPmk = webconsolejs["pages/operation/manage/pmk"].selectedPmkObj[0];
+	var k8sClusterId = selectedPmk.id;
+	var provider = selectedPmk.provider; // CSP별 동시 전송 정책 판단용
+
 	const result = await webconsolejs["common/api/services/pmk_api"].createNode(
 		k8sClusterId,
 		selectedNsId,
-		Create_Node_Config_Arr
+		Create_Node_Config_Arr,
+		provider
 	);
 
 	if (result === false) return;
@@ -947,15 +950,15 @@ export function clusterFormDone_btn() {
 			+ nodeGroup_name + displayNodegroupCnt
 			+ '</li>';
 
-		// plusIcon 제거 및 리스트 업데이트
+		// 리스트 업데이트 — 기존 + NodeGroup 버튼(#..._plusIcon)은 유지하고 항목만 추가
+		// (remove 후 getPlusVm으로 재생성하면 id가 _plusVmIcon으로 바뀌어 다음 Done의
+		//  remove가 실패하고, Done마다 + NodeGroup 버튼이 하나씩 증식한다)
 		var ngEleId = "nodegroup";
 		if (isNodeGroup) {
 			ngEleId = "addnodegroup";
 		}
-		
-		$("#" + ngEleId + "_plusIcon").remove();
+
 		$("#" + ngEleId + "_list").append(add_nodegroup_html);
-		$("#" + ngEleId + "_list").prepend(getPlusVm(ngEleId));
 
 		// 카운터 증가
 		nodeGroup_data_cnt++;
