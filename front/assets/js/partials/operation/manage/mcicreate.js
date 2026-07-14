@@ -29,6 +29,8 @@ export function initMciCreate() {
 	
 	// 이미지 선택 콜백 함수 설정
 	webconsolejs["partials/operation/manage/imagerecommendation"].setImageSelectionCallback(webconsolejs["partials/operation/manage/mcicreate"].callbackImageRecommendation);
+
+	initTemplateDeploySelect(); // Deployment Algorithm의 Template 선택 처리
 }
 
 // callback PopupData
@@ -1118,12 +1120,40 @@ export function clearExpressForm() {
 // ─── Infra Template으로 MCI 배포 ─────────────────────────────────────────
 
 let templateSelectTable = null;
+let mciDeployAlgorithmPrev = "express";
+let templateDeploySucceeded = false;
+
+function revertDeployAlgorithmSelect() {
+	const sel = document.getElementById("mci_deploy_algorithm");
+	if (sel && sel.value === "template") sel.value = mciDeployAlgorithmPrev;
+}
+
+function initTemplateDeploySelect() {
+	const sel = document.getElementById("mci_deploy_algorithm");
+	if (!sel) return;
+	mciDeployAlgorithmPrev = sel.value;
+	sel.addEventListener("change", async function () {
+		if (this.value !== "template") {
+			mciDeployAlgorithmPrev = this.value;
+			return;
+		}
+		const mciName = ($("#mci_name").val() || "").trim();
+		if (!mciName) {
+			alert("Please input MCI Name first");
+			this.value = "express";
+			mciDeployAlgorithmPrev = "express";
+			return;
+		}
+		await openTemplateSelectModal();
+	});
+}
 
 export async function openTemplateSelectModal() {
 	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
 	var nsId = selectedWorkspaceProject.nsId;
 	if (!nsId) {
 		alert("Please select a project first");
+		revertDeployAlgorithmSelect();
 		return;
 	}
 
@@ -1163,6 +1193,12 @@ export async function openTemplateSelectModal() {
 	modalEl.addEventListener("shown.bs.modal", function () {
 		if (templateSelectTable) templateSelectTable.redraw(true);
 	}, { once: true });
+	// 배포 없이 닫히면 Deployment Algorithm을 이전 값으로 되돌린다
+	// (displayNewServerForm이 select 값으로 분기하므로 'template'으로 남겨두지 않음)
+	templateDeploySucceeded = false;
+	modalEl.addEventListener("hidden.bs.modal", function () {
+		if (!templateDeploySucceeded) revertDeployAlgorithmSelect();
+	}, { once: true });
 	new bootstrap.Modal(modalEl).show();
 }
 
@@ -1190,6 +1226,7 @@ export async function deployFromSelectedTemplate() {
 
 	try {
 		await webconsolejs["common/api/services/infratemplate_api"].deployFromTemplate(nsId, template.id, applyReq);
+		templateDeploySucceeded = true;
 		bootstrap.Modal.getInstance(document.getElementById("infra-template-select-modal"))?.hide();
 		alert("MCI creation request completed.");
 		window.location.href = "/webconsole/operations/manage/workloads/mciworkloads";
