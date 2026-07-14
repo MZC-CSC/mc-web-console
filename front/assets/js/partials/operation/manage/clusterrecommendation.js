@@ -15,7 +15,7 @@ export function initClusterRecommendation(callbackfunction) {
 	}
 
 	// 팝업 열릴 때마다 provider 체크박스 초기화 (All 체크, 나머지 해제)
-	const modalEl = document.getElementById('image-search');
+	const modalEl = document.getElementById('cluster-spec-search');
 	if (modalEl) {
 		modalEl.addEventListener('shown.bs.modal', function () {
 			document.querySelectorAll('.spec-provider-check-cluster').forEach(cb => cb.checked = false);
