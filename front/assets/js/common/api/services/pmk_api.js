@@ -440,9 +440,10 @@ export async function createNode(k8sClusterId, nsId, Create_Node_Config_Arr) {
         responses.push(response);
       }
     } catch (error) {
+      // 한 건의 실패가 나머지 NodeGroup 전송을 막지 않도록 계속 진행 (실패 목록은 마지막에 표시)
       console.error('Error creating node:', obj.name, error);
-      webconsolejs["common/util"].showToast('Error creating node group ' + obj.name + ': ' + (error.message || 'Unknown error'), 'error');
-      throw error;
+      failedNames.push(obj.name);
+      responses.push(null);
     }
   }
 
