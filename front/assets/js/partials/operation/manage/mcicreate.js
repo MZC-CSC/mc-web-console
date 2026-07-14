@@ -1114,3 +1114,86 @@ export function clearExpressForm() {
 	// 5. 폼은 그대로 유지 (토글하지 않음)
 }
 
+
+// ─── Infra Template으로 MCI 배포 ─────────────────────────────────────────
+
+let templateSelectTable = null;
+
+export async function openTemplateSelectModal() {
+	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
+	var nsId = selectedWorkspaceProject.nsId;
+	if (!nsId) {
+		alert("Please select a project first");
+		return;
+	}
+
+	let templates = [];
+	try {
+		const data = await webconsolejs["common/api/services/infratemplate_api"].list(nsId);
+		templates = data?.templates || [];
+	} catch (e) {
+		if (e?.response?.status !== 404) console.error("Failed to load infra templates", e);
+	}
+
+	if (templateSelectTable) {
+		templateSelectTable.replaceData(templates);
+	} else {
+		templateSelectTable = new Tabulator("#template-select-table", {
+			data: templates,
+			layout: "fitColumns",
+			placeholder: "No infra templates found.",
+			selectableRows: 1,
+			columns: [
+				{ title: "Name", field: "name", sorter: "string" },
+				{ title: "Description", field: "description", sorter: "string" },
+				{
+					title: "NodeGroups", field: "infraDynamicReq", headerSort: false,
+					formatter: function (cell) {
+						const groups = cell.getValue()?.nodeGroups || [];
+						const total = groups.reduce((sum, g) => sum + (Number(g.nodeGroupSize) || 0), 0);
+						return `${groups.length} group(s) / ${total} node(s)`;
+					}
+				},
+				{ title: "Created", field: "createdAt", sorter: "string", width: 180 }
+			]
+		});
+	}
+
+	const modalEl = document.getElementById("infra-template-select-modal");
+	modalEl.addEventListener("shown.bs.modal", function () {
+		if (templateSelectTable) templateSelectTable.redraw(true);
+	}, { once: true });
+	new bootstrap.Modal(modalEl).show();
+}
+
+export async function deployFromSelectedTemplate() {
+	const selected = templateSelectTable ? templateSelectTable.getSelectedData() : [];
+	if (selected.length === 0) {
+		alert("Please select a template");
+		return;
+	}
+	const template = selected[0];
+
+	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
+	var nsId = selectedWorkspaceProject.nsId;
+
+	var mciName = ($("#mci_name").val() || "").trim();
+	var mciDesc = $("#mci_desc").val();
+
+	if (!mciName) {
+		alert("MCI Name is required");
+		return;
+	}
+
+	const applyReq = { name: mciName };
+	if (mciDesc) applyReq.description = mciDesc;
+
+	try {
+		await webconsolejs["common/api/services/infratemplate_api"].deployFromTemplate(nsId, template.id, applyReq);
+		bootstrap.Modal.getInstance(document.getElementById("infra-template-select-modal"))?.hide();
+		alert("MCI creation request completed.");
+		window.location.href = "/webconsole/operations/manage/workloads/mciworkloads";
+	} catch (e) {
+		alert("Failed to deploy from template: " + (e?.response?.data?.message || e.message));
+	}
+}

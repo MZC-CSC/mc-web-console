@@ -3631,3 +3631,42 @@ function clearLabelFilter() {
     mciListTable.setData(Object.values(window.totalMciListObj));
   }
 }
+// ─── MCI를 Infra Template으로 저장 ────────────────────────────────────────
+
+export function openSaveAsTemplateModal() {
+  if (window.currentMciId == undefined || window.currentMciId == "") {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an MCI first')
+    return;
+  }
+  document.getElementById('save-template-name').value = `${window.currentMciId}-template`;
+  document.getElementById('save-template-desc').value = '';
+  new bootstrap.Modal(document.getElementById('save-as-template-modal')).show();
+}
+
+export async function executeSaveAsTemplate() {
+  const mciId = window.currentMciId;
+  const nsId = window.currentNsId;
+  if (mciId == undefined || mciId == "") {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an MCI first')
+    return;
+  }
+  const name = document.getElementById('save-template-name').value.trim();
+  if (!name) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Template name is required')
+    return;
+  }
+  const description = document.getElementById('save-template-desc').value.trim();
+
+  executeWithToast(
+    async () => {
+      const infraDynamicReq = await webconsolejs["common/api/services/infratemplate_api"].getInfraReqFromInfra(nsId, mciId);
+      const body = { name, infraDynamicReq };
+      if (description) body.description = description;
+      return webconsolejs["common/api/services/infratemplate_api"].create(nsId, body);
+    },
+    "Template saved",
+    "Failed to save template"
+  ).then(() => {
+    bootstrap.Modal.getInstance(document.getElementById('save-as-template-modal'))?.hide();
+  }).catch(() => {});
+}

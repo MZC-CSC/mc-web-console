@@ -300,6 +300,35 @@
                       </svg>
                       Delete
                     </a>
+                    <a
+                      class="dropdown-item"
+                      onclick="webconsolejs['pages/operation/manage/mci'].openSaveAsTemplateModal()"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="icon dropdown-item-icon"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        stroke-width="2"
+                        stroke="currentColor"
+                        fill="none"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <path
+                          stroke="none"
+                          d="M0 0h24v24H0z"
+                          fill="none"
+                        ></path>
+                        <path
+                          d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2"
+                        ></path>
+                        <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                        <path d="M14 4l0 4l-6 0l0 -4"></path>
+                      </svg>
+                      Save as Template
+                    </a>
                     <a class="dropdown-item" href="#">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -588,6 +617,15 @@
           <div class="card">
             <div class="card-header">
               <h3 class="card-title">Create MCI</h3>
+              <div class="card-options ms-auto">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  onclick="webconsolejs['partials/operation/manage/mcicreate'].openTemplateSelectModal()"
+                >
+                  From Template
+                </button>
+              </div>
             </div>
 
             <div class="card-body">
@@ -1663,6 +1701,67 @@
   </div>
 </div>
 
+<!-- Infra Template 선택 팝업 -->
+<div class="modal modal-blur fade" id="infra-template-select-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Deploy from Infra Template</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-2">
+          MCI Name/Description below override the template values; current MCI Name / Description inputs of the
+          Create MCI form are used.
+        </p>
+        <div id="template-select-table"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="webconsolejs['partials/operation/manage/mcicreate'].deployFromSelectedTemplate()"
+        >
+          Deploy from Template
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MCI를 Infra Template으로 저장 팝업 -->
+<div class="modal modal-blur fade" id="save-as-template-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Save as Infra Template</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label required">Template Name</label>
+          <input type="text" id="save-template-name" class="form-control" placeholder="my-infra-template">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <input type="text" id="save-template-desc" class="form-control" placeholder="Optional description">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="webconsolejs['pages/operation/manage/mci'].executeSaveAsTemplate()"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- pageloader-->
 {{ partial("partials/layout/pageloader.html") | raw }}
 {{ javascriptTag("pages/operation/manage/mci.js") | raw }}
@@ -1670,3 +1769,4 @@
 {{ javascriptTag("common/api/services/vmimage_api.js") | raw }}
 {{ javascriptTag("common/api/services/import_api.js") | raw }}
 {{ javascriptTag("pages/operation/manage/importvm.js") | raw }}
+{{ javascriptTag("common/api/services/infratemplate_api.js") | raw }}
