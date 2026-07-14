@@ -1128,6 +1128,59 @@ function revertDeployAlgorithmSelect() {
 	if (sel && sel.value === "template") sel.value = mciDeployAlgorithmPrev;
 }
 
+// 템플릿 미리보기 초기화 (선택 없음 → 안내문구 표시)
+function resetTemplateSelectDetail() {
+	const hint = document.getElementById("template-select-detail-hint");
+	const content = document.getElementById("template-select-detail-content");
+	if (hint) hint.classList.remove("d-none");
+	if (content) content.classList.add("d-none");
+}
+
+// 선택한 템플릿 내용을 읽기 전용으로 렌더링
+function renderTemplateSelectDetail(template) {
+	const hint = document.getElementById("template-select-detail-hint");
+	const content = document.getElementById("template-select-detail-content");
+	if (!content) return;
+	if (hint) hint.classList.add("d-none");
+	content.classList.remove("d-none");
+
+	const req = template.infraDynamicReq || {};
+	document.getElementById("template-select-detail-desc").textContent = template.description || "-";
+
+	const tbody = document.getElementById("template-select-nodegroup-rows");
+	tbody.innerHTML = "";
+	const groups = req.nodeGroups || [];
+	if (groups.length === 0) {
+		const tr = document.createElement("tr");
+		const td = document.createElement("td");
+		td.colSpan = 7;
+		td.className = "text-muted";
+		td.textContent = "-";
+		tr.appendChild(td);
+		tbody.appendChild(tr);
+	} else {
+		groups.forEach(g => {
+			const tr = document.createElement("tr");
+			const rootDisk = [g.rootDiskType, g.rootDiskSize].filter(v => v !== undefined && v !== "" && v !== 0).join(" / ");
+			[g.name, g.specId, g.imageId, g.nodeGroupSize, g.connectionName, rootDisk, g.zone].forEach(val => {
+				const td = document.createElement("td");
+				td.textContent = (val === undefined || val === null || val === "") ? "-" : String(val);
+				tr.appendChild(td);
+			});
+			tbody.appendChild(tr);
+		});
+	}
+
+	const block = document.getElementById("template-select-postcommand-block");
+	const commands = req.postCommand?.command || [];
+	if (commands.length > 0) {
+		block.classList.remove("d-none");
+		document.getElementById("template-select-postcommand").textContent = commands.join("\n");
+	} else {
+		block.classList.add("d-none");
+	}
+}
+
 function initTemplateDeploySelect() {
 	const sel = document.getElementById("mci_deploy_algorithm");
 	if (!sel) return;
@@ -1167,6 +1220,7 @@ export async function openTemplateSelectModal() {
 
 	if (templateSelectTable) {
 		templateSelectTable.replaceData(templates);
+		templateSelectTable.deselectRow();
 	} else {
 		templateSelectTable = new Tabulator("#template-select-table", {
 			data: templates,
@@ -1187,6 +1241,12 @@ export async function openTemplateSelectModal() {
 				{ title: "Created", field: "createdAt", sorter: "string", width: 180 }
 			]
 		});
+
+		// 선택 변경 시 템플릿 미리보기 갱신
+		templateSelectTable.on("rowSelectionChanged", function (data) {
+			if (data.length > 0) renderTemplateSelectDetail(data[0]);
+			else resetTemplateSelectDetail();
+		});
 	}
 
 	const modalEl = document.getElementById("infra-template-select-modal");
@@ -1199,6 +1259,7 @@ export async function openTemplateSelectModal() {
 	modalEl.addEventListener("hidden.bs.modal", function () {
 		if (!templateDeploySucceeded) revertDeployAlgorithmSelect();
 	}, { once: true });
+	resetTemplateSelectDetail();
 	new bootstrap.Modal(modalEl).show();
 }
 

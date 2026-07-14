@@ -1695,7 +1695,7 @@
 
 <!-- Infra Template 선택 팝업 -->
 <div class="modal modal-blur fade" id="infra-template-select-modal" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Deploy from Infra Template</h5>
@@ -1707,6 +1707,40 @@
           Create MCI form are used.
         </p>
         <div id="template-select-table"></div>
+
+        <!-- 선택한 템플릿 미리보기 (읽기 전용) -->
+        <div id="template-select-detail" class="mt-3">
+          <p id="template-select-detail-hint" class="text-muted mb-0">
+            Select a template to preview its configuration.
+          </p>
+          <div id="template-select-detail-content" class="d-none">
+            <div class="mb-2">
+              <span class="text-muted">Description:</span>
+              <span id="template-select-detail-desc">-</span>
+            </div>
+            <h4 class="mb-1">NodeGroups</h4>
+            <div class="table-responsive" style="overflow-x:auto">
+              <table class="table table-vcenter table-sm">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Spec ID</th>
+                    <th>Image ID</th>
+                    <th>Size</th>
+                    <th>Connection</th>
+                    <th>Root Disk</th>
+                    <th>Zone</th>
+                  </tr>
+                </thead>
+                <tbody id="template-select-nodegroup-rows"></tbody>
+              </table>
+            </div>
+            <div id="template-select-postcommand-block" class="d-none">
+              <h4 class="mb-1">Post Command</h4>
+              <pre id="template-select-postcommand" class="bg-dark text-white p-2 rounded mb-0" style="max-height:120px;overflow:auto"></pre>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
