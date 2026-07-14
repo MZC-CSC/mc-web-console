@@ -25,8 +25,20 @@ export function initServerRecommendation(callbackfunction) {
 	}
 }
 
+// 값이 없거나 0/-1인 숫자 필드는 "-"로 표시
+function dashIfEmpty(cell) {
+	var v = cell.getValue();
+	if (v === undefined || v === null || v === "" || v === 0 || v === -1) {
+		return "-";
+	}
+	return v;
+}
+
 function initRecommendSpecTable() {
-	var tableObjParams = {};
+	// fitColumns는 전체 칼럼을 컨테이너 폭에 압축해 가로 스크롤이 생기지 않음 → fitData로 전환
+	var tableObjParams = {
+		layout: "fitData",
+	};
 
 	var columns = [
 		{
@@ -45,12 +57,6 @@ function initRecommendSpecTable() {
 			visible: false
 		},
 		{
-			title: "EVALUATIONSCORE",
-			field: "evaluationScore10",
-			headerSort: false,
-			visible: false
-		},
-		{
 			title: "PROVIDER",
 			field: "providerName",
 			vertAlign: "middle",
@@ -62,7 +68,8 @@ function initRecommendSpecTable() {
 	{
 		title: "REGION",
 		field: "regionName",
-		vertAlign: "middle"
+		vertAlign: "middle",
+		minWidth: 140,
 	},
 	{
 		title: "SPEC NAME",
@@ -93,6 +100,73 @@ function initRecommendSpecTable() {
 		hozAlign: "center",
 		headerHozAlign: "center",
 		maxWidth: 80,
+	},
+	{
+		title: "ARCHITECTURE",
+		field: "architecture",
+		vertAlign: "middle",
+		hozAlign: "center",
+		formatter: dashIfEmpty,
+	},
+	{
+		title: "DISK (GB)",
+		field: "diskSizeGB",
+		vertAlign: "middle",
+		hozAlign: "center",
+		formatter: dashIfEmpty,
+	},
+	{
+		title: "ROOT DISK",
+		field: "rootDiskType",
+		vertAlign: "middle",
+		hozAlign: "center",
+		formatter: function (cell) {
+			var row = cell.getRow().getData();
+			var type = row.rootDiskType;
+			var size = row.rootDiskSize;
+			if (!type && (!size || size <= 0)) {
+				return "-";
+			}
+			if (size && size > 0) {
+				return (type ? type + " " : "") + size + " GB";
+			}
+			return type;
+		},
+	},
+	{
+		title: "NET BW (Gbps)",
+		field: "netBwGbps",
+		vertAlign: "middle",
+		hozAlign: "center",
+		formatter: dashIfEmpty,
+	},
+	{
+		title: "GPU",
+		field: "acceleratorModel",
+		vertAlign: "middle",
+		hozAlign: "center",
+		formatter: function (cell) {
+			var row = cell.getRow().getData();
+			var model = row.acceleratorModel;
+			if (!model || model === "NA" || row.acceleratorType === "") {
+				return "-";
+			}
+			var count = row.acceleratorCount;
+			return count && count > 1 ? model + " x" + count : model;
+		},
+	},
+	{
+		title: "GPU MEM (GB)",
+		field: "acceleratorMemoryGB",
+		vertAlign: "middle",
+		hozAlign: "center",
+		formatter: dashIfEmpty,
+	},
+	{
+		title: "SCORE",
+		field: "evaluationScore10",
+		vertAlign: "middle",
+		hozAlign: "center",
 	}
 	];
 
