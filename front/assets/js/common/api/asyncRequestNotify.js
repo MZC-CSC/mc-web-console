@@ -26,18 +26,21 @@ function statusDotClass(status) {
   return 'status-dot d-block';
 }
 
-function statusLabel(status) {
+/**
+ * UI labels: never show "Success" (ambiguous with request acceptance).
+ */
+function statusPhrase(status) {
   if (status === 'Handling') {
-    return 'Processing';
+    return 'In progress';
   }
   if (status === 'Success') {
-    return 'Success';
+    return 'Completed';
   }
   if (status === 'Timeout') {
-    return 'Timeout';
+    return 'Timed out';
   }
   if (status === 'Error') {
-    return 'Error';
+    return 'Failed';
   }
   return status || '';
 }
@@ -46,7 +49,7 @@ function formatTime(ts) {
   if (!ts) {
     return '';
   }
-  const d = new Date(ts);
+  const d = typeof ts === 'number' ? new Date(ts) : new Date(ts);
   if (Number.isNaN(d.getTime())) {
     return '';
   }
@@ -59,6 +62,24 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function buildSubtitle(job) {
+  const parts = [];
+  if (job.startedAt) {
+    parts.push('Requested ' + formatTime(job.startedAt));
+  }
+  if (job.status !== 'Handling' && job.finishedAt) {
+    parts.push('Finished ' + formatTime(job.finishedAt));
+  }
+  parts.push(shortId(job.requestId));
+  if (job.status !== 'Handling' && job.message) {
+    const shortMsg = String(job.message).replace(/^.*?—\s*/, '');
+    if (shortMsg && shortMsg !== 'completed') {
+      parts.push(shortMsg);
+    }
+  }
+  return parts.join(' · ');
 }
 
 function renderJobs(jobs) {
@@ -91,20 +112,9 @@ function renderJobs(jobs) {
 
   listEl.innerHTML = jobs
     .map((job) => {
-      const sub =
-        (job.operationId ? escapeHtml(job.operationId) + ' · ' : '') +
-        shortId(job.requestId) +
-        (job.startedAt ? ' · ' + formatTime(job.startedAt) : '');
       const title = escapeHtml(job.label || job.operationId || 'Request');
-      const st = statusLabel(job.status);
-      const msg =
-        job.status !== 'Handling' && job.message
-          ? '<div class="d-block text-secondary text-truncate mt-n1">' +
-            escapeHtml(job.message) +
-            '</div>'
-          : '<div class="d-block text-secondary text-truncate mt-n1">' +
-            escapeHtml(sub) +
-            '</div>';
+      const st = statusPhrase(job.status);
+      const sub = buildSubtitle(job);
       return (
         '<div class="list-group-item" data-request-id="' +
         escapeHtml(job.requestId) +
@@ -118,10 +128,12 @@ function renderJobs(jobs) {
         '<div class="col text-truncate">' +
         '<span class="text-body d-block">' +
         title +
-        ' <span class="text-secondary small">(' +
+        ' <span class="text-secondary small">· ' +
         escapeHtml(st) +
-        ')</span></span>' +
-        msg +
+        '</span></span>' +
+        '<div class="d-block text-secondary text-truncate mt-n1">' +
+        escapeHtml(sub) +
+        '</div>' +
         '</div>' +
         '<div class="col-auto">' +
         '<a href="#" class="list-group-item-actions async-request-dismiss" ' +
@@ -173,12 +185,11 @@ function bindActions() {
 }
 
 export function initAsyncRequestNotify() {
-  const t = tracker();
-  if (!t || !t.subscribe) {
-    return;
-  }
   bindActions();
-  t.subscribe(renderJobs);
+  const t = tracker();
+  if (t && t.subscribe) {
+    t.subscribe(renderJobs);
+  }
 }
 
 if (typeof document !== 'undefined') {

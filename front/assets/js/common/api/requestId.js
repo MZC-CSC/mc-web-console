@@ -77,16 +77,27 @@ export function isAsyncTrackOperation(operationId) {
  * @param {string} [label] - navbar / toast label
  * @returns {{ requestId: string, headers: Object, httpOptions: Object }}
  */
-export function beginTrackedRequest(operationId, label) {
+export function beginTrackedRequest(operationId, label, meta) {
   const requestId = generateRequestId();
   const headers = xRequestIdHeaders(requestId);
+  const resolvedLabel = label || operationId;
+  if (resolvedLabel) {
+    headers['x-mcwc-label'] = resolvedLabel;
+  }
+  if (meta && meta.href) {
+    headers['x-mcwc-href'] = meta.href;
+  }
+  if (meta && meta.nsId) {
+    headers['x-mcwc-ns-id'] = meta.nsId;
+  }
   if (isAsyncTrackOperation(operationId)) {
     const tracker = webconsolejs && webconsolejs['common/api/asyncRequestTracker'];
     if (tracker && typeof tracker.track === 'function') {
       tracker.track({
         requestId: requestId,
         operationId: operationId,
-        label: label || operationId,
+        label: resolvedLabel,
+        href: (meta && meta.href) || '',
       });
     }
   }

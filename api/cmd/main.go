@@ -49,6 +49,7 @@ func main() {
 	jwt.SetSecretKey(jwtSecret)
 
 	// 데이터베이스 초기화 (MC_WEB_CONSOLE_POSTGRES_HOST 환경변수가 설정된 경우에만 활성화)
+	dbEnabled := false
 	if os.Getenv("MC_WEB_CONSOLE_POSTGRES_HOST") != "" {
 		if err := repository.InitDatabase(cfg); err != nil {
 			log.Fatalf("Failed to initialize database: %v", err)
@@ -59,6 +60,7 @@ func main() {
 		if err := repository.AutoMigrate(); err != nil {
 			log.Fatalf("Failed to migrate database: %v", err)
 		}
+		dbEnabled = true
 	} else {
 		log.Println("⚠️  MC_WEB_CONSOLE_POSTGRES_HOST not configured, running without database (session management disabled)")
 	}
@@ -119,6 +121,17 @@ func main() {
 	// 단일 세그먼트 내부 핸들러
 	api.POST("/disklookup", handler.DiskLookup)
 	api.POST("/getapihosts", handler.GetApiHosts)
+
+	// Async request history (WEB-TECH-017) — must register before subsystem wildcard
+	asyncReq := api.Group("/async-requests")
+	asyncReq.GET("", handler.ListAsyncRequests)
+	asyncReq.DELETE("", handler.ClearFinishedAsyncRequests)
+	asyncReq.PATCH("/:requestId", handler.PatchAsyncRequest)
+	asyncReq.DELETE("/:requestId", handler.DeleteAsyncRequest)
+
+	if dbEnabled {
+		service.StartAsyncRequestPoller(cfg)
+	}
 
 	// 관리자 전용 BFF 라우트 (와일드카드보다 먼저 등록되어야 정적 매칭됨)
 	// FR-CLOUD-ADMIN-006-08: 외부 raw YAML 도달성 확인 (CORS 우회 + 토큰 노출 방지)
