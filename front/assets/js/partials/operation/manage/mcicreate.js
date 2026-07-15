@@ -1293,14 +1293,13 @@ export async function deployFromSelectedTemplate() {
 	if (deployBtn) deployBtn.disabled = true;
 
 	try {
-		// mciDynamic과 동일한 비동기 방식 — 생성 요청만 보내고 결과를 기다리지 않는다
+		// requestId toast로 상태 표시 — 생성 요청만 보내고 결과를 기다리지 않는다
 		webconsolejs["common/api/services/infratemplate_api"]
 			.deployFromTemplate(nsId, template.id, applyReq, undefined, { loaderType: "none" })
 			.catch(() => {});
 		templateDeploySucceeded = true;
 		bootstrap.Modal.getInstance(document.getElementById("infra-template-select-modal"))?.hide();
-		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.SUCCESS, "MCI creation request completed.");
-		// Toast가 보이도록 잠시 후 이동
+		// Toast가 보이도록 잠시 후 이동 (진행/완료는 asyncRequestTracker)
 		setTimeout(() => { window.location.href = "/webconsole/operations/manage/workloads/mciworkloads"; }, 1500);
 	} catch (e) {
 		templateDeployInFlight = false;

@@ -22,6 +22,8 @@ func CustomCORSConfig() echo.MiddlewareFunc {
 			echo.HeaderContentType,
 			echo.HeaderAccept,
 			echo.HeaderAuthorization,
+			echo.HeaderXRequestID,
+			"x-request-id",
 		},
 		AllowCredentials: true,
 		MaxAge:           86400, // 24시간
