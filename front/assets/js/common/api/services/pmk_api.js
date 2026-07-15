@@ -289,10 +289,17 @@ export async function vmDynamic(pmkId, nsId, Express_Server_Config_Arr) {
   }
 
   var controller = "/api/" + "mc-infra-manager/" + "PostK8sNodeGroupDynamic";
+  const ngName = (obj && obj.name) ? obj.name : 'nodegroup';
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostK8sNodeGroupDynamic',
+    'K8s NG dynamic: ' + ngName
+  );
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
-    data
-  )
+    data,
+    false,
+    tracked.httpOptions
+  );
 
   return response
 }
@@ -459,12 +466,16 @@ async function dispatchNodeGroupsConcurrently(controller, k8sClusterId, nsId, co
   for (var i = 0; i < configArr.length; i++) {
     var obj = configArr[i];
     var data = buildNodeGroupRequest(k8sClusterId, nsId, obj);
+    var tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+      'Postk8snodegroup',
+      'K8s NG create: ' + obj.name
+    );
 
     var reqPromise = webconsolejs["common/api/http"].commonAPIPost(
       controller,
       data,
       undefined,
-      { loaderType: 'toast', progressLabel: 'NodeGroup ' + obj.name }
+      tracked.httpOptions
     );
     pending.push({ name: obj.name, promise: reqPromise });
 
@@ -513,11 +524,17 @@ async function sendNodeGroupsSequentially(controller, k8sClusterId, nsId, config
   for (var i = 0; i < configArr.length; i++) {
     var obj = configArr[i];
     var data = buildNodeGroupRequest(k8sClusterId, nsId, obj);
+    var tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+      'Postk8snodegroup',
+      'K8s NG create: ' + obj.name
+    );
 
     try {
       const response = await webconsolejs["common/api/http"].commonAPIPost(
         controller,
-        data
+        data,
+        false,
+        tracked.httpOptions
       );
 
       if (response && (response.status === 200 || response.status === 201)) {
@@ -819,11 +836,20 @@ export function pmkDelete(nsId, k8sClusterId, options = {}) {
     },
   };
   let controller = '/api/' + 'mc-infra-manager/' + 'Deletek8scluster';
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'Deletek8scluster',
+    'K8s delete: ' + k8sClusterId
+  );
+  const mergedOptions = Object.assign({}, options || {}, {
+    // tracked request: 강제 none — 페이지/API Processing 로더와 중복 방지
+    loaderType: 'none',
+    headers: Object.assign({}, (options && options.headers) || {}, tracked.headers),
+  });
   let response = webconsolejs['common/api/http'].commonAPIPost(
     controller,
     data,
     false,
-    options
+    mergedOptions
   );
   return response;
 }
@@ -853,11 +879,19 @@ export function nodeGroupDelete(nsId, k8sClusterId, k8sNodeGroupName, options = 
     },
   };
   let controller = '/api/' + 'mc-infra-manager/' + 'Deletek8snodegroup';
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'Deletek8snodegroup',
+    'K8s NG delete: ' + k8sNodeGroupName
+  );
+  const mergedOptions = Object.assign({}, options || {}, {
+    loaderType: 'none',
+    headers: Object.assign({}, (options && options.headers) || {}, tracked.headers),
+  });
   let response = webconsolejs['common/api/http'].commonAPIPost(
     controller,
     data,
     false,
-    options
+    mergedOptions
   );
   return response;
 }
@@ -972,9 +1006,16 @@ export async function createK8sClusterDynamic(nsId, clusterData) {
   };
 
   var controller = "/api/" + "mc-infra-manager/" + "Postk8sclusterdynamic";
-  const response = await webconsolejs["common/api/http"].commonAPIPost(
+  const clusterName = (clusterData && clusterData.name) ? clusterData.name : 'cluster';
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostK8sClusterDynamic',
+    'K8s create: ' + clusterName
+  );
+  const response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
-    data
+    data,
+    undefined,
+    tracked.httpOptions
   );
 
   return response;

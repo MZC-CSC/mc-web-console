@@ -568,15 +568,14 @@ function updateMciLabelsTab(mciData) {
   }
 }
 
-// mci 삭제
+// mci 삭제 — requestId tracker가 progress/결과 toast 담당
 export function deleteMci() {
   const deletingMciId = window.currentMciId;
   window.currentMciId = "";
   webconsolejs["partials/layout/navigatePages"].deactiveElement(document.getElementById("mci_info"));
   mciListTable.deselectRow();
-  executeWithToast(
+  executeTrackedRequest(
     () => webconsolejs["common/api/services/mci_api"].mciDelete(deletingMciId, window.currentNsId),
-    "MCI deleted successfully",
     "MCI deletion failed"
   ).then(() => {
     refreshMciList();
@@ -587,16 +586,28 @@ export function deleteMci() {
 export function deleteVm() {
   const deletingVmId = currentVmId;
   resetDefaultTabSelections();
-  executeWithToast(
+  executeTrackedRequest(
     () => webconsolejs["common/api/services/mci_api"].vmDelete(window.currentMciId, window.currentNsId, deletingVmId),
-    "VM deleted successfully",
     "VM deletion failed"
   ).then(() => {
     refreshMciList();
   });
 }
 
-// 공통 API 호출 래퍼 함수 (Toast 포함)
+// requestId 추적 API용: 레거시 "API Processing..." / 즉시 success toast 생략
+// (asyncRequestTracker가 GetRequest 기반 progress·결과 toast를 표시)
+function executeTrackedRequest(apiCall, errorMessage) {
+  return Promise.resolve(apiCall())
+    .catch((error) => {
+      webconsolejs["common/utils/toast"].showToast(
+        webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR,
+        errorMessage
+      );
+      throw error;
+    });
+}
+
+// 공통 API 호출 래퍼 함수 (Toast 포함) — 짧은 sync 작업용 (template save 등)
 function executeWithToast(apiCall, successMessage, errorMessage) {
   // 진행 상태 표시
   webconsolejs["common/utils/toast"].showProgressToast("API", "processing");
@@ -626,9 +637,8 @@ export function changeMciLifeCycle(type) {
     webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an MCI')
     return;
   }
-  executeWithToast(
+  executeTrackedRequest(
     () => webconsolejs["common/api/services/mci_api"].mciLifeCycle(type, window.currentMciId, window.currentNsId),
-    `MCI ${type} completed successfully`,
     `MCI ${type} failed`
   ).then(() => {
     refreshMciList();
@@ -642,9 +652,8 @@ export function changeVmLifeCycle(type) {
     return;
   }
   if (selectedVmId) {
-    executeWithToast(
+    executeTrackedRequest(
       () => webconsolejs["common/api/services/mci_api"].vmLifeCycle(type, window.currentMciId, window.currentNsId, selectedVmId),
-      `VM ${type} completed successfully`,
       `VM ${type} failed`
     ).then(() => {
       refreshMciList();
@@ -2164,14 +2173,8 @@ function providerFormatterString(data) {
     btnOk.addEventListener('click', () => {
       var numVMsToAdd = parseInt(inputBox.value, 10)
       
-      // 로딩 프로그레스 토스트 표시
-      webconsolejs["common/utils/toast"].showProgressToast("ScaleOut", "processing");
-      
-      // API 호출 (fire-and-forget: tumblebug ScaleOut은 VM 생성 완료까지 수분 소요)
+      // fire-and-forget: requestId tracker가 ScaleOut progress/결과 toast 표시
       webconsolejs["common/api/services/mci_api"].postScaleOutSubGroup(window.currentNsId, currentMciId, currentSubGroupId, numVMsToAdd);
-      webconsolejs["common/utils/toast"].hideProgressToast();
-      alert(`ScaleOut 요청이 접수되었습니다.\nVM 생성이 완료되면 Group 탭을 새로고침하세요.`);
-
     });
     li.appendChild(btnOk);
     

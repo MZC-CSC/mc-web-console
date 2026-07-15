@@ -152,9 +152,15 @@ export function mciLifeCycle(type, currentMciId, nsId) {
     }
   };
   let controller = "/api/" + "mc-infra-manager/" + "GetControlInfra";
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'GetControlInfra',
+    'MCI ' + type + ': ' + currentMciId
+  );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
-    data
+    data,
+    false,
+    tracked.httpOptions
   );
   return response;
 }
@@ -171,9 +177,15 @@ export function mciDelete(currentMciId, nsId) {
     }
   };
   let controller = "/api/" + "mc-infra-manager/" + "DelInfra";
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'DelInfra',
+    'MCI delete: ' + currentMciId
+  );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
-    data
+    data,
+    false,
+    tracked.httpOptions
   );
   return response;
 }
@@ -190,9 +202,15 @@ export function vmDelete(mciId, nsId, vmId) {
     }
   };
   let controller = "/api/" + "mc-infra-manager/" + "DelInfraNode";
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'DelInfraNode',
+    'VM delete: ' + vmId
+  );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
-    data
+    data,
+    false,
+    tracked.httpOptions
   );
   return response;
 }
@@ -211,9 +229,15 @@ export function vmLifeCycle(type, mciId, nsId, vmid) {
     }
   };
   let controller = "/api/" + "mc-infra-manager/" + "GetControlInfraNode";
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'GetControlInfraNode',
+    'VM ' + type + ': ' + vmid
+  );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
-    data
+    data,
+    false,
+    tracked.httpOptions
   );
   return response;
 }
@@ -303,15 +327,20 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
   }
 
   var controller = "/api/" + "mc-infra-manager/" + "PostInfraDynamic";
-  const response = webconsolejs["common/api/http"].commonAPIPost(
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostInfraDynamic',
+    'MCI create: ' + mciName
+  );
+  webconsolejs["common/api/http"].commonAPIPost(
     controller,
-    data
+    data,
+    undefined,
+    tracked.httpOptions
   );
 
-  alert("Creation request completed");
   var urlParamMap = new Map();
 
-  // 생성요청했으므로 결과를 기다리지 않고 mciList로 보냄
+  // 생성요청했으므로 결과를 기다리지 않고 mciList로 보냄 (상태는 tracker toast로 표시)
   // webconsolejs["common/util"].changePage("MciMng", urlParamMap)
   window.location = "/webconsole/operations/manage/workloads/mciworkloads"
 }
@@ -340,10 +369,18 @@ export async function vmDynamic(mciId, nsId, Express_Server_Config_Arr) {
 
 
   var controller = "/api/" + "mc-infra-manager/" + "PostInfraNodeGroupDynamic";
+  const ngName = (obj && obj.name) ? obj.name : 'nodegroup';
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostInfraNodeGroupDynamic',
+    'NodeGroup add: ' + ngName
+  );
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
-    data
-  )
+    data,
+    false,
+    tracked.httpOptions
+  );
+  return response;
 }
 
 export async function mciRecommendVm(data) {
@@ -736,9 +773,13 @@ export async function postScaleOutSubGroup(nsId, mciId, subgroupId, numVMsToAdd)
   };
 
   var controller = "/api/" + "mc-infra-manager/" + "PostInfraNodeGroupScaleOut";
-  webconsolejs["common/api/http"].commonAPIPost(controller, data)
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostInfraNodeGroupScaleOut',
+    'ScaleOut: ' + subgroupId + ' +' + numVMsToAdd
+  );
+  webconsolejs["common/api/http"].commonAPIPost(controller, data, false, tracked.httpOptions)
     .catch(err => console.error("ScaleOut background error:", err));
-  return { status: "requested" }
+  return { status: "requested" };
 
 }
 

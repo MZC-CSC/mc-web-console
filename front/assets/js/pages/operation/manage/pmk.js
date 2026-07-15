@@ -1693,14 +1693,11 @@ export async function deployPmkDynamic() {
             }
         }
 
-        // 동적 클러스터 생성 API 호출 (비동기 - 결과를 기다리지 않음)
+        // 동적 클러스터 생성 API 호출 (비동기 - requestId toast로 상태 표시)
         webconsolejs["common/api/services/pmk_api"].createK8sClusterDynamic(
             selectedWorkspaceProject.nsId,
             createData
         );
-
-        // 즉시 Toast 메시지 표시
-        webconsolejs['common/util'].showToast('Cluster creation request has been sent', 'info');
 
         // 폼 초기화
         $("#cluster_name_dynamic").val("");

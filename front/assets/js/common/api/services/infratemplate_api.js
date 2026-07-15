@@ -59,7 +59,27 @@ export async function deployFromTemplate(ns, templateId, applyReq, option, optio
     request: applyReq
   };
   if (option) params.queryParams = { option };
-  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, params, undefined, options);
+
+  const labelName = (applyReq && applyReq.name) ? applyReq.name : templateId;
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostInfraDynamicFromTemplate',
+    'MCI from template: ' + labelName
+  );
+
+  const mergedOptions = Object.assign({}, options || {}, {
+    loaderType: (options && options.loaderType) || 'none',
+    headers: Object.assign(
+      {},
+      (options && options.headers) || {},
+      tracked.headers
+    )
+  });
+  const response = await webconsolejs['common/api/http'].commonAPIPost(
+    controller,
+    params,
+    undefined,
+    mergedOptions
+  );
   return response;
 }
 
