@@ -183,8 +183,14 @@ func SubsystemAnyController(c echo.Context) error {
 		if credHolder != "" {
 			httpReq.Header.Set("x-credential-holder", credHolder)
 		}
+		trackedReqID := ""
 		if reqID := c.Request().Header.Get("x-request-id"); reqID != "" {
 			httpReq.Header.Set("x-request-id", reqID)
+			trackedReqID = reqID
+		}
+		// Persist allowlisted async request before Do so Handling is visible immediately.
+		if trackedReqID != "" {
+			PersistTrackedProxyRequest(c, subsystemName, operationId, trackedReqID)
 		}
 	}
 
@@ -193,6 +199,9 @@ func SubsystemAnyController(c echo.Context) error {
 	client := &http.Client{}
 	resp, err := client.Do(httpReq)
 	if err != nil {
+		if reqID := c.Request().Header.Get("x-request-id"); reqID != "" {
+			MarkTrackedProxyError(reqID, "Failed to reach backend service: "+subsystemName)
+		}
 		return errors.NewInternalServerError("Failed to reach backend service: "+subsystemName, err)
 	}
 	defer resp.Body.Close()

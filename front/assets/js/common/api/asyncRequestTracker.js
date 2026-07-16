@@ -1,17 +1,22 @@
 /**
- * Track long-running mc-infra-manager requests via GetRequest + Toast.
- * Jobs persist in sessionStorage (incl. finished history for navbar).
+ * Track long-running mc-infra-manager requests via console API + GetRequest.
+ * Primary: GET /api/async-requests (Postgres). Fallback: sessionStorage + poll.
  */
 
 const STORAGE_KEY = 'mcwc_async_requests';
 const POLL_MS = 2500;
+const LIST_REFRESH_MS = 2000;
 const MAX_MS = 15 * 60 * 1000;
 const MAX_JOBS = 20;
 const GET_REQUEST_URL = '/api/mc-infra-manager/GetRequest';
+const LIST_URL = '/api/async-requests';
 const EVENT_NAME = 'mcwc-async-request-changed';
 
 const timers = new Map();
 const listeners = new Set();
+let useServer = null;
+let listTimer = null;
+let lastToastStatus = new Map();
 
 function toastApi() {
   return webconsolejs && webconsolejs['common/utils/toast'];
@@ -21,21 +26,49 @@ function toastIdFor(requestId) {
   return 'async-req-' + requestId;
 }
 
-function loadJobs() {
+function toMillis(ts) {
+  if (ts == null || ts === '') {
+    return 0;
+  }
+  if (typeof ts === 'number') {
+    return ts;
+  }
+  const n = Date.parse(ts);
+  return Number.isNaN(n) ? 0 : n;
+}
+
+function normalizeJob(job) {
+  if (!job) {
+    return null;
+  }
+  return {
+    requestId: job.requestId || job.request_id,
+    operationId: job.operationId || job.operation_id || '',
+    label: job.label || job.operationId || 'Request',
+    status: job.status || 'Handling',
+    startedAt: toMillis(job.startedAt || job.started_at) || Date.now(),
+    finishedAt: job.finishedAt || job.finished_at
+      ? toMillis(job.finishedAt || job.finished_at)
+      : undefined,
+    message: job.message || '',
+    href: job.href || '',
+  };
+}
+
+function loadJobsLocal() {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) {
       return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizeJob).filter(Boolean) : [];
   } catch (e) {
     return [];
   }
 }
 
-function saveJobs(jobs) {
-  // Keep Handling first by startedAt, then finished by finishedAt; cap size
+function saveJobsLocal(jobs) {
   const handling = jobs
     .filter((j) => j.status === 'Handling')
     .sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
@@ -48,7 +81,7 @@ function saveJobs(jobs) {
 }
 
 function emit(jobs) {
-  const list = jobs || loadJobs();
+  const list = jobs || loadJobsLocal();
   listeners.forEach((cb) => {
     try {
       cb(list);
@@ -63,10 +96,10 @@ function emit(jobs) {
   }
 }
 
-function upsertJob(job) {
-  const jobs = loadJobs().filter((j) => j.requestId !== job.requestId);
+function upsertJobLocal(job) {
+  const jobs = loadJobsLocal().filter((j) => j.requestId !== job.requestId);
   jobs.push(job);
-  const saved = saveJobs(jobs);
+  const saved = saveJobsLocal(jobs);
   emit(saved);
 }
 
@@ -84,7 +117,7 @@ function showProgress(job) {
   }
   toast.showToast(
     toast.TOAST_TYPES ? toast.TOAST_TYPES.PROGRESS : 'progress',
-    job.label + ' — processing...',
+    job.label + ' — in progress...',
     { id: toastIdFor(job.requestId), autohide: false }
   );
 }
@@ -105,9 +138,9 @@ function finishToast(job, type, message) {
   }
 }
 
-function markFinished(requestId, status, message) {
+function markFinishedLocal(requestId, status, message) {
   stopTimer(requestId);
-  const jobs = loadJobs();
+  const jobs = loadJobsLocal();
   const job = jobs.find((j) => j.requestId === requestId);
   if (!job) {
     return;
@@ -117,9 +150,97 @@ function markFinished(requestId, status, message) {
   if (message) {
     job.message = message;
   }
-  const saved = saveJobs(jobs);
+  const saved = saveJobsLocal(jobs);
   emit(saved);
   return job;
+}
+
+function maybeToastTransition(prevJobs, nextJobs) {
+  const prevMap = new Map((prevJobs || []).map((j) => [j.requestId, j]));
+  (nextJobs || []).forEach((job) => {
+    const prev = prevMap.get(job.requestId);
+    const prevStatus = prev ? prev.status : lastToastStatus.get(job.requestId);
+    if (prevStatus === job.status) {
+      return;
+    }
+    lastToastStatus.set(job.requestId, job.status);
+    if (job.status === 'Handling') {
+      showProgress(job);
+      return;
+    }
+    if (job.status === 'Success') {
+      finishToast(job, 'success', job.label + ' — completed');
+      stopTimer(job.requestId);
+      return;
+    }
+    if (job.status === 'Error' || job.status === 'Timeout') {
+      finishToast(
+        job,
+        'error',
+        job.message || job.label + ' — ' + (job.status === 'Timeout' ? 'timed out' : 'failed')
+      );
+      stopTimer(job.requestId);
+    }
+  });
+}
+
+async function fetchServerJobs() {
+  const http = webconsolejs && webconsolejs['common/api/http'];
+  if (!http || !http.commonAPIGet) {
+    return null;
+  }
+  const response = await http.commonAPIGet(LIST_URL);
+  if (!response || response.status !== 200) {
+    return null;
+  }
+  const data =
+    (response.data && response.data.responseData) ||
+    (response.data && response.data.data) ||
+    response.data;
+  if (!Array.isArray(data)) {
+    return null;
+  }
+  return data.map(normalizeJob).filter(Boolean);
+}
+
+async function refreshFromServer() {
+  try {
+    const jobs = await fetchServerJobs();
+    if (jobs == null) {
+      if (useServer === true) {
+        // transient failure — keep server mode
+        return;
+      }
+      useServer = false;
+      return;
+    }
+    const prev = useServer === true ? (window.__mcwcAsyncJobsCache || []) : loadJobsLocal();
+    useServer = true;
+    window.__mcwcAsyncJobsCache = jobs;
+    maybeToastTransition(prev, jobs);
+    emit(jobs);
+    // still poll GetRequest for Handling toast progress when server list lags
+    jobs.filter((j) => j.status === 'Handling').forEach((job) => {
+      if (!timers.has(job.requestId)) {
+        startPolling(job);
+      }
+    });
+  } catch (e) {
+    if (useServer !== true) {
+      useServer = false;
+    }
+  }
+}
+
+function ensureListRefresh() {
+  if (listTimer) {
+    return;
+  }
+  listTimer = setInterval(function () {
+    if (useServer !== false) {
+      refreshFromServer();
+    }
+  }, LIST_REFRESH_MS);
 }
 
 async function pollOnce(job) {
@@ -141,14 +262,26 @@ async function pollOnce(job) {
     if (status === 'Success' || status === 'success') {
       const msg = job.label + ' — completed';
       finishToast(job, 'success', msg);
-      markFinished(job.requestId, 'Success', msg);
+      if (useServer) {
+        lastToastStatus.set(job.requestId, 'Success');
+        stopTimer(job.requestId);
+        refreshFromServer();
+      } else {
+        markFinishedLocal(job.requestId, 'Success', msg);
+      }
       return;
     }
     if (status === 'Error' || status === 'error') {
       const errMsg = details.errorResponse || details.ErrorResponse || 'failed';
       const msg = job.label + ' — ' + errMsg;
       finishToast(job, 'error', msg);
-      markFinished(job.requestId, 'Error', msg);
+      if (useServer) {
+        lastToastStatus.set(job.requestId, 'Error');
+        stopTimer(job.requestId);
+        refreshFromServer();
+      } else {
+        markFinishedLocal(job.requestId, 'Error', msg);
+      }
       return;
     }
 
@@ -165,7 +298,8 @@ function startPolling(job) {
     return;
   }
   const tick = () => {
-    const current = loadJobs().find((j) => j.requestId === job.requestId);
+    const current = (useServer ? (window.__mcwcAsyncJobsCache || []) : loadJobsLocal())
+      .find((j) => j.requestId === job.requestId);
     if (!current || current.status !== 'Handling') {
       stopTimer(job.requestId);
       return;
@@ -173,13 +307,20 @@ function startPolling(job) {
     if (Date.now() - current.startedAt > MAX_MS) {
       const msg = current.label + ' — status check timed out';
       finishToast(current, 'error', msg);
-      markFinished(current.requestId, 'Timeout', msg);
+      if (!useServer) {
+        markFinishedLocal(current.requestId, 'Timeout', msg);
+      }
+      stopTimer(job.requestId);
       return;
     }
     pollOnce(current);
   };
-  timers.set(job.requestId, setInterval(tick, POLL_MS));
+  timers.set(job.requestId, setInterval(tick, DEFAULT_POLL_MS()));
   tick();
+}
+
+function DEFAULT_POLL_MS() {
+  return POLL_MS;
 }
 
 /**
@@ -196,28 +337,47 @@ export function track(opts) {
     label: opts.label || opts.operationId || 'Request',
     startedAt: Date.now(),
     status: 'Handling',
-    href: opts.href || ''
+    href: opts.href || '',
   };
-  upsertJob(job);
+  lastToastStatus.set(requestId, 'Handling');
   showProgress(job);
+  if (useServer !== true) {
+    upsertJobLocal(job);
+  } else {
+    const cache = window.__mcwcAsyncJobsCache || [];
+    const next = cache.filter((j) => j.requestId !== requestId).concat([job]);
+    window.__mcwcAsyncJobsCache = next;
+    emit(next);
+  }
   startPolling(job);
+  ensureListRefresh();
+  refreshFromServer();
 }
 
 export function resume() {
-  const jobs = loadJobs();
-  jobs.filter((j) => j.status === 'Handling').forEach((job) => {
-    showProgress(job);
-    startPolling(job);
+  ensureListRefresh();
+  refreshFromServer().then(function () {
+    if (useServer) {
+      return;
+    }
+    const jobs = loadJobsLocal();
+    jobs.filter((j) => j.status === 'Handling').forEach((job) => {
+      showProgress(job);
+      startPolling(job);
+    });
+    emit(jobs);
   });
-  emit(jobs);
 }
 
 export function listJobs() {
-  return loadJobs();
+  if (useServer && window.__mcwcAsyncJobsCache) {
+    return window.__mcwcAsyncJobsCache;
+  }
+  return loadJobsLocal();
 }
 
 export function getHandlingCount() {
-  return loadJobs().filter((j) => j.status === 'Handling').length;
+  return listJobs().filter((j) => j.status === 'Handling').length;
 }
 
 export function subscribe(cb) {
@@ -225,21 +385,51 @@ export function subscribe(cb) {
     return function noop() {};
   }
   listeners.add(cb);
-  cb(loadJobs());
+  cb(listJobs());
   return function unsubscribe() {
     listeners.delete(cb);
   };
 }
 
-export function clearFinished() {
-  const saved = saveJobs(loadJobs().filter((j) => j.status === 'Handling'));
+export async function clearFinished() {
+  if (useServer) {
+    try {
+      await axiosDelete(LIST_URL + '?finished=1');
+      await refreshFromServer();
+      return;
+    } catch (e) {
+      /* fall through */
+    }
+  }
+  const saved = saveJobsLocal(loadJobsLocal().filter((j) => j.status === 'Handling'));
   emit(saved);
 }
 
-export function dismiss(requestId) {
+export async function dismiss(requestId) {
   stopTimer(requestId);
-  const saved = saveJobs(loadJobs().filter((j) => j.requestId !== requestId));
+  if (useServer) {
+    try {
+      await axiosDelete(LIST_URL + '/' + encodeURIComponent(requestId));
+      await refreshFromServer();
+      return;
+    } catch (e) {
+      /* fall through */
+    }
+  }
+  const saved = saveJobsLocal(loadJobsLocal().filter((j) => j.requestId !== requestId));
   emit(saved);
+}
+
+async function axiosDelete(url) {
+  const response = await fetch(url, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new Error('DELETE ' + url + ' failed: ' + response.status);
+  }
+  return response;
 }
 
 export const ASYNC_REQUEST_EVENT = EVENT_NAME;
