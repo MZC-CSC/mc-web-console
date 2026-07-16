@@ -7,10 +7,11 @@ function tracker() {
 }
 
 function shortId(requestId) {
-  if (!requestId || requestId.length < 8) {
-    return requestId || '';
+  if (!requestId) {
+    return '';
   }
-  return '…' + requestId.slice(-8);
+  // Show full requestId; wide Requests panel wraps if needed
+  return requestId;
 }
 
 function statusDotClass(status) {
