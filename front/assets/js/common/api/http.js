@@ -85,9 +85,15 @@ export async function commonAPIPost(url, data, attempt, options = {}) {
   console.log("Loader Type :", loaderType);
   console.log("-----------------------");
   
+  // Custom headers (e.g. x-request-id for tumblebug RequestMap)
+  const axiosConfig = {};
+  if (options.headers && typeof options.headers === 'object') {
+    axiosConfig.headers = options.headers;
+  }
+
   try {
     if (data === undefined || data === null) {
-      var response = await axios.post(url);
+      var response = await axios.post(url, undefined, axiosConfig);
     } else if (data.formData instanceof FormData) {
       // FormData 처리 분기 - axios 사용
       console.log("FormData detected, sending with axios");
@@ -110,9 +116,9 @@ export async function commonAPIPost(url, data, attempt, options = {}) {
       
       // FormData 사용 시 Content-Type 헤더를 설정하지 않음
       // 브라우저가 자동으로 boundary 정보와 함께 올바른 헤더를 설정
-      var response = await axios.post(url, data.formData);
+      var response = await axios.post(url, data.formData, axiosConfig);
     } else {
-      var response = await axios.post(url, data);
+      var response = await axios.post(url, data, axiosConfig);
     }
     
     console.log("#### commonAPIPost Response");

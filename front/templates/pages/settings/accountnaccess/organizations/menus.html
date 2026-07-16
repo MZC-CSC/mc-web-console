@@ -49,6 +49,18 @@
                   <div class="datagrid-title">Menu Number</div>
                   <div class="datagrid-content" id="detail-menu-menunumber"></div>
                 </div>
+                <div class="datagrid-item">
+                  <div class="datagrid-title">View Type</div>
+                  <div class="datagrid-content" id="detail-menu-viewtype"></div>
+                </div>
+                <div class="datagrid-item">
+                  <div class="datagrid-title">Framework Service</div>
+                  <div class="datagrid-content" id="detail-menu-frameworkservice"></div>
+                </div>
+                <div class="datagrid-item">
+                  <div class="datagrid-title">Path</div>
+                  <div class="datagrid-content" id="detail-menu-path"></div>
+                </div>
               </div>
             </div>
             <div class="card-footer">
@@ -136,6 +148,24 @@
           </label>
         </div>
         <div class="mb-3">
+          <label class="form-label">View Type</label>
+          <select class="form-select" id="create-menu-viewtype">
+            <option value="local" selected>local</option>
+            <option value="iframe">iframe</option>
+            <option value="popup">popup</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Framework Service</label>
+          <input type="text" class="form-control" id="create-menu-frameworkservice"
+            placeholder="e.g. mc-cost-optimizer-fe" />
+          <small class="text-muted">Required for iframe/popup (getapihosts key)</small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Path</label>
+          <input type="text" class="form-control" id="create-menu-path" placeholder="e.g. / or /web/workflow/list" />
+        </div>
+        <div class="mb-3">
           <label class="form-label">Roles</label>
           <div id="create-menu-roles" class="d-flex flex-column gap-1" style="max-height: 180px; overflow-y: auto;">
             <!-- role checkboxes rendered by JS -->
@@ -188,6 +218,23 @@
             <input class="form-check-input" type="checkbox" id="edit-menu-isaction" />
             <span class="form-check-label">Is Action (clickable page menu)</span>
           </label>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">View Type</label>
+          <select class="form-select" id="edit-menu-viewtype">
+            <option value="local">local</option>
+            <option value="iframe">iframe</option>
+            <option value="popup">popup</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Framework Service</label>
+          <input type="text" class="form-control" id="edit-menu-frameworkservice"
+            placeholder="e.g. mc-cost-optimizer-fe" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Path</label>
+          <input type="text" class="form-control" id="edit-menu-path" placeholder="e.g. / or /web/workflow/list" />
         </div>
         <div class="mb-3">
           <label class="form-label">Roles</label>
