@@ -6,14 +6,6 @@ function tracker() {
   return webconsolejs && webconsolejs['common/api/asyncRequestTracker'];
 }
 
-function shortId(requestId) {
-  if (!requestId) {
-    return '';
-  }
-  // Show full requestId; wide Requests panel wraps if needed
-  return requestId;
-}
-
 function statusDotClass(status) {
   if (status === 'Handling') {
     return 'status-dot status-dot-animated bg-azure d-block';
@@ -71,7 +63,7 @@ function buildSubtitleLines(job) {
     line1.push('Requested ' + formatTime(job.startedAt));
   }
   if (job.requestId) {
-    line1.push(shortId(job.requestId));
+    line1.push(job.requestId);
   }
 
   const line2 = [];
@@ -91,6 +83,21 @@ function buildSubtitleLines(job) {
   };
 }
 
+let lastRenderKey = '';
+
+function jobsRenderKey(jobs) {
+  return JSON.stringify(
+    (jobs || []).map((j) => [
+      j.requestId,
+      j.status,
+      j.label,
+      j.startedAt,
+      j.finishedAt,
+      j.message || '',
+    ]),
+  );
+}
+
 function renderJobs(jobs) {
   const listEl = document.getElementById('async-request-notif-list');
   const badgeEl = document.getElementById('async-request-notif-badge');
@@ -107,6 +114,29 @@ function renderJobs(jobs) {
     badgeEl.textContent = '';
     badgeEl.classList.add('d-none');
   }
+
+  // Skip DOM rewrite when content unchanged — preserves text selection / drag-copy
+  const key = jobsRenderKey(jobs);
+  if (key === lastRenderKey) {
+    return;
+  }
+  // Defer rewrite while user is selecting text inside the menu
+  try {
+    const sel = window.getSelection && window.getSelection();
+    const menu = document.getElementById('async-request-notif-menu');
+    if (
+      sel &&
+      sel.rangeCount > 0 &&
+      String(sel).length > 0 &&
+      menu &&
+      menu.contains(sel.anchorNode)
+    ) {
+      return;
+    }
+  } catch (e) {
+    // ignore selection probe errors
+  }
+  lastRenderKey = key;
 
   if (!jobs || jobs.length === 0) {
     listEl.innerHTML = '';
@@ -126,17 +156,17 @@ function renderJobs(jobs) {
       const { line1, line2 } = buildSubtitleLines(job);
       const subHtml =
         (line1
-          ? '<div class="d-block text-secondary small text-wrap">' +
+          ? '<div class="d-block text-secondary small text-wrap user-select-auto">' +
             escapeHtml(line1) +
             '</div>'
           : '') +
         (line2
-          ? '<div class="d-block text-secondary small text-wrap">' +
+          ? '<div class="d-block text-secondary small text-wrap user-select-auto">' +
             escapeHtml(line2) +
             '</div>'
           : '');
       return (
-        '<div class="list-group-item" data-request-id="' +
+        '<div class="list-group-item user-select-auto" data-request-id="' +
         escapeHtml(job.requestId) +
         '">' +
         '<div class="row align-items-center">' +
@@ -180,6 +210,15 @@ function bindActions() {
       if (t && t.clearFinished) {
         t.clearFinished();
       }
+    });
+  }
+
+  const menuEl = document.getElementById('async-request-notif-menu');
+  if (menuEl && !menuEl.dataset.selectBound) {
+    menuEl.dataset.selectBound = '1';
+    // Keep dropdown open while selecting text (mouseup may land outside)
+    menuEl.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
     });
   }
 
