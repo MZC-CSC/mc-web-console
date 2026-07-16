@@ -64,22 +64,30 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-function buildSubtitle(job) {
-  const parts = [];
+function buildSubtitleLines(job) {
+  const line1 = [];
   if (job.startedAt) {
-    parts.push('Requested ' + formatTime(job.startedAt));
+    line1.push('Requested ' + formatTime(job.startedAt));
   }
+  if (job.requestId) {
+    line1.push(shortId(job.requestId));
+  }
+
+  const line2 = [];
   if (job.status !== 'Handling' && job.finishedAt) {
-    parts.push('Finished ' + formatTime(job.finishedAt));
+    line2.push('Finished ' + formatTime(job.finishedAt));
   }
-  parts.push(shortId(job.requestId));
   if (job.status !== 'Handling' && job.message) {
     const shortMsg = String(job.message).replace(/^.*?—\s*/, '');
     if (shortMsg && shortMsg !== 'completed') {
-      parts.push(shortMsg);
+      line2.push(shortMsg);
     }
   }
-  return parts.join(' · ');
+
+  return {
+    line1: line1.join(' · '),
+    line2: line2.join(' · '),
+  };
 }
 
 function renderJobs(jobs) {
@@ -114,7 +122,18 @@ function renderJobs(jobs) {
     .map((job) => {
       const title = escapeHtml(job.label || job.operationId || 'Request');
       const st = statusPhrase(job.status);
-      const sub = buildSubtitle(job);
+      const { line1, line2 } = buildSubtitleLines(job);
+      const subHtml =
+        (line1
+          ? '<div class="d-block text-secondary small text-wrap">' +
+            escapeHtml(line1) +
+            '</div>'
+          : '') +
+        (line2
+          ? '<div class="d-block text-secondary small text-wrap">' +
+            escapeHtml(line2) +
+            '</div>'
+          : '');
       return (
         '<div class="list-group-item" data-request-id="' +
         escapeHtml(job.requestId) +
@@ -125,15 +144,13 @@ function renderJobs(jobs) {
         '" title="' +
         escapeHtml(st) +
         '"></span></div>' +
-        '<div class="col text-truncate">' +
-        '<span class="text-body d-block">' +
+        '<div class="col text-break">' +
+        '<span class="text-body d-block text-truncate">' +
         title +
         ' <span class="text-secondary small">· ' +
         escapeHtml(st) +
         '</span></span>' +
-        '<div class="d-block text-secondary text-truncate mt-n1">' +
-        escapeHtml(sub) +
-        '</div>' +
+        subHtml +
         '</div>' +
         '<div class="col-auto">' +
         '<a href="#" class="list-group-item-actions async-request-dismiss" ' +
