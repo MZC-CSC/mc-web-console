@@ -821,17 +821,17 @@ serviceActions:
       method: post
       resourcePath: /api/permission/file/framework/{framework}
       description: CSV 기반으로 권한을 업데이트 합니다.
-    Getprojectbyid:
+    getProjectByID:
       method: get
-      resourcePath: /api/prj/project/id/{projectId}
+      resourcePath: /api/projects/id/{projectId}
       description: project 단건 조회
-    Updateprojectbyid:
+    updateProject:
       method: put
-      resourcePath: /api/prj/project/id/{projectId}
+      resourcePath: /api/projects/id/{projectId}
       description: project 수정
-    Deleteprojectbyid:
+    deleteProject:
       method: delete
-      resourcePath: /api/prj/project/id/{projectId}
+      resourcePath: /api/projects/id/{projectId}
       description: project 삭제
     deleteWorkspace:
       method: delete
