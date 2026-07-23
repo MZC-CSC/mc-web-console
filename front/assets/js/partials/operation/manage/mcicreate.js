@@ -314,7 +314,8 @@ export async function displayNewServerForm() {
   // +SubGroup 버튼 클릭 시 수정 모드 플래그 초기화 (신규 추가 모드)
   currentEditingIndex = -1;
   
-  var deploymentAlgo = $("#mci_deploy_algorithm").val();
+  // 화면별 select 참조 — Create MCI는 #mci_deploy_algorithm, Extend VM은 #vm_deploy_algorithm
+  var deploymentAlgo = $(isVm ? "#vm_deploy_algorithm" : "#mci_deploy_algorithm").val();
 
   if (deploymentAlgo == "express") {
     // 폼을 열기 전에 추가 초기화
@@ -905,9 +906,7 @@ export async function createVmDynamic() {
     var selectedNsId = selectedWorkspaceProject.nsId;
     var mciId = window.currentMciId;
 
-    webconsolejs["common/api/services/mci_api"].vmDynamic(mciId, selectedNsId, Express_Server_Config_Arr)
-
-    // response가 있으면 
+    await webconsolejs["common/api/services/mci_api"].vmDynamic(mciId, selectedNsId, Express_Server_Config_Arr)
 
     alert("VM creation request completed")
     window.location = `/webconsole/operations/manage/workloads/mciworkloads`;
@@ -1172,13 +1171,15 @@ export function clearExpressForm() {
 // ─── Infra Template으로 MCI 배포 ─────────────────────────────────────────
 
 let templateSelectTable = null;
-let mciDeployAlgorithmPrev = "express";
+// Create MCI(#mci_deploy_algorithm)와 Extend VM(#vm_deploy_algorithm) 두 select가 template 모달을 공유한다
+let deployAlgorithmPrev = { mci_deploy_algorithm: "express", vm_deploy_algorithm: "express" };
+let templateModalSourceSelectId = "mci_deploy_algorithm"; // 모달을 연 select — 닫힐 때 이 select만 되돌린다
 let templateDeploySucceeded = false;
 let templateDeployInFlight = false;
 
 function revertDeployAlgorithmSelect() {
-	const sel = document.getElementById("mci_deploy_algorithm");
-	if (sel && sel.value === "template") sel.value = mciDeployAlgorithmPrev;
+	const sel = document.getElementById(templateModalSourceSelectId);
+	if (sel && sel.value === "template") sel.value = deployAlgorithmPrev[templateModalSourceSelectId] || "express";
 }
 
 // 템플릿 미리보기 초기화 (선택 없음 → 안내문구 표시)
@@ -1235,22 +1236,28 @@ function renderTemplateSelectDetail(template) {
 }
 
 function initTemplateDeploySelect() {
-	const sel = document.getElementById("mci_deploy_algorithm");
-	if (!sel) return;
-	mciDeployAlgorithmPrev = sel.value;
-	sel.addEventListener("change", async function () {
-		if (this.value !== "template") {
-			mciDeployAlgorithmPrev = this.value;
-			return;
-		}
-		const mciName = ($("#mci_name").val() || "").trim();
-		if (!mciName) {
-			webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please input MCI Name first");
-			this.value = "express";
-			mciDeployAlgorithmPrev = "express";
-			return;
-		}
-		await openTemplateSelectModal();
+	["mci_deploy_algorithm", "vm_deploy_algorithm"].forEach(function (selId) {
+		const sel = document.getElementById(selId);
+		if (!sel) return;
+		deployAlgorithmPrev[selId] = sel.value;
+		sel.addEventListener("change", async function () {
+			if (this.value !== "template") {
+				deployAlgorithmPrev[selId] = this.value;
+				return;
+			}
+			// Create MCI 경로만 MCI Name 선입력 필수 — Extend VM은 기존 MCI 대상이라 불필요
+			if (selId === "mci_deploy_algorithm") {
+				const mciName = ($("#mci_name").val() || "").trim();
+				if (!mciName) {
+					webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please input MCI Name first");
+					this.value = "express";
+					deployAlgorithmPrev[selId] = "express";
+					return;
+				}
+			}
+			templateModalSourceSelectId = selId;
+			await openTemplateSelectModal();
+		});
 	});
 }
 
@@ -1312,6 +1319,9 @@ export async function openTemplateSelectModal() {
 	modalEl.addEventListener("hidden.bs.modal", function () {
 		if (!templateDeploySucceeded) revertDeployAlgorithmSelect();
 	}, { once: true });
+	// Extend VM 경로에서는 새 MCI를 배포하는 [Deploy from Template] 버튼을 숨긴다 (Add NodeGroup만)
+	const deployFromTplBtn = document.getElementById("btn-deploy-from-template");
+	if (deployFromTplBtn) deployFromTplBtn.classList.toggle("d-none", templateModalSourceSelectId === "vm_deploy_algorithm");
 	resetTemplateSelectDetail();
 	new bootstrap.Modal(modalEl).show();
 }
@@ -1413,7 +1423,8 @@ export function addTemplateToForm() {
 		postCommandUserName: req.postCommand?.userName || "",
 		postCommandTimeoutMinutes: req.postCommand?.timeoutMinutes
 	};
-	if (!$("#mci_desc").val() && templatePrefillInfraState.description) {
+	// Create MCI 경로에서만 — Extend VM은 기존 MCI의 description을 유지한다
+	if (!isVm && !$("#mci_desc").val() && templatePrefillInfraState.description) {
 		$("#mci_desc").val(templatePrefillInfraState.description);
 	}
 
