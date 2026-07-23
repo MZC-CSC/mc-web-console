@@ -1138,6 +1138,26 @@ serviceActions:
       method: get
       resourcePath: /api/groups/id/{groupId}/platform-roles
       description: 그룹의 Platform Role 목록 조회
+    getCompany:
+      method: get
+      resourcePath: /api/company
+      description: 플랫폼 회사 정보 조회 (싱글톤)
+    createCompany:
+      method: post
+      resourcePath: /api/company
+      description: 플랫폼 회사 정보 생성 (싱글톤, platformAdmin)
+    updateCompany:
+      method: put
+      resourcePath: /api/company
+      description: 플랫폼 회사 이름/설명 수정 (platformAdmin)
+    deactivateCompany:
+      method: delete
+      resourcePath: /api/company
+      description: 플랫폼 회사 비활성화 (platformAdmin, 멱등)
+    activateCompany:
+      method: post
+      resourcePath: /api/company/activate
+      description: 플랫폼 회사 활성화 (platformAdmin, 멱등)
     listCspAccounts:
       method: post
       resourcePath: /api/csp-accounts/list
