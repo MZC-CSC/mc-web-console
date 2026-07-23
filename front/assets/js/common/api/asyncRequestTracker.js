@@ -4,10 +4,13 @@
  */
 
 const STORAGE_KEY = 'mcwc_async_requests';
+const TOASTED_KEY = 'mcwc_async_toasted';
 const POLL_MS = 2500;
 const LIST_REFRESH_MS = 2000;
 const MAX_MS = 15 * 60 * 1000;
 const MAX_JOBS = 20;
+const RECENT_FINISH_TOAST_MS = 30 * 1000;
+const TOASTED_MAX = 40;
 const GET_REQUEST_URL = '/api/mc-infra-manager/GetRequest';
 const LIST_URL = '/api/async-requests';
 const EVENT_NAME = 'mcwc-async-request-changed';
@@ -16,7 +19,6 @@ const timers = new Map();
 const listeners = new Set();
 let useServer = null;
 let listTimer = null;
-let lastToastStatus = new Map();
 
 function toastApi() {
   return webconsolejs && webconsolejs['common/utils/toast'];
@@ -138,6 +140,48 @@ function finishToast(job, type, message) {
   }
 }
 
+function loadToasted() {
+  try {
+    const raw = sessionStorage.getItem(TOASTED_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveToasted(map) {
+  const keys = Object.keys(map);
+  if (keys.length > TOASTED_MAX) {
+    keys.slice(0, keys.length - TOASTED_MAX).forEach((k) => delete map[k]);
+  }
+  try {
+    sessionStorage.setItem(TOASTED_KEY, JSON.stringify(map));
+  } catch (e) {
+    /* storage full — dedupe degrades gracefully */
+  }
+}
+
+/**
+ * Terminal-status toast, at most once per requestId per tab session
+ * (ledger in sessionStorage so page reloads stay silent).
+ * Shows only when the transition was observed live on this page, or the job
+ * finished within RECENT_FINISH_TOAST_MS (completion during navigation).
+ */
+function maybeFinishToast(job, status, live, message) {
+  const toasted = loadToasted();
+  if (toasted[job.requestId] === status) {
+    return;
+  }
+  const recent =
+    job.finishedAt && Date.now() - job.finishedAt < RECENT_FINISH_TOAST_MS;
+  if (live || recent) {
+    finishToast(job, status === 'Success' ? 'success' : 'error', message);
+  }
+  toasted[job.requestId] = status;
+  saveToasted(toasted);
+}
+
 function markFinishedLocal(requestId, status, message) {
   stopTimer(requestId);
   const jobs = loadJobsLocal();
@@ -158,25 +202,22 @@ function markFinishedLocal(requestId, status, message) {
 function maybeToastTransition(prevJobs, nextJobs) {
   const prevMap = new Map((prevJobs || []).map((j) => [j.requestId, j]));
   (nextJobs || []).forEach((job) => {
-    const prev = prevMap.get(job.requestId);
-    const prevStatus = prev ? prev.status : lastToastStatus.get(job.requestId);
-    if (prevStatus === job.status) {
-      return;
-    }
-    lastToastStatus.set(job.requestId, job.status);
     if (job.status === 'Handling') {
-      showProgress(job);
+      // progress toast is shown only at track() time — never on load/refresh
       return;
     }
+    const prev = prevMap.get(job.requestId);
+    const live = !!prev && prev.status === 'Handling';
     if (job.status === 'Success') {
-      finishToast(job, 'success', job.label + ' — completed');
+      maybeFinishToast(job, 'Success', live, job.label + ' — completed');
       stopTimer(job.requestId);
       return;
     }
     if (job.status === 'Error' || job.status === 'Timeout') {
-      finishToast(
+      maybeFinishToast(
         job,
-        'error',
+        job.status,
+        live,
         job.message || job.label + ' — ' + (job.status === 'Timeout' ? 'timed out' : 'failed')
       );
       stopTimer(job.requestId);
@@ -278,9 +319,8 @@ async function pollOnce(job) {
 
     if (status === 'Success' || status === 'success') {
       const msg = job.label + ' — completed';
-      finishToast(job, 'success', msg);
+      maybeFinishToast(job, 'Success', true, msg);
       if (useServer) {
-        lastToastStatus.set(job.requestId, 'Success');
         stopTimer(job.requestId);
         refreshFromServer();
       } else {
@@ -291,9 +331,8 @@ async function pollOnce(job) {
     if (status === 'Error' || status === 'error') {
       const errMsg = details.errorResponse || details.ErrorResponse || 'failed';
       const msg = job.label + ' — ' + errMsg;
-      finishToast(job, 'error', msg);
+      maybeFinishToast(job, 'Error', true, msg);
       if (useServer) {
-        lastToastStatus.set(job.requestId, 'Error');
         stopTimer(job.requestId);
         refreshFromServer();
       } else {
@@ -323,7 +362,7 @@ function startPolling(job) {
     }
     if (Date.now() - current.startedAt > MAX_MS) {
       const msg = current.label + ' — status check timed out';
-      finishToast(current, 'error', msg);
+      maybeFinishToast(current, 'Timeout', true, msg);
       if (!useServer) {
         markFinishedLocal(current.requestId, 'Timeout', msg);
       }
@@ -356,7 +395,6 @@ export function track(opts) {
     status: 'Handling',
     href: opts.href || '',
   };
-  lastToastStatus.set(requestId, 'Handling');
   showProgress(job);
   if (useServer !== true) {
     upsertJobLocal(job);
@@ -387,7 +425,7 @@ export function resume() {
     }
     const jobs = loadJobsLocal();
     jobs.filter((j) => j.status === 'Handling').forEach((job) => {
-      showProgress(job);
+      // no progress re-toast on load — badge/list carry in-flight state
       startPolling(job);
     });
     emit(jobs);
