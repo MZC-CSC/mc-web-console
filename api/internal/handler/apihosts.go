@@ -16,9 +16,11 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// ServiceNoAuth Auth 정보를 제외한 서비스 호스트 정보 (Buffalo ServiceNoAuth 호환)
+// ServiceNoAuth credential(username/password)을 제외한 서비스 호스트 정보 (Buffalo ServiceNoAuth 호환).
+// AuthType은 호출 측이 프레임워크별 인증 방식(basic/bearer)을 선택하는 데 필요해 노출한다.
 type ServiceNoAuth struct {
-	BaseURL string `json:"BaseURL"`
+	BaseURL  string `json:"BaseURL"`
+	AuthType string `json:"AuthType,omitempty"`
 }
 
 // GetApiHosts POST /api/getapihosts
@@ -39,7 +41,7 @@ func GetApiHosts(c echo.Context) error {
 
 	// api.yaml을 기본값으로 사용 (레지스트리 미등록 서비스도 포함)
 	for k, v := range cfg.ApiSpec.Services {
-		apiHosts[k] = ServiceNoAuth{BaseURL: v.BaseURL}
+		apiHosts[k] = ServiceNoAuth{BaseURL: v.BaseURL, AuthType: v.Auth.Type}
 	}
 
 	if cfg.MCIAM.Use && cfg.RegistryCache != nil {
@@ -54,7 +56,11 @@ func GetApiHosts(c echo.Context) error {
 		// 레지스트리 값으로 override (BaseURL이 있는 경우만)
 		for k, v := range cached {
 			if v.BaseURL != "" {
-				apiHosts[k] = ServiceNoAuth{BaseURL: v.BaseURL}
+				authType := v.Auth.Type
+				if authType == "" {
+					authType = apiHosts[k].AuthType
+				}
+				apiHosts[k] = ServiceNoAuth{BaseURL: v.BaseURL, AuthType: authType}
 			}
 		}
 	}
