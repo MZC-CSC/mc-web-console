@@ -225,10 +225,23 @@ async function refreshFromServer() {
         startPolling(job);
       }
     });
+    // Nothing in flight (server list has no Handling job and no active GetRequest
+    // poll — the timers guard covers the gap between track() and the server row
+    // appearing): stop the list interval. track() restarts it on the next request.
+    if (!jobs.some((j) => j.status === 'Handling') && timers.size === 0) {
+      stopListRefresh();
+    }
   } catch (e) {
     if (useServer !== true) {
       useServer = false;
     }
+  }
+}
+
+function stopListRefresh() {
+  if (listTimer) {
+    clearInterval(listTimer);
+    listTimer = null;
   }
 }
 
@@ -237,9 +250,13 @@ function ensureListRefresh() {
     return;
   }
   listTimer = setInterval(function () {
-    if (useServer !== false) {
-      refreshFromServer();
+    if (useServer === false) {
+      // fallback mode has no server list — per-request GetRequest timers
+      // handle progress and stop on their own
+      stopListRefresh();
+      return;
     }
+    refreshFromServer();
   }, LIST_REFRESH_MS);
 }
 
@@ -352,6 +369,14 @@ export function track(opts) {
   startPolling(job);
   ensureListRefresh();
   refreshFromServer();
+}
+
+/**
+ * One-shot server list refresh — used by the navbar dropdown on open so the
+ * list stays current even while interval polling is stopped.
+ */
+export function refreshNow() {
+  return refreshFromServer();
 }
 
 export function resume() {

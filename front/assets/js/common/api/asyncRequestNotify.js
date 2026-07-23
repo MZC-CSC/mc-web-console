@@ -213,6 +213,19 @@ function bindActions() {
     });
   }
 
+  const toggleEl = document.getElementById('async-request-notif-toggle');
+  if (toggleEl && !toggleEl.dataset.refreshBound) {
+    toggleEl.dataset.refreshBound = '1';
+    // Interval polling stops while nothing is in flight — refresh once on open
+    // so the list reflects jobs started elsewhere (other tabs/sessions)
+    toggleEl.addEventListener('show.bs.dropdown', () => {
+      const t = tracker();
+      if (t && t.refreshNow) {
+        t.refreshNow();
+      }
+    });
+  }
+
   const menuEl = document.getElementById('async-request-notif-menu');
   if (menuEl && !menuEl.dataset.selectBound) {
     menuEl.dataset.selectBound = '1';
