@@ -501,8 +501,8 @@ function addServerConfigToList(express_form) {
 
   // 수정 모드인지 신규 추가 모드인지 판단
   if (currentEditingIndex >= 0 && currentEditingIndex < Express_Server_Config_Arr.length) {
-    // 수정 모드: 기존 데이터를 업데이트
-    Express_Server_Config_Arr[currentEditingIndex] = express_form;
+    // 수정 모드: 기존 데이터를 업데이트 (폼에 없는 carry-through 필드는 보존)
+    Express_Server_Config_Arr[currentEditingIndex] = { ...Express_Server_Config_Arr[currentEditingIndex], ...express_form };
 
     // 리스트 아이템 텍스트 업데이트
     var vmEleId = "vm";

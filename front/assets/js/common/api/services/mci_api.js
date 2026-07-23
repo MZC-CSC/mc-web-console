@@ -254,8 +254,11 @@ export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_A
     description: config.description,
     rootDiskSize: (config.rootDiskSize !== "" && config.rootDiskSize !== undefined) ? parseInt(config.rootDiskSize) : 0,
     rootDiskType: config.rootDiskType,
-    label: config.label || {},
-    vmUserPassword: config.vmUserPassword || ""
+    ...(config.zone ? { zone: config.zone } : {}),
+    ...(config.nodeUserPassword ? { nodeUserPassword: config.nodeUserPassword } : {}),
+    ...(config.label && Object.keys(config.label).length > 0 ? { label: config.label } : {}),
+    ...(config.vNetTemplateId ? { vNetTemplateId: config.vNetTemplateId } : {}),
+    ...(config.sgTemplateId ? { sgTemplateId: config.sgTemplateId } : {})
   }));
 
   // command 처리 - 첫 번째 서버의 command를 사용 (모든 서버가 동일한 command를 사용한다고 가정)
@@ -302,7 +305,12 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
     connectionName: config.connectionName,
     description: config.description,
     rootDiskSize: (config.rootDiskSize !== "" && config.rootDiskSize !== undefined) ? parseInt(config.rootDiskSize) : 0,
-    rootDiskType: config.rootDiskType
+    rootDiskType: config.rootDiskType,
+    ...(config.zone ? { zone: config.zone } : {}),
+    ...(config.nodeUserPassword ? { nodeUserPassword: config.nodeUserPassword } : {}),
+    ...(config.label && Object.keys(config.label).length > 0 ? { label: config.label } : {}),
+    ...(config.vNetTemplateId ? { vNetTemplateId: config.vNetTemplateId } : {}),
+    ...(config.sgTemplateId ? { sgTemplateId: config.sgTemplateId } : {})
   }));
 
   // command 처리 - 첫 번째 서버의 command를 사용 (모든 서버가 동일한 command를 사용한다고 가정)
