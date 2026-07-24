@@ -210,7 +210,7 @@ class ToastManager {
      * @param {string} vmId - VM ID
      */
     showRetryProgress(vmId) {
-        return this.show(TOAST_TYPES.WARNING, `Retrying command for VM: <strong>${vmId}</strong>`, { id: 'retryProgressToast' });
+        return this.show(TOAST_TYPES.WARNING, `Retrying command for Node: <strong>${vmId}</strong>`, { id: 'retryProgressToast' });
     }
 
     /**
@@ -218,7 +218,7 @@ class ToastManager {
      * @param {string} vmId - VM ID
      */
     showRetrySuccess(vmId) {
-        return this.show(TOAST_TYPES.SUCCESS, `Command retry successful for VM: <strong>${vmId}</strong>`, { id: 'retrySuccessToast' });
+        return this.show(TOAST_TYPES.SUCCESS, `Command retry successful for Node: <strong>${vmId}</strong>`, { id: 'retrySuccessToast' });
     }
 
     /**
@@ -227,7 +227,7 @@ class ToastManager {
      * @param {string} errorMessage - 에러 메시지
      */
     showRetryError(vmId, errorMessage) {
-        return this.show(TOAST_TYPES.ERROR, `Command retry failed for VM: <strong>${vmId}</strong><br><small>${errorMessage}</small>`, { id: 'retryErrorToast' });
+        return this.show(TOAST_TYPES.ERROR, `Command retry failed for Node: <strong>${vmId}</strong><br><small>${errorMessage}</small>`, { id: 'retryErrorToast' });
     }
 }
 

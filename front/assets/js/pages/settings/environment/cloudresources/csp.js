@@ -221,7 +221,7 @@ window.cspSubmitRegist = async function () {
 
   const vmChecked = targetTypes.includes('vm');
   const mciName   = document.getElementById('target-mci-name').value.trim();
-  if (vmChecked && !mciName) { alert('Enter an MCI Name for VM registration.'); return; }
+  if (vmChecked && !mciName) { alert('Enter an Infra Name for Node registration.'); return; }
 
   if (isSchedule) {
     await submitSchedule(nsId, connectionName, targetTypes, mciName);
@@ -301,7 +301,7 @@ async function submitImmediate(nsId, connectionName, targetTypes, mciName) {
           conflictCount++;
         } else {
           failCount++;
-          errors.push(`VM: ${e?.response?.data?.message || e.message}`);
+          errors.push(`Node: ${e?.response?.data?.message || e.message}`);
         }
       }
     }

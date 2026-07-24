@@ -3,7 +3,7 @@
   <div class="card bg-secondary-lt">
     <div class="card-header">
       <h3 class="card-title">
-        Server List / Status
+        Node List / Status
         <span class="text-info" id="mci_server_info_status"> </span>
         <span class="text-secondary" id="mci_server_info_count"></span>
       </h3>
@@ -132,7 +132,7 @@
               class="dropdown-item"
               data-bs-toggle="modal"
               data-bs-target="#commonDefaultModal"
-              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmReboot', 'Would you like to reboot the vm ?', 'pages/operation/manage/mci.changeVmLifeCycle', 'reboot')"
+              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmReboot', 'Would you like to reboot the node ?', 'pages/operation/manage/mci.changeVmLifeCycle', 'reboot')"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -158,7 +158,7 @@
               class="dropdown-item"
               data-bs-toggle="modal"
               data-bs-target="#commonDefaultModal"
-              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmSuspend', 'Would you like to suspend the vm ?', 'pages/operation/manage/mci.changeVmLifeCycle', 'suspend')"
+              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmSuspend', 'Would you like to suspend the node ?', 'pages/operation/manage/mci.changeVmLifeCycle', 'suspend')"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -184,7 +184,7 @@
               class="dropdown-item"
               data-bs-toggle="modal"
               data-bs-target="#commonDefaultModal"
-              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmResume', 'Would you like to resume the vm ?', 'pages/operation/manage/mci.changeVmLifeCycle', 'resume')"
+              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmResume', 'Would you like to resume the node ?', 'pages/operation/manage/mci.changeVmLifeCycle', 'resume')"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -210,7 +210,7 @@
               class="dropdown-item"
               data-bs-toggle="modal"
               data-bs-target="#commonDefaultModal"
-              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmTerminate', 'Would you like to terminate the vm ?', 'pages/operation/manage/mci.changeVmLifeCycle', 'terminate')"
+              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmTerminate', 'Would you like to terminate the node ?', 'pages/operation/manage/mci.changeVmLifeCycle', 'terminate')"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -264,7 +264,7 @@
               class="dropdown-item"
               data-bs-toggle="modal"
               data-bs-target="#commonDefaultModal"
-              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmDelete', 'Would you like to delete VM ?', 'pages/operation/manage/mci.deleteVm')"
+              onclick="webconsolejs['partials/layout/modal'].commonModal(this,'VmDelete', 'Would you like to delete Node ?', 'pages/operation/manage/mci.deleteVm')"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

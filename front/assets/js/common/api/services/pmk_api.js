@@ -824,7 +824,7 @@ export function pmkDelete(nsId, k8sClusterId, options = {}) {
     });
     webconsolejs['partials/layout/modal'].commonShowDefaultModal(
       'Invalid Parameters',
-      'Invalid parameters for PMK deletion. Please try again.'
+      'Invalid parameters for K8s deletion. Please try again.'
     );
     return;
   }

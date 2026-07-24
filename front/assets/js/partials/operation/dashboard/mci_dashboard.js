@@ -185,7 +185,7 @@ function setMciListTableRow(aMciData, mciIndex) {
     mciTableRow += '       <span>/</span> <span class="text-red">' + sumVmCountStop + '</span>'
     mciTableRow += '       <span>/</span> <span class="text-secondary">' + sumVmCountTerminate + '<span>)</span> </span>'
     mciTableRow += '     <div>'
-    mciTableRow += '          <span>server ' + sumVmCount + '</span>'
+    mciTableRow += '          <span>node ' + sumVmCount + '</span>'
     mciTableRow += '     </div>'
     mciTableRow += '         <ul class="vm-list">'
     mciTableRow += addVm

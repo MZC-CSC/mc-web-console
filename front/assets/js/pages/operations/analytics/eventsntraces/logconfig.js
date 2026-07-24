@@ -93,7 +93,7 @@ const LogConfigManager = {
 
     async loadVmList(mciId) {
         if (!mciId) {
-            if (DOM.targetSelect) DOM.targetSelect.innerHTML = '<option value="">Select Server</option>';
+            if (DOM.targetSelect) DOM.targetSelect.innerHTML = '<option value="">Select Node</option>';
             return;
         }
         try {
@@ -102,7 +102,7 @@ const LogConfigManager = {
             const vms = (respMci && respMci.vm) ? respMci.vm : [];
 
             if (DOM.targetSelect) {
-                DOM.targetSelect.innerHTML = '<option value="">Select Server</option>';
+                DOM.targetSelect.innerHTML = '<option value="">Select Node</option>';
                 vms.forEach(vm => {
                     const opt = document.createElement('option');
                     opt.value = vm.id;
@@ -151,7 +151,7 @@ const LogConfigManager = {
         const tag = document.getElementById('logconfig-tag').value.trim();
 
         if (!AppState.selectedMciId || !AppState.selectedTargetId) {
-            webconsolejs['common/util'].showToast('Please select a workload and server first.', 'warning');
+            webconsolejs['common/util'].showToast('Please select a workload and node first.', 'warning');
             return;
         }
 

@@ -776,7 +776,7 @@ export function showTransferResultModal(fileName, result, successCount, totalCou
                                         <h4 class="${successCount === totalCount ? 'text-success' : 'text-warning'}">
                                             ${successCount}/${totalCount}
                                         </h4>
-                                        <small class="text-muted">VM Transfer Complete</small>
+                                        <small class="text-muted">Node Transfer Complete</small>
                                     </div>
                                 </div>
                             </div>
@@ -791,13 +791,13 @@ export function showTransferResultModal(fileName, result, successCount, totalCou
                             </div>
                         </div>
                         
-                        <h6>VM Transfer Details:</h6>
+                        <h6>Node Transfer Details:</h6>
                         <div class="table-responsive">
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
-                                        <th>VM ID</th>
-                                        <th>VM IP</th>
+                                        <th>Node ID</th>
+                                        <th>Node IP</th>
                                         <th>Status</th>
                                         <th>Result</th>
                                     </tr>
@@ -903,8 +903,8 @@ export function showCommandResultsInModal(command, result, successCount, totalCo
                             <table class="table table-sm">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th>VM ID</th>
-                                        <th>VM IP</th>
+                                        <th>Node ID</th>
+                                        <th>Node IP</th>
                                         <th>Status</th>
                                         <th>Result</th>
                                     </tr>
@@ -1145,7 +1145,7 @@ function showTransferResultsModal(results, successFiles, totalFiles) {
                                     <tr>
                                         <th>File Name</th>
                                         <th>Status</th>
-                                        <th>VM Count</th>
+                                        <th>Node Count</th>
                                         <th>Success/Total</th>
                                     </tr>
                                 </thead>
@@ -1289,7 +1289,7 @@ function showCommandResultPage(page) {
                 ${isSuccess ?
                 `<small class="text-muted">${r.stdout?.['0'] || 'Command executed successfully'}</small>` :
                 `<div class="d-flex align-items-center justify-content-start">
-                        <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); retryVMCommand('${r.vmId}', ${globalIndex})" title="Retry command for this VM">
+                        <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); retryVMCommand('${r.vmId}', ${globalIndex})" title="Retry command for this Node">
                             <i class="ti ti-refresh"></i> Retry
                         </button>
                     </div>`

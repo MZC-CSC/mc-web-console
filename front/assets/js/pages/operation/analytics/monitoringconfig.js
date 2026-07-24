@@ -242,6 +242,10 @@ function initMonitorConfigTable() {
     {
       title: "Type",
       field: "workloadType",
+      formatter: function(cell) {
+        var v = cell.getValue();
+        return v === "MCI" ? "Infra" : v; // 표시용 매핑, 내부 workloadType 값은 유지
+      },
       vertAlign: "middle",
       hozAlign: "center",
       headerSort: false,
@@ -383,7 +387,7 @@ function initMonitorMetricsTable() {
       width: 60,
     },
     {
-      title: "Server Name/Id",
+      title: "Node Name/Id",
       field: "vmId",
       vertAlign: "middle",
       hozAlign: "center",
@@ -539,7 +543,7 @@ async function setMonitorConfigInfoData() {
   
     $(htmlCardIdPrefix+"name").text(selectedServerNode.name+" / "+selectedServerNode.id)
     $(htmlCardIdPrefix+"desc").text(selectedServerNode.description)
-    $(htmlCardIdPrefix+"workload").text(selectedServerNode.workloadType+" / "+selectedServerNode.workloadName)
+    $(htmlCardIdPrefix+"workload").text((selectedServerNode.workloadType === "MCI" ? "Infra" : selectedServerNode.workloadType)+" / "+selectedServerNode.workloadName)
     $(htmlCardIdPrefix+"monitor").html(generateOnOffIndicator(selectedServerNode.monitoringAgentStatus === "SUCCESS" && selectedServerNode.logAgentStatus === "SUCCESS" ? true : false))
     $(htmlCardIdPrefix+"monitoring_agent_status").html(generateStatusIndicator(selectedServerNode.logAgentStatus === "SUCCESS" ? "success" : "danger", selectedServerNode.monitoringAgentStatus))
     $(htmlCardIdPrefix+"log_agent_status").html(generateStatusIndicator(selectedServerNode.logAgentStatus === "SUCCESS" ? "success" : "danger", selectedServerNode.monitoringAgentStatus))
