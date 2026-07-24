@@ -314,7 +314,8 @@ export async function displayNewServerForm() {
   // +SubGroup 버튼 클릭 시 수정 모드 플래그 초기화 (신규 추가 모드)
   currentEditingIndex = -1;
   
-  var deploymentAlgo = $("#mci_deploy_algorithm").val();
+  // 화면별 select 참조 — Create MCI는 #mci_deploy_algorithm, Extend VM은 #vm_deploy_algorithm
+  var deploymentAlgo = $(isVm ? "#vm_deploy_algorithm" : "#mci_deploy_algorithm").val();
 
   if (deploymentAlgo == "express") {
     // 폼을 열기 전에 추가 초기화
@@ -329,7 +330,10 @@ export async function displayNewServerForm() {
     
     // 모달들 초기화
     resetModals();
-    
+
+    // 신규 모드 — 직전 편집(template li)의 carry-through 섹션 잔상 제거
+    renderCarryThroughSection(null);
+
     var div = document.getElementById("server_configuration");
     webconsolejs["partials/layout/navigatePages"].toggleSubElement(div)
 
@@ -614,11 +618,55 @@ export function view_express(cnt) {
   $("#p_subGroupSize").val(select_form_data.subGroupSize || "1");
   $("#p_vm_cnt").val(select_form_data.subGroupSize || "1");
   
+  // template carry-through 필드 read-only 표시 (값이 있는 필드만)
+  renderCarryThroughSection(select_form_data);
+
   // 서버 입력 폼 표시
   var div = document.getElementById("server_configuration");
   if (!div.classList.contains("active")) {
     webconsolejs["partials/layout/navigatePages"].toggleSubElement(div);
   }
+}
+
+// template Add NodeGroup carry-through 필드(zone/nodeUserPassword/label/vNetTemplateId/sgTemplateId)를
+// 편집 폼에 read-only로 표시 — 값이 있는 필드만 렌더, 전부 없으면(수동 입력 SubGroup) 섹션 숨김.
+// nodeUserPassword는 존재 여부만 마스킹 표시하고 평문을 노출하지 않는다.
+function renderCarryThroughSection(data) {
+  var section = document.getElementById("carry_through_section");
+  var fields = document.getElementById("carry_through_fields");
+  if (!section || !fields) return;
+
+  var items = [];
+  if (data && data.zone) items.push(["zone", "Zone", data.zone]);
+  if (data && data.nodeUserPassword) items.push(["nodeUserPassword", "Node User Password", "••••••"]);
+  if (data && data.label && Object.keys(data.label).length > 0) {
+    items.push(["label", "Label", Object.keys(data.label).map(function (k) { return k + "=" + data.label[k]; }).join(", ")]);
+  }
+  if (data && data.vNetTemplateId) items.push(["vNetTemplateId", "vNet Template ID", data.vNetTemplateId]);
+  if (data && data.sgTemplateId) items.push(["sgTemplateId", "SG Template ID", data.sgTemplateId]);
+
+  fields.innerHTML = "";
+  if (items.length === 0) {
+    section.classList.add("d-none");
+    return;
+  }
+  items.forEach(function (item) {
+    var col = document.createElement("div");
+    col.className = "col-md-6";
+    var label = document.createElement("label");
+    label.className = "form-label";
+    label.textContent = item[1];
+    var input = document.createElement("input");
+    input.type = "text";
+    input.className = "form-control";
+    input.readOnly = true;
+    input.setAttribute("data-carry-field", item[0]);
+    input.value = item[2]; // DOM value 할당 — template 값의 HTML 해석(XSS) 방지
+    col.appendChild(label);
+    col.appendChild(input);
+    fields.appendChild(col);
+  });
+  section.classList.remove("d-none");
 }
 
 
@@ -858,9 +906,7 @@ export async function createVmDynamic() {
     var selectedNsId = selectedWorkspaceProject.nsId;
     var mciId = window.currentMciId;
 
-    webconsolejs["common/api/services/mci_api"].vmDynamic(mciId, selectedNsId, Express_Server_Config_Arr)
-
-    // response가 있으면 
+    await webconsolejs["common/api/services/mci_api"].vmDynamic(mciId, selectedNsId, Express_Server_Config_Arr)
 
     alert("VM creation request completed")
     window.location = `/webconsole/operations/manage/workloads/mciworkloads`;
@@ -1125,13 +1171,15 @@ export function clearExpressForm() {
 // ─── Infra Template으로 MCI 배포 ─────────────────────────────────────────
 
 let templateSelectTable = null;
-let mciDeployAlgorithmPrev = "express";
+// Create MCI(#mci_deploy_algorithm)와 Extend VM(#vm_deploy_algorithm) 두 select가 template 모달을 공유한다
+let deployAlgorithmPrev = { mci_deploy_algorithm: "express", vm_deploy_algorithm: "express" };
+let templateModalSourceSelectId = "mci_deploy_algorithm"; // 모달을 연 select — 닫힐 때 이 select만 되돌린다
 let templateDeploySucceeded = false;
 let templateDeployInFlight = false;
 
 function revertDeployAlgorithmSelect() {
-	const sel = document.getElementById("mci_deploy_algorithm");
-	if (sel && sel.value === "template") sel.value = mciDeployAlgorithmPrev;
+	const sel = document.getElementById(templateModalSourceSelectId);
+	if (sel && sel.value === "template") sel.value = deployAlgorithmPrev[templateModalSourceSelectId] || "express";
 }
 
 // 템플릿 미리보기 초기화 (선택 없음 → 안내문구 표시)
@@ -1188,22 +1236,28 @@ function renderTemplateSelectDetail(template) {
 }
 
 function initTemplateDeploySelect() {
-	const sel = document.getElementById("mci_deploy_algorithm");
-	if (!sel) return;
-	mciDeployAlgorithmPrev = sel.value;
-	sel.addEventListener("change", async function () {
-		if (this.value !== "template") {
-			mciDeployAlgorithmPrev = this.value;
-			return;
-		}
-		const mciName = ($("#mci_name").val() || "").trim();
-		if (!mciName) {
-			webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please input MCI Name first");
-			this.value = "express";
-			mciDeployAlgorithmPrev = "express";
-			return;
-		}
-		await openTemplateSelectModal();
+	["mci_deploy_algorithm", "vm_deploy_algorithm"].forEach(function (selId) {
+		const sel = document.getElementById(selId);
+		if (!sel) return;
+		deployAlgorithmPrev[selId] = sel.value;
+		sel.addEventListener("change", async function () {
+			if (this.value !== "template") {
+				deployAlgorithmPrev[selId] = this.value;
+				return;
+			}
+			// Create MCI 경로만 MCI Name 선입력 필수 — Extend VM은 기존 MCI 대상이라 불필요
+			if (selId === "mci_deploy_algorithm") {
+				const mciName = ($("#mci_name").val() || "").trim();
+				if (!mciName) {
+					webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please input MCI Name first");
+					this.value = "express";
+					deployAlgorithmPrev[selId] = "express";
+					return;
+				}
+			}
+			templateModalSourceSelectId = selId;
+			await openTemplateSelectModal();
+		});
 	});
 }
 
@@ -1265,6 +1319,9 @@ export async function openTemplateSelectModal() {
 	modalEl.addEventListener("hidden.bs.modal", function () {
 		if (!templateDeploySucceeded) revertDeployAlgorithmSelect();
 	}, { once: true });
+	// Extend VM 경로에서는 새 MCI를 배포하는 [Deploy from Template] 버튼을 숨긴다 (Add NodeGroup만)
+	const deployFromTplBtn = document.getElementById("btn-deploy-from-template");
+	if (deployFromTplBtn) deployFromTplBtn.classList.toggle("d-none", templateModalSourceSelectId === "vm_deploy_algorithm");
 	resetTemplateSelectDetail();
 	new bootstrap.Modal(modalEl).show();
 }
@@ -1366,7 +1423,8 @@ export function addTemplateToForm() {
 		postCommandUserName: req.postCommand?.userName || "",
 		postCommandTimeoutMinutes: req.postCommand?.timeoutMinutes
 	};
-	if (!$("#mci_desc").val() && templatePrefillInfraState.description) {
+	// Create MCI 경로에서만 — Extend VM은 기존 MCI의 description을 유지한다
+	if (!isVm && !$("#mci_desc").val() && templatePrefillInfraState.description) {
 		$("#mci_desc").val(templatePrefillInfraState.description);
 	}
 

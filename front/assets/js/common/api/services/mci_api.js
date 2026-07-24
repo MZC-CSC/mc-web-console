@@ -355,40 +355,46 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
 
 export async function vmDynamic(mciId, nsId, Express_Server_Config_Arr) {
 
-  var obj = {}
-  obj = Express_Server_Config_Arr[0]
-  const data = {
-    pathParams: {
-      nsId: nsId,
-      infraId: mciId,
-    },
-    request: {
-      "imageId": obj.commonImage,
-      "specId": obj.commonSpec,
-      "connectionName": obj.connectionName,
-      "description": obj.description,
-      // "label": "",
-      "name": obj.name,
-      "nodeGroupSize": parseInt(obj.subGroupSize) || 1,
-      "rootDiskSize": (obj.rootDiskSize !== "" && obj.rootDiskSize !== undefined) ? parseInt(obj.rootDiskSize) : 0,
-      "rootDiskType": obj.rootDiskType,
-    }
-  }
-
-
+  // 서버 body가 단일 CreateNodeGroupDynamicReq이므로 nodeGroup별로 순차 호출
   var controller = "/api/" + "mc-infra-manager/" + "PostInfraNodeGroupDynamic";
-  const ngName = (obj && obj.name) ? obj.name : 'nodegroup';
-  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
-    'PostInfraNodeGroupDynamic',
-    'NodeGroup add: ' + ngName
-  );
-  const response = await webconsolejs["common/api/http"].commonAPIPost(
-    controller,
-    data,
-    false,
-    tracked.httpOptions
-  );
-  return response;
+  const responses = [];
+  for (const obj of Express_Server_Config_Arr) {
+    const data = {
+      pathParams: {
+        nsId: nsId,
+        infraId: mciId,
+      },
+      request: {
+        "imageId": obj.commonImage,
+        "specId": obj.commonSpec,
+        "connectionName": obj.connectionName,
+        "description": obj.description,
+        "name": obj.name,
+        "nodeGroupSize": parseInt(obj.subGroupSize) || 1,
+        "rootDiskSize": (obj.rootDiskSize !== "" && obj.rootDiskSize !== undefined) ? parseInt(obj.rootDiskSize) : 0,
+        "rootDiskType": obj.rootDiskType,
+        ...(obj.zone ? { zone: obj.zone } : {}),
+        ...(obj.nodeUserPassword ? { nodeUserPassword: obj.nodeUserPassword } : {}),
+        ...(obj.label && Object.keys(obj.label).length > 0 ? { label: obj.label } : {}),
+        ...(obj.vNetTemplateId ? { vNetTemplateId: obj.vNetTemplateId } : {}),
+        ...(obj.sgTemplateId ? { sgTemplateId: obj.sgTemplateId } : {})
+      }
+    }
+
+    const ngName = (obj && obj.name) ? obj.name : 'nodegroup';
+    const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+      'PostInfraNodeGroupDynamic',
+      'NodeGroup add: ' + ngName
+    );
+    const response = await webconsolejs["common/api/http"].commonAPIPost(
+      controller,
+      data,
+      false,
+      tracked.httpOptions
+    );
+    responses.push(response);
+  }
+  return responses;
 }
 
 export async function mciRecommendVm(data) {
