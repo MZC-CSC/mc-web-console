@@ -92,8 +92,12 @@ func PostFileToInfraHandler(c echo.Context) error {
 	}
 	writer.Close()
 
-	// Build target URL with path substitution
-	targetURL := fmt.Sprintf("%s/ns/%s/transferFile/infra/%s", INFRA_MANAGER_URL, nsId, infraId)
+	// Build target URL with path substitution (getapihosts → env → localhost fallback)
+	baseURL, authType := ResolveFramework(c, "mc-infra-manager", "http://localhost:1323/tumblebug")
+	if authType == "" {
+		authType = "basic" // legacy default for mc-infra-manager (cb-tumblebug)
+	}
+	targetURL := fmt.Sprintf("%s/ns/%s/transferFile/infra/%s", baseURL, nsId, infraId)
 
 	// Forward queryParams as URL query string (e.g. subGroupId, vmId)
 	if len(req.QueryParams) > 0 {
@@ -109,9 +113,7 @@ func PostFileToInfraHandler(c echo.Context) error {
 		return respondUploadError(c, http.StatusInternalServerError, "failed to build request: "+err.Error())
 	}
 	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// Use Basic auth for mc-infra-manager (cb-tumblebug)
-	httpReq.SetBasicAuth(INFRA_MANAGER_USER, INFRA_MANAGER_PASS)
+	applyFrameworkAuth(httpReq, c, "mc-infra-manager", authType)
 
 	client := &http.Client{}
 	resp, err := client.Do(httpReq)

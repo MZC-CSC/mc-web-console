@@ -804,6 +804,7 @@
                   <option value="express">Express</option>
                   <option value="simple">Simple</option>
                   <option value="expert">Expert</option>
+                  <option value="template">Template</option>
                 </select>
               </div>
 
@@ -1744,6 +1745,14 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button
+          type="button"
+          id="btn-add-nodegroup-to-form"
+          class="btn btn-outline-primary"
+          onclick="webconsolejs['partials/operation/manage/mcicreate'].addTemplateToForm()"
+        >
+          Add NodeGroup
+        </button>
         <button
           type="button"
           id="btn-deploy-from-template"

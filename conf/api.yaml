@@ -821,17 +821,17 @@ serviceActions:
       method: post
       resourcePath: /api/permission/file/framework/{framework}
       description: CSV 기반으로 권한을 업데이트 합니다.
-    Getprojectbyid:
+    getProjectByID:
       method: get
-      resourcePath: /api/prj/project/id/{projectId}
+      resourcePath: /api/projects/id/{projectId}
       description: project 단건 조회
-    Updateprojectbyid:
+    updateProject:
       method: put
-      resourcePath: /api/prj/project/id/{projectId}
+      resourcePath: /api/projects/id/{projectId}
       description: project 수정
-    Deleteprojectbyid:
+    deleteProject:
       method: delete
-      resourcePath: /api/prj/project/id/{projectId}
+      resourcePath: /api/projects/id/{projectId}
       description: project 삭제
     deleteWorkspace:
       method: delete
@@ -966,6 +966,10 @@ serviceActions:
       method: get
       resourcePath: /api/workspaces/id/{workspaceId}/projects/list
       description: workspace - projects mapping workspace 기준 목록 조회
+    listUserProjectsByWorkspace:
+      method: get
+      resourcePath: /api/users/workspaces/id/{workspaceId}/projects/list
+      description: workspace - projects mapping, 로그인 사용자 본인 소속 workspace만 조회
     listUserWorkspaces:
       method: post
       resourcePath: /api/users/workspaces/list
@@ -1134,6 +1138,26 @@ serviceActions:
       method: get
       resourcePath: /api/groups/id/{groupId}/platform-roles
       description: 그룹의 Platform Role 목록 조회
+    getCompany:
+      method: get
+      resourcePath: /api/company
+      description: 플랫폼 회사 정보 조회 (싱글톤)
+    createCompany:
+      method: post
+      resourcePath: /api/company
+      description: 플랫폼 회사 정보 생성 (싱글톤, platformAdmin)
+    updateCompany:
+      method: put
+      resourcePath: /api/company
+      description: 플랫폼 회사 이름/설명 수정 (platformAdmin)
+    deactivateCompany:
+      method: delete
+      resourcePath: /api/company
+      description: 플랫폼 회사 비활성화 (platformAdmin, 멱등)
+    activateCompany:
+      method: post
+      resourcePath: /api/company/activate
+      description: 플랫폼 회사 활성화 (platformAdmin, 멱등)
     listCspAccounts:
       method: post
       resourcePath: /api/csp-accounts/list
