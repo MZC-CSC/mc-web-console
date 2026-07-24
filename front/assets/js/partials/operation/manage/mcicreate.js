@@ -331,7 +331,7 @@ export async function displayNewServerForm() {
     // 모달들 초기화
     resetModals();
 
-    // 신규 모드 — 직전 편집(template li)의 carry-through 섹션 잔상 제거
+    // 신규 모드 — 직전 편집(template li)의 carry-through 값 잔상 제거 (빈 필드로 초기화)
     renderCarryThroughSection(null);
 
     var div = document.getElementById("server_configuration");
@@ -618,7 +618,7 @@ export function view_express(cnt) {
   $("#p_subGroupSize").val(select_form_data.subGroupSize || "1");
   $("#p_vm_cnt").val(select_form_data.subGroupSize || "1");
   
-  // template carry-through 필드 read-only 표시 (값이 있는 필드만)
+  // template carry-through 필드 read-only 표시 (5필드 항상, 값 없으면 빈 칸)
   renderCarryThroughSection(select_form_data);
 
   // 서버 입력 폼 표시
@@ -629,27 +629,25 @@ export function view_express(cnt) {
 }
 
 // template Add NodeGroup carry-through 필드(zone/nodeUserPassword/label/vNetTemplateId/sgTemplateId)를
-// 편집 폼에 read-only로 표시 — 값이 있는 필드만 렌더, 전부 없으면(수동 입력 SubGroup) 섹션 숨김.
-// nodeUserPassword는 존재 여부만 마스킹 표시하고 평문을 노출하지 않는다.
+// 편집 폼에 read-only로 표시 — 5필드 모두 항상 렌더, 값이 없으면 빈 입력으로 표시.
+// nodeUserPassword는 값이 있을 때만 마스킹 표시하고 평문을 노출하지 않는다.
 function renderCarryThroughSection(data) {
   var section = document.getElementById("carry_through_section");
   var fields = document.getElementById("carry_through_fields");
   if (!section || !fields) return;
 
-  var items = [];
-  if (data && data.zone) items.push(["zone", "Zone", data.zone]);
-  if (data && data.nodeUserPassword) items.push(["nodeUserPassword", "Node User Password", "••••••"]);
-  if (data && data.label && Object.keys(data.label).length > 0) {
-    items.push(["label", "Label", Object.keys(data.label).map(function (k) { return k + "=" + data.label[k]; }).join(", ")]);
-  }
-  if (data && data.vNetTemplateId) items.push(["vNetTemplateId", "vNet Template ID", data.vNetTemplateId]);
-  if (data && data.sgTemplateId) items.push(["sgTemplateId", "SG Template ID", data.sgTemplateId]);
+  var items = [
+    ["zone", "Zone", (data && data.zone) || ""],
+    ["nodeUserPassword", "Node User Password", data && data.nodeUserPassword ? "••••••" : ""],
+    ["label", "Label",
+      data && data.label && Object.keys(data.label).length > 0
+        ? Object.keys(data.label).map(function (k) { return k + "=" + data.label[k]; }).join(", ")
+        : ""],
+    ["vNetTemplateId", "vNet Template ID", (data && data.vNetTemplateId) || ""],
+    ["sgTemplateId", "SG Template ID", (data && data.sgTemplateId) || ""],
+  ];
 
   fields.innerHTML = "";
-  if (items.length === 0) {
-    section.classList.add("d-none");
-    return;
-  }
   items.forEach(function (item) {
     var col = document.createElement("div");
     col.className = "col-md-6";
@@ -658,7 +656,7 @@ function renderCarryThroughSection(data) {
     label.textContent = item[1];
     var input = document.createElement("input");
     input.type = "text";
-    input.className = "form-control";
+    input.className = "form-control carry-through-readonly";
     input.readOnly = true;
     input.setAttribute("data-carry-field", item[0]);
     input.value = item[2]; // DOM value 할당 — template 값의 HTML 해석(XSS) 방지
