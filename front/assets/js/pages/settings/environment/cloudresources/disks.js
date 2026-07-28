@@ -73,6 +73,12 @@ function diskId(data) {
   return data?.id || data?.name;
 }
 
+// API 프록시는 백엔드(CSP SDK) 에러 메시지를 {responseData:{message},status:{...}} 로 감싼다.
+// 축소된 axios 기본 메시지("Request failed with status code 500") 대신 실제 원인을 보여준다.
+function extractErrorMessage(err) {
+  return err?.response?.data?.responseData?.message || err?.message || String(err);
+}
+
 // ─── Tabulator 테이블 ─────────────────────────────────────────────────────
 
 function initTable(items) {
@@ -157,7 +163,7 @@ export async function confirmDeleteDisk() {
     await loadDiskList();
   } catch (err) {
     console.error('Data Disk 삭제 실패:', err);
-    showToast(TOAST_TYPES.ERROR, 'Failed to delete Data Disk: ' + (err.message || ''));
+    showToast(TOAST_TYPES.ERROR, 'Failed to delete Data Disk: ' + extractErrorMessage(err));
   }
 }
 
@@ -231,7 +237,7 @@ export async function executeCreateDisk() {
     await loadDiskList();
   } catch (err) {
     console.error('Data Disk 생성 실패:', err);
-    showToast(TOAST_TYPES.ERROR, 'Failed to create Data Disk: ' + (err.message || ''));
+    showToast(TOAST_TYPES.ERROR, 'Failed to create Data Disk: ' + extractErrorMessage(err));
   } finally {
     spinner.classList.add('d-none');
     btn.disabled = false;
@@ -300,7 +306,7 @@ export async function executeImportDisk() {
     bootstrap.Modal.getInstance(document.getElementById('import-disk-modal'))?.hide();
     await loadDiskList();
   } catch (err) {
-    showToast(TOAST_TYPES.ERROR, 'DataDisk import failed: ' + (err.message || ''));
+    showToast(TOAST_TYPES.ERROR, 'DataDisk import failed: ' + extractErrorMessage(err));
   } finally {
     spinner.classList.add('d-none');
     btn.disabled = false;
