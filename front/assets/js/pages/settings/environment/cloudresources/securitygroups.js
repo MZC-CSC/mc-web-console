@@ -322,8 +322,8 @@ export async function executeCreateSG() {
 
     try {
         await sgApi().create(AppState.ns, { connectionName, name, vNetId, firewallRules });
-        showToast(TOAST_TYPES.SUCCESS, `SecurityGroup "${name}" created.`);
-        document.querySelector('#create-sg-modal .btn-close')?.click();
+        showToast(TOAST_TYPES.SUCCESS, `SecurityGroup "${name}" created successfully`);
+        bootstrap.Modal.getInstance(document.getElementById('create-sg-modal'))?.hide();
         await loadSGList();
     } catch (err) {
         console.error('Create SG failed:', err);
@@ -355,7 +355,9 @@ export async function executeImportSG() {
     }
 
     const spinner = document.getElementById('import-sg-spinner');
+    const btn     = document.getElementById('import-sg-execute-btn');
     spinner.classList.remove('d-none');
+    if (btn) btn.disabled = true;
 
     try {
         const result = await importApi().registerCspResources(['securityGroup'], connectionName, AppState.ns);
@@ -371,6 +373,7 @@ export async function executeImportSG() {
         showToast(TOAST_TYPES.ERROR, 'Failed to import SecurityGroups: ' + (err.message || ''));
     } finally {
         spinner.classList.add('d-none');
+        if (btn) btn.disabled = false;
     }
 }
 

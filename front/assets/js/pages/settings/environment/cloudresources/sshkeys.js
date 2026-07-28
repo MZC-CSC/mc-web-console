@@ -277,7 +277,9 @@ export async function executeImportSshKey() {
     }
 
     const spinner = document.getElementById('import-sshkey-spinner');
+    const btn     = document.getElementById('import-sshkey-execute-btn');
     spinner.classList.remove('d-none');
+    if (btn) btn.disabled = true;
 
     try {
         const result = await importApi().registerCspResources(['sshKey'], connectionName, AppState.ns);
@@ -293,12 +295,13 @@ export async function executeImportSshKey() {
         showToast(TOAST_TYPES.ERROR, 'SSH Key import failed: ' + (err.message || ''));
     } finally {
         spinner.classList.add('d-none');
+        if (btn) btn.disabled = false;
     }
 }
 
 async function _loadConnectionOptions(selectId) {
     const select = document.getElementById(selectId);
-    select.innerHTML = '<option value="">Select</option>';
+    select.innerHTML = '<option value="">-- Select --</option>';
     try {
         const result = await webconsolejs['common/api/http'].commonAPIPost(
             '/api/mc-infra-manager/GetConnConfigList', {}

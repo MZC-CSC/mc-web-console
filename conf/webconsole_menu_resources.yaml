@@ -132,7 +132,7 @@ menus:
     parentid: cloudresources
     displayname: Specs
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1410
 
@@ -140,7 +140,7 @@ menus:
     parentid: cloudresources
     displayname: Images
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1420
 
@@ -156,7 +156,7 @@ menus:
     parentid: cloudresources
     displayname: Security Groups
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1520
 
@@ -164,7 +164,7 @@ menus:
     parentid: cloudresources
     displayname: MyImages
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1530
 
@@ -172,7 +172,7 @@ menus:
     parentid: cloudresources
     displayname: Disks
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1540
 
@@ -180,7 +180,7 @@ menus:
     parentid: cloudresources
     displayname: SSH Keys
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1550
 
