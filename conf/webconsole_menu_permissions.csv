@@ -21,6 +21,7 @@ mc-web-console,securitysmenu,TRUE,,,TRUE,
 mc-web-console,myimagesmenu,TRUE,,,TRUE,
 mc-web-console,disksmenu,TRUE,,,TRUE,
 mc-web-console,sshkeysmenu,TRUE,,,TRUE,
+mc-web-console,nlbsmenu,TRUE,,,TRUE,
 mc-web-console,cloudrescatalogsmenu,TRUE,,,TRUE,TRUE
 mc-web-console,workspacessettingsmenu,TRUE,,,,
 mc-web-console,allocatedprojectsmenu,TRUE,,,,

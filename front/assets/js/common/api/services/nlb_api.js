@@ -1,0 +1,54 @@
+/**
+ * NLB API — mc-infra-manager /ns/{nsId}/infra/{infraId}/nlb
+ * NLB는 infra(MCI) 하위 리소스로, 모든 호출에 infraId가 필요하다.
+ */
+
+export async function getAllNLB(nsId, infraId) {
+  const controller = '/api/mc-infra-manager/GetAllNLB';
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
+    pathParams: { nsId, infraId }
+  });
+  return response?.data?.responseData;
+}
+
+export async function getNLB(nsId, infraId, nlbId) {
+  const controller = '/api/mc-infra-manager/GetNLB';
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
+    pathParams: { nsId, infraId, nlbId }
+  });
+  return response?.data?.responseData;
+}
+
+export async function postNLB(nsId, infraId, body) {
+  const controller = '/api/mc-infra-manager/PostNLB';
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
+    pathParams: { nsId, infraId },
+    request: body
+  });
+  return response?.data;
+}
+
+export async function delNLB(nsId, infraId, nlbId) {
+  const controller = '/api/mc-infra-manager/DelNLB';
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
+    pathParams: { nsId, infraId, nlbId }
+  });
+  return response?.data;
+}
+
+export async function getNLBHealth(nsId, infraId, nlbId) {
+  const controller = '/api/mc-infra-manager/GetNLBHealth';
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
+    pathParams: { nsId, infraId, nlbId }
+  });
+  return response?.data?.responseData;
+}
+
+/** infra의 NodeGroup(subGroup) id 목록 — Create NLB 대상 선택용 */
+export async function getInfraNodeGroupIds(nsId, infraId) {
+  const controller = '/api/mc-infra-manager/GetInfraGroupIds';
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
+    pathParams: { nsId, infraId }
+  });
+  return response?.data?.responseData;
+}
