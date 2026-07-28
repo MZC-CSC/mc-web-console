@@ -1,9 +1,9 @@
-// list: FilterSpecsByRange with empty body → returns all specs in namespace
-export async function list(ns) {
+// list: FilterSpecsByRange — system ns는 스펙 수천 건이므로 limit 없이는 응답이 수백 MB로 타임아웃됨
+export async function list(ns, limit = 500) {
   const controller = '/api/mc-infra-manager/FilterSpecsByRange';
   const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
     pathParams: { nsId: ns },
-    request: {}
+    request: { limit }
   });
   return response?.data?.responseData;
 }

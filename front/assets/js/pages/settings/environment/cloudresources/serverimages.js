@@ -9,14 +9,15 @@ const imageApi = () => webconsolejs['common/api/services/serverimage_api'];
 const AppState = {
   tables: { resourceTable: null, popupTable: null },
   resources: { selected: null },
+  connections: [],
+  lastCriteria: null,
 };
 
 // ─── 페이지 초기화 ────────────────────────────────────────────────────────
 
-$('#select-current-project').on('change', async function () {
+$('#select-current-project').on('change', function () {
   if (this.value === '') return;
   hideDetail();
-  await refreshImageList();
 });
 
 document.addEventListener('DOMContentLoaded', async function () {
@@ -33,11 +34,66 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   updateNamespaceLabel();
   initFilter();
-
-  if (selectedWorkspaceProject.projectId !== '') {
-    await refreshImageList();
-  }
+  // system ns 이미지는 17만+ 건 — 자동 전체 조회 대신 조건 검색으로만 로드
+  initTable([]);
+  await loadSearchConnections();
 });
+
+async function loadSearchConnections() {
+  const select = document.getElementById('search-connection');
+  if (!select) return;
+  try {
+    const resp = await webconsolejs['common/api/http'].commonAPIPost('/api/mc-infra-manager/GetConnConfigList', {});
+    AppState.connections = resp?.data?.responseData?.connectionconfig || [];
+    for (const c of AppState.connections) {
+      const opt = document.createElement('option');
+      opt.value = c.configName;
+      opt.textContent = c.configName;
+      select.appendChild(opt);
+    }
+  } catch (err) {
+    console.error('Failed to load connection list', err);
+  }
+}
+
+export async function searchImages() {
+  const configName = document.getElementById('search-connection')?.value || '';
+  const osType = document.getElementById('search-ostype')?.value.trim() || '';
+  const basicOnly = document.getElementById('search-basic-only')?.checked ?? true;
+
+  if (!configName && !osType) {
+    showToast(TOAST_TYPES.WARNING, 'Select a connection or enter an OS type to search.');
+    return;
+  }
+
+  const criteria = {};
+  if (osType) criteria.osType = osType;
+  if (basicOnly) criteria.includeBasicImageOnly = true;
+  const conn = AppState.connections.find((c) => c.configName === configName);
+  if (conn) {
+    criteria.providerName = conn.providerName;
+    const regionName = conn.regionDetail?.regionName || conn.regionDetail?.regionId;
+    if (regionName) criteria.regionName = regionName;
+  }
+
+  const spinner = document.getElementById('search-image-spinner');
+  const btn = document.getElementById('search-image-btn');
+  spinner?.classList.remove('d-none');
+  if (btn) btn.disabled = true;
+  try {
+    AppState.lastCriteria = criteria;
+    const data = await imageApi().search(SYSTEM_NS, criteria);
+    const items = data?.imageList || [];
+    AppState.tables.resourceTable?.replaceData(items);
+    showToast(TOAST_TYPES.SUCCESS, `Found ${data?.imageCount ?? items.length} images`);
+  } catch (err) {
+    console.error('Image search failed:', err);
+    showToast(TOAST_TYPES.ERROR, 'Image search failed: ' + (err?.response?.data?.message || err.message));
+  } finally {
+    spinner?.classList.add('d-none');
+    if (btn) btn.disabled = false;
+  }
+}
 
 function updateNamespaceLabel() {
   const label = document.getElementById('serverimages-context-label');
@@ -46,23 +102,14 @@ function updateNamespaceLabel() {
 
 // ─── Image 목록 ───────────────────────────────────────────────────────────
 
+// 등록/삭제 후 목록 갱신 — 마지막 검색 조건으로 재검색 (검색 전이면 아무것도 안 함)
 export async function refreshImageList() {
+  if (!AppState.lastCriteria) return;
   try {
-    const data = await imageApi().list(SYSTEM_NS);
-    const items = data?.image || [];
-    if (AppState.tables.resourceTable) {
-      AppState.tables.resourceTable.replaceData(items);
-    } else {
-      initTable(items);
-    }
+    const data = await imageApi().search(SYSTEM_NS, AppState.lastCriteria);
+    AppState.tables.resourceTable?.replaceData(data?.imageList || []);
   } catch (err) {
-    if (err?.response?.status !== 404) console.error('Failed to load images', err);
-    const items = [];
-    if (AppState.tables.resourceTable) {
-      AppState.tables.resourceTable.replaceData(items);
-    } else {
-      initTable(items);
-    }
+    if (err?.response?.status !== 404) console.error('Failed to refresh images', err);
   }
 }
 
@@ -70,7 +117,7 @@ function initTable(data) {
   AppState.tables.resourceTable = new Tabulator('#image-table', {
     data,
     layout: 'fitColumns',
-    placeholder: 'No images found.',
+    placeholder: 'Search with connection/OS type to load images.',
     pagination: 'local',
     paginationSize: 10,
     paginationSizeSelector: [10, 20, 50],
@@ -248,6 +295,7 @@ document.getElementById('popup-connection')?.addEventListener('change', function
 if (typeof webconsolejs === 'undefined') { window.webconsolejs = {}; }
 webconsolejs[PAGE_KEY] = {
   refreshImageList,
+  searchImages,
   hideDetail,
   confirmDeleteImage,
   openImageSelectPopup,
