@@ -1155,7 +1155,7 @@ export function validateAndOpenImageModal(event) {
 	
 	if (!specValue || specValue.trim() === "") {
 		console.warn("No PMK spec selected - validation failed");
-		alert("Please select a server specification first before opening the image recommendation modal.");
+		alert("Please select a node specification first before opening the image recommendation modal.");
 		if (event) {
 			event.preventDefault();
 			event.stopPropagation();
@@ -1166,7 +1166,7 @@ export function validateAndOpenImageModal(event) {
 	// 전역 변수에서 spec 정보 확인
 	if (!window.selectedPmkSpecInfo) {
 		console.warn("No PMK spec info in global variable - validation failed");
-		alert("Please select a server specification first before opening the image recommendation modal.");
+		alert("Please select a node specification first before opening the image recommendation modal.");
 		if (event) {
 			event.preventDefault();
 			event.stopPropagation();
@@ -1210,7 +1210,7 @@ export function validateAndOpenImageModal(event) {
 				}
 			} catch (error) {
 				console.error("failed to open PMK image modal:", error);
-				alert("Error opening PMK image recommendation modal. Please try again.");
+				alert("Error opening K8s image recommendation modal. Please try again.");
 			}
 		}, 100); // 100ms 지연으로 이벤트 처리 완료 후 모달 열기
 		

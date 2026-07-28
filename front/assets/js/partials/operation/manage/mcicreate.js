@@ -406,8 +406,8 @@ export async function displayNewServerForm() {
 export function expressDone_btn() {
   // 1. 필수 필드 검증
   var requiredFields = [
-    { id: '#ep_name', message: 'SubGroup name is required' },
-    { id: '#ep_vm_add_cnt', message: 'VM count is required' },
+    { id: '#ep_name', message: 'NodeGroup name is required' },
+    { id: '#ep_vm_add_cnt', message: 'Node count is required' },
     { id: '#ep_commonSpecId', message: 'Spec is required' },
     { id: '#ep_commonImageId', message: 'Image is required' }
   ];
@@ -423,7 +423,7 @@ export function expressDone_btn() {
   // 2. VM 개수 숫자 검증
   var vmAddCnt = $("#ep_vm_add_cnt").val();
   if (isNaN(vmAddCnt) || parseInt(vmAddCnt) < 1) {
-    alert('VM count must be a positive number');
+    alert('Node count must be a positive number');
     $("#ep_vm_add_cnt").focus();
     return;
   }
@@ -704,7 +704,7 @@ function getPlusVm(vmElementId) {
 
 	var append = "";
 	append = append + '<li class="removebullet btn btn-secondary-lt" id="' + vmElementId + '_plusVmIcon" onClick="webconsolejs[\'partials/operation/manage/mcicreate\'].displayNewServerForm()">';
-	append = append + "+ SubGroup"
+	append = append + "+ NodeGroup"
 	append = append + '</li>';
 	return append;
 }
@@ -776,7 +776,7 @@ export function deployMci() {
 	//             new_obj['vm'] = TotalServerConfigArr;
 	//             console.log("new obj is : ", new_obj);
 	//         } else {
-	//             commonAlert("Please Input Servers");
+	//             commonAlert("Please Input Nodes");
 	//             $(".simple_servers_config").addClass("active");
 	//             $("#s_name").focus();
 	//         }
@@ -827,7 +827,7 @@ export async function createMciDynamic() {
 
 	
 	if (!mciName) {
-		alert("Please Input MCI Name!!!!!")
+		alert("Please Input Infra Name!!!!!")
 		return;
 	}
 
@@ -848,12 +848,12 @@ export async function createMciDynamic() {
 			// overallStatus 우선 체크 - Error 상태 처리
 			if (reviewData.overallStatus === "Error" || !reviewData.creationViable) {
 				// 오류 정보 수집
-				let errorMessage = `MCI 생성 오류\n\n${reviewData.overallMessage}\n\n`;
+				let errorMessage = `Infra 생성 오류\n\n${reviewData.overallMessage}\n\n`;
 				
 				if (reviewData.vmReviews && reviewData.vmReviews.length > 0) {
 					reviewData.vmReviews.forEach(vm => {
 						if (vm.status === "Error" && vm.errors) {
-							errorMessage += `VM: ${vm.vmName} (SubGroup Size: ${vm.subGroupSize})\n`;
+							errorMessage += `Node: ${vm.vmName} (NodeGroup Size: ${vm.subGroupSize})\n`;
 							errorMessage += `Provider: ${vm.providerName}\n`;
 							errorMessage += `Region: ${vm.regionName}\n`;
 							
@@ -891,11 +891,11 @@ export async function createMciDynamic() {
 		} else {
 			// API 호출 실패
 			console.error("검증 API 호출 실패:", validationResult);
-			alert("MCI 생성 검증 중 오류가 발생했습니다.");
+			alert("Infra 생성 검증 중 오류가 발생했습니다.");
 		}
 	} catch (error) {
 		console.error("MCI 검증 중 오류:", error);
-		alert("MCI 검증 중 오류가 발생했습니다: " + error.message);
+		alert("Infra 검증 중 오류가 발생했습니다: " + error.message);
 	}
 }
 
@@ -906,7 +906,7 @@ export async function createVmDynamic() {
 
     await webconsolejs["common/api/services/mci_api"].vmDynamic(mciId, selectedNsId, Express_Server_Config_Arr)
 
-    alert("VM creation request completed")
+    alert("Node creation request completed")
     window.location = `/webconsole/operations/manage/workloads/mciworkloads`;
 
     await webconsolejs["pages/operation/manage/mci"].refreshRowData(mciId, checked_array);
@@ -990,7 +990,7 @@ export async function deployVm() {
 	//         new_obj['vm'] = TotalServerConfigArr;
 	//         console.log("new obj is : ", new_obj);
 	//     } else {
-	//         commonAlert("Please Input Servers");
+	//         commonAlert("Please Input Nodes");
 	//         $(".simple_servers_config").addClass("active");
 	//         $("#s_name").focus();
 	//     }
@@ -1086,7 +1086,7 @@ function vmCreateCallback(resultVmKey, resultStatus) {
 	} else if (createdServer = 0) { //모두 실패
 		//commonResultAlert($("#serverRegistResult").text());
 	}
-	commonResultAlert("VM creation request completed");
+	commonResultAlert("Node creation request completed");
 }
 
 // SubGroup Size
@@ -1247,7 +1247,7 @@ function initTemplateDeploySelect() {
 			if (selId === "mci_deploy_algorithm") {
 				const mciName = ($("#mci_name").val() || "").trim();
 				if (!mciName) {
-					webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please input MCI Name first");
+					webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Please input Infra Name first");
 					this.value = "express";
 					deployAlgorithmPrev[selId] = "express";
 					return;
@@ -1341,7 +1341,7 @@ export async function deployFromSelectedTemplate() {
 	var mciDesc = $("#mci_desc").val();
 
 	if (!mciName) {
-		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "MCI Name is required");
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Infra Name is required");
 		return;
 	}
 

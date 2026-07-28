@@ -62,7 +62,7 @@
             <label class="form-check"><input class="form-check-input modal-type-cb" type="checkbox" value="vNet"><span class="form-check-label">vNet</span></label>
             <label class="form-check"><input class="form-check-input modal-type-cb" type="checkbox" value="securityGroup"><span class="form-check-label">Security Group</span></label>
             <label class="form-check"><input class="form-check-input modal-type-cb" type="checkbox" value="sshKey"><span class="form-check-label">SSH Key</span></label>
-            <label class="form-check"><input class="form-check-input modal-type-cb" type="checkbox" value="vm" onchange="scheduleToggleModalMci()"><span class="form-check-label">VM</span></label>
+            <label class="form-check"><input class="form-check-input modal-type-cb" type="checkbox" value="vm" onchange="scheduleToggleModalMci()"><span class="form-check-label">Node</span></label>
           </div>
         </div>
         <div class="mb-3">
@@ -70,7 +70,7 @@
           <input type="number" id="modal-interval" class="form-control" value="60" min="10">
         </div>
         <div class="mb-3" id="modal-mci-group" style="display:none">
-          <label class="form-label">MCI Name Prefix (for VM)</label>
+          <label class="form-label">Infra Name Prefix (for Node)</label>
           <input type="text" id="modal-mci-prefix" class="form-control" value="csp">
         </div>
       </div>

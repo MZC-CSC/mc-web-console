@@ -121,7 +121,7 @@ async function displayMonitoringMci(nsId, mciId) {
   if (Array.isArray(vmList) && vmList.length > 0) {
     displayServerStatusList(mciId, respMci.responseData.vm)
   } else {
-    alert("There is no VM List !!")
+    alert("There is no Node List !!")
   }
 
 
@@ -293,7 +293,7 @@ export async function startMonitoring() {
 
   // VM이 선택되지 않은 경우 처리
   if (!selectedVMId) {
-    alert("Please select a VM first.");
+    alert("Please select a Node first.");
     return;
   }
   

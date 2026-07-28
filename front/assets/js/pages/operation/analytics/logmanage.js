@@ -104,7 +104,7 @@ async function displayLogMci(nsId, mciId) {
   if (Array.isArray(vmList) && vmList.length > 0) {
     displayServerStatusList(mciId, respMci.responseData.vm);
   } else {
-    alert("There is no VM List !!");
+    alert("There is no Node List !!");
   }
 }
 
@@ -252,14 +252,14 @@ function initLogTable() {
       width: 100
     },
     {
-      title: "MCI",
+      title: "Infra",
       field: "labels",
       formatter: labelsMciIdFormatter,
       vertAlign: "middle",
       width: 120
     },
     {
-      title: "VM",
+      title: "Node",
       field: "labels",
       formatter: labelsVMIdFormatter,
       vertAlign: "middle",
@@ -434,7 +434,7 @@ export async function getCollectedLog() {
   }
 
   if (!selectedVmId) {
-    alert("Please select a Server");
+    alert("Please select a Node");
     return;
   }
 

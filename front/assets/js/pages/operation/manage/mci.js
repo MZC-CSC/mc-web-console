@@ -54,7 +54,7 @@ async function initMci() {
     webconsolejs["partials/operation/manage/mcicreate"].initMciCreate();
 
     const targetSection = "mcicreate";
-    const createBtnName = "Add Mci";
+    const createBtnName = "Add Infra";
     webconsolejs['partials/layout/navigatePages'].addPageHeaderButton(targetSection, createBtnName);
   } catch (e) {
     console.error(e);
@@ -456,7 +456,7 @@ export async function getSelectedMciData() {
     if (mciResp.status.code != 200) {
       webconsolejs["common/utils/toast"].showToast(
         webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR,
-        `MCI query failed: ${mciResp.status.message || window.currentMciId}`
+        `Infra query failed: ${mciResp.status.message || window.currentMciId}`
       );
       return;
     }
@@ -540,7 +540,7 @@ function setMciInfoData(mciData) {
     $("#mci_info_text").text(" [ " + mciName + " ]")
     $("#mci_server_info_status").empty();
     $("#mci_server_info_status").text(" [ " + mciName + " ]")
-    $("#mci_server_info_count").text(" Server(" + totalvmCount + ")")
+    $("#mci_server_info_count").text(" Node(" + totalvmCount + ")")
 
 
     // $("#mci_info_status_img").attr("src", "/assets/images/common/" + mciStatusIcon)
@@ -576,7 +576,7 @@ export function deleteMci() {
   mciListTable.deselectRow();
   executeTrackedRequest(
     () => webconsolejs["common/api/services/mci_api"].mciDelete(deletingMciId, window.currentNsId),
-    "MCI deletion failed"
+    "Infra deletion failed"
   ).then(() => {
     refreshMciList();
   });
@@ -588,7 +588,7 @@ export function deleteVm() {
   resetDefaultTabSelections();
   executeTrackedRequest(
     () => webconsolejs["common/api/services/mci_api"].vmDelete(window.currentMciId, window.currentNsId, deletingVmId),
-    "VM deletion failed"
+    "Node deletion failed"
   ).then(() => {
     refreshMciList();
   });
@@ -634,12 +634,12 @@ function executeWithToast(apiCall, successMessage, errorMessage) {
 // mci life cycle 변경
 export function changeMciLifeCycle(type) {
   if (window.currentMciId == undefined || window.currentMciId == "") {
-    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an MCI')
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an Infra')
     return;
   }
   executeTrackedRequest(
     () => webconsolejs["common/api/services/mci_api"].mciLifeCycle(type, window.currentMciId, window.currentNsId),
-    `MCI ${type} failed`
+    `Infra ${type} failed`
   ).then(() => {
     refreshMciList();
   });
@@ -648,13 +648,13 @@ export function changeMciLifeCycle(type) {
 // vm life cycle 변경
 export function changeVmLifeCycle(type) {
   if (currentVmId == undefined || currentVmId == "") {
-    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select a VM')
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select a Node')
     return;
   }
   if (selectedVmId) {
     executeTrackedRequest(
       () => webconsolejs["common/api/services/mci_api"].vmLifeCycle(type, window.currentMciId, window.currentNsId, selectedVmId),
-      `VM ${type} failed`
+      `Node ${type} failed`
     ).then(() => {
       refreshMciList();
     });
@@ -1877,7 +1877,7 @@ function initMciTable() {
       visible: false
     },
     {
-      title: "Total Servers",
+      title: "Total Nodes",
       field: "statusCount.countTotal",
       vertAlign: "middle",
       hozAlign: "center",
@@ -2116,8 +2116,8 @@ function providerFormatterString(data) {
       e.preventDefault();
       e.stopImmediatePropagation();
       alert(checkedBoxes.length === 0
-        ? 'Please select subGroup first'
-        : 'Please select only one subGroup');
+        ? 'Please select NodeGroup first'
+        : 'Please select only one NodeGroup');
       return;
     }
 
@@ -2181,7 +2181,7 @@ function providerFormatterString(data) {
     // 설명 텍스트 추가
     const explanationText = document.createElement('span');
     explanationText.className = 'ms-2 text-muted small';
-    explanationText.textContent = '(VMs to add)';
+    explanationText.textContent = '(Nodes to add)';
     li.appendChild(explanationText);
 
     formListUl.appendChild(li);
@@ -2474,9 +2474,9 @@ function initPolicyTable() {
       formatter: "rowSelection", titleFormatter: "rowSelection", vertAlign: "middle", hozAlign: "center",        // headerHozAlign: "center",
       width: 60,
     },
-    { title: "MCI Name", field: "mciName", width: 120 },
-    { title: "MCI ID", field: "mciId", width: 120 },
-    { title: "SubGroupSize", field: "subGroupSize", width: 120 },
+    { title: "Infra Name", field: "mciName", width: 120 },
+    { title: "Infra ID", field: "mciId", width: 120 },
+    { title: "NodeGroup Size", field: "subGroupSize", width: 120 },
     { title: "Condition", field: "condition", width: 150 },
     { title: "Period(s)", field: "evaluationPeriod", width: 100 },
     { title: "Action", field: "actionType", width: 100 },
@@ -2491,9 +2491,9 @@ function initPolicyTable() {
     { title: "Common Image", field: "commonImage", visible: false },
     { title: "Common Spec", field: "commonSpec", visible: false },
     { title: "Connection Name", field: "connectionName", visible: false },
-    { title: "VM Description", field: "vmDescription", visible: false },
+    { title: "Node Description", field: "vmDescription", visible: false },
     { title: "Label", field: "label", visible: false },
-    { title: "VM Name", field: "vmName", visible: false },
+    { title: "Node Name", field: "vmName", visible: false },
     { title: "Root Disk Size", field: "rootDiskSize", visible: false },
     { title: "Root Disk Type", field: "rootDiskType", visible: false },
     { title: "Metric", field: "metric", visible: false },
@@ -2792,7 +2792,7 @@ export async function initSubGroupRemoteCmdModal() {
     if (selectedVmGroupId) {
       currentSubGroupId = selectedVmGroupId;
     } else {
-      alert("Please select a SubGroup first.");
+      alert("Please select a NodeGroup first.");
       return;
     }
   }
@@ -2818,7 +2818,7 @@ export async function initMciRemoteCmdModal() {
   
   // 현재 선택된 MCI가 있는지 확인
   if (!currentMciId) {
-    alert("Please select an MCI first.");
+    alert("Please select an Infra first.");
     return;
   }
   
@@ -3058,11 +3058,11 @@ function updateSubGroupRemoteCmdButtonState() {
     if (selectedVmGroupId) {
       subGroupRemoteCmdBtn.classList.remove('disabled');
       subGroupRemoteCmdBtn.style.pointerEvents = 'auto';
-      subGroupRemoteCmdBtn.title = 'Connect to selected SubGroup';
+      subGroupRemoteCmdBtn.title = 'Connect to selected NodeGroup';
     } else {
       subGroupRemoteCmdBtn.classList.add('disabled');
       subGroupRemoteCmdBtn.style.pointerEvents = 'none';
-      subGroupRemoteCmdBtn.title = 'Please select a SubGroup first';
+      subGroupRemoteCmdBtn.title = 'Please select a NodeGroup first';
     }
   }
 }
@@ -3074,11 +3074,11 @@ function updateMciRemoteCmdButtonState() {
     if (currentMciId) {
       mciRemoteCmdBtn.classList.remove('disabled');
       mciRemoteCmdBtn.style.pointerEvents = 'auto';
-      mciRemoteCmdBtn.title = 'Connect to selected MCI';
+      mciRemoteCmdBtn.title = 'Connect to selected Infra';
     } else {
       mciRemoteCmdBtn.classList.add('disabled');
       mciRemoteCmdBtn.style.pointerEvents = 'none';
-      mciRemoteCmdBtn.title = 'Please select an MCI first';
+      mciRemoteCmdBtn.title = 'Please select an Infra first';
     }
   }
 }
@@ -3638,7 +3638,7 @@ function clearLabelFilter() {
 
 export function openSaveAsTemplateModal() {
   if (window.currentMciId == undefined || window.currentMciId == "") {
-    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an MCI first')
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an Infra first')
     return;
   }
   document.getElementById('save-template-name').value = `${window.currentMciId}-template`;
@@ -3650,7 +3650,7 @@ export async function executeSaveAsTemplate() {
   const mciId = window.currentMciId;
   const nsId = window.currentNsId;
   if (mciId == undefined || mciId == "") {
-    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an MCI first')
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an Infra first')
     return;
   }
   const name = document.getElementById('save-template-name').value.trim();

@@ -154,7 +154,7 @@ export function mciLifeCycle(type, currentMciId, nsId) {
   let controller = "/api/" + "mc-infra-manager/" + "GetControlInfra";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'GetControlInfra',
-    'MCI ' + type + ': ' + currentMciId
+    'Infra ' + type + ': ' + currentMciId
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -179,7 +179,7 @@ export function mciDelete(currentMciId, nsId) {
   let controller = "/api/" + "mc-infra-manager/" + "DelInfra";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'DelInfra',
-    'MCI delete: ' + currentMciId
+    'Infra delete: ' + currentMciId
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -204,7 +204,7 @@ export function vmDelete(mciId, nsId, vmId) {
   let controller = "/api/" + "mc-infra-manager/" + "DelInfraNode";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'DelInfraNode',
-    'VM delete: ' + vmId
+    'Node delete: ' + vmId
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -231,7 +231,7 @@ export function vmLifeCycle(type, mciId, nsId, vmid) {
   let controller = "/api/" + "mc-infra-manager/" + "GetControlInfraNode";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'GetControlInfraNode',
-    'VM ' + type + ': ' + vmid
+    'Node ' + type + ': ' + vmid
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -337,7 +337,7 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
   var controller = "/api/" + "mc-infra-manager/" + "PostInfraDynamic";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'PostInfraDynamic',
-    'MCI create: ' + mciName
+    'Infra create: ' + mciName
   );
   webconsolejs["common/api/http"].commonAPIPost(
     controller,
