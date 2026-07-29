@@ -175,10 +175,20 @@ export function hideDetail() {
 
 // ─── Delete ───────────────────────────────────────────────────────────────
 
-export async function confirmDeleteCustomImage() {
+export function confirmDeleteCustomImage() {
   const selected = AppState.resources.selected;
   if (!selected) return;
-  if (!confirm(`Delete Custom Image "${selected.name}"?`)) return;
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal',
+    'Delete Custom Image',
+    `Delete Custom Image "${selected.name}"?`,
+    'pages/settings/environment/cloudresources/myimages.executeDeleteCustomImage'
+  );
+}
+
+export async function executeDeleteCustomImage() {
+  const selected = AppState.resources.selected;
+  if (!selected) return;
   try {
     await myImageApi().del(AppState.ns, selected.name);
     showToast(TOAST_TYPES.SUCCESS, `Custom Image "${selected.name}" deleted successfully`);
@@ -280,5 +290,6 @@ webconsolejs['pages/settings/environment/cloudresources/myimages'] = {
   loadImageList,
   hideDetail,
   confirmDeleteCustomImage,
+  executeDeleteCustomImage,
   executeRegisterCustomImage,
 };

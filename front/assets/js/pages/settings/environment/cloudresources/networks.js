@@ -205,7 +205,7 @@ function _renderEditSubnetTable(subnets) {
             <td><code>${s.cspResourceId || '-'}</code></td>
             <td>
               <button type="button" class="btn btn-sm btn-outline-danger"
-                onclick="webconsolejs['pages/settings/environment/cloudresources/networks'].deleteSubnet('${s.name}')">
+                onclick="webconsolejs['pages/settings/environment/cloudresources/networks'].confirmDeleteSubnet('${s.name}')">
                 Delete
               </button>
             </td>`;
@@ -238,10 +238,21 @@ export function addEditSubnetRow() {
     list.appendChild(row);
 }
 
-export async function deleteSubnet(subnetId) {
+export function confirmDeleteSubnet(subnetId) {
     const vnetName = AppState.resources.selected?.name;
     if (!vnetName || !subnetId) return;
-    if (!confirm(`Delete Subnet "${subnetId}"?`)) return;
+    webconsolejs['partials/layout/modal'].commonConfirmModal(
+        'commonDefaultModal',
+        'Delete Subnet',
+        `Delete Subnet "${subnetId}"?`,
+        'pages/settings/environment/cloudresources/networks.executeDeleteSubnet',
+        subnetId
+    );
+}
+
+export async function executeDeleteSubnet(subnetId) {
+    const vnetName = AppState.resources.selected?.name;
+    if (!vnetName || !subnetId) return;
     try {
         await vpcApi().delSubnet(AppState.ns, vnetName, subnetId);
         showToast(TOAST_TYPES.SUCCESS, `Subnet "${subnetId}" deleted successfully`);
@@ -310,10 +321,20 @@ export async function saveVNet() {
     await loadVNetList();
 }
 
-export async function confirmDeleteVNet() {
+export function confirmDeleteVNet() {
     const selected = AppState.resources.selected;
     if (!selected) return;
-    if (!confirm(`Delete VPC "${selected.name}"?`)) return;
+    webconsolejs['partials/layout/modal'].commonConfirmModal(
+        'commonDefaultModal',
+        'Delete VPC',
+        `Delete VPC "${selected.name}"?`,
+        'pages/settings/environment/cloudresources/networks.executeDeleteVNet'
+    );
+}
+
+export async function executeDeleteVNet() {
+    const selected = AppState.resources.selected;
+    if (!selected) return;
     try {
         await vpcApi().del(AppState.ns, selected.name);
         showToast(TOAST_TYPES.SUCCESS, `VPC "${selected.name}" deleted successfully`);
@@ -576,9 +597,11 @@ webconsolejs['pages/settings/environment/cloudresources/networks'] = {
     executeCreateVNet,
     hideDetail,
     confirmDeleteVNet,
+    executeDeleteVNet,
     showEditMode,
     cancelEditMode,
     addEditSubnetRow,
-    deleteSubnet,
+    confirmDeleteSubnet,
+    executeDeleteSubnet,
     saveVNet,
 };

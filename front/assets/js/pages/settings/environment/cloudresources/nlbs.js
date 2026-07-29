@@ -235,11 +235,22 @@ export async function checkNlbHealth() {
 
 // ─── Delete ───────────────────────────────────────────────────────────────
 
-export async function confirmDeleteNlb() {
+export function confirmDeleteNlb() {
   const selected = AppState.resources.selected;
   if (!selected) return;
   const id = nlbId(selected);
-  if (!confirm(`NLB "${id}" — confirm delete?`)) return;
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal',
+    'Delete NLB',
+    `NLB "${id}" — confirm delete?`,
+    'pages/settings/environment/cloudresources/nlbs.executeDeleteNlb'
+  );
+}
+
+export async function executeDeleteNlb() {
+  const selected = AppState.resources.selected;
+  if (!selected) return;
+  const id = nlbId(selected);
   try {
     await nlbApi().delNLB(AppState.ns, AppState.infraId, id);
     showToast(TOAST_TYPES.SUCCESS, `NLB "${id}" deleted successfully`);
@@ -369,6 +380,7 @@ webconsolejs['pages/settings/environment/cloudresources/nlbs'] = {
   hideDetail,
   checkNlbHealth,
   confirmDeleteNlb,
+  executeDeleteNlb,
   openCreateNlbModal,
   executeCreateNlb,
 };

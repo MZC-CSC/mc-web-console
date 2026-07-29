@@ -115,9 +115,20 @@ export function hideDetail() {
   AppState.resources.selected = null;
 }
 
-export async function confirmDeleteSpec() {
+export function confirmDeleteSpec() {
   const item = AppState.resources.selected;
-  if (!item || !confirm(`Delete spec "${item.name}"?`)) return;
+  if (!item) return;
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal',
+    'Delete Spec',
+    `Delete spec "${item.name}"?`,
+    'pages/settings/environment/cloudresources/serverspecs.executeDeleteSpec'
+  );
+}
+
+export async function executeDeleteSpec() {
+  const item = AppState.resources.selected;
+  if (!item) return;
   try {
     await specApi().del(SYSTEM_NS, item.name);
     showToast(TOAST_TYPES.SUCCESS, `Spec "${item.name}" deleted successfully`);
@@ -252,6 +263,7 @@ webconsolejs[PAGE_KEY] = {
   refreshSpecList,
   hideDetail,
   confirmDeleteSpec,
+  executeDeleteSpec,
   openSpecSelectPopup,
   loadSpecList,
   submitRegisterSpec,

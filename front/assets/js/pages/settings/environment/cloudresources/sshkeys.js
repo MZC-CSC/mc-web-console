@@ -167,10 +167,20 @@ export function togglePrivateKey() {
 
 // ─── Delete ───────────────────────────────────────────────────────────────
 
-export async function confirmDeleteSshKey() {
+export function confirmDeleteSshKey() {
     const selected = AppState.resources.selected;
     if (!selected) return;
-    if (!confirm(`SSH Key "${selected.name}" — confirm delete?`)) return;
+    webconsolejs['partials/layout/modal'].commonConfirmModal(
+        'commonDefaultModal',
+        'Delete SSH Key',
+        `SSH Key "${selected.name}" — confirm delete?`,
+        'pages/settings/environment/cloudresources/sshkeys.executeDeleteSshKey'
+    );
+}
+
+export async function executeDeleteSshKey() {
+    const selected = AppState.resources.selected;
+    if (!selected) return;
     try {
         await sshKeyApi().del(AppState.ns, selected.name);
         showToast(TOAST_TYPES.SUCCESS, `SSH Key "${selected.name}" deleted successfully`);
@@ -325,6 +335,7 @@ webconsolejs['pages/settings/environment/cloudresources/sshkeys'] = {
     hideDetail,
     togglePrivateKey,
     confirmDeleteSshKey,
+    executeDeleteSshKey,
     executeCreateSshKey,
     openImportSshKeyModal,
     executeImportSshKey,

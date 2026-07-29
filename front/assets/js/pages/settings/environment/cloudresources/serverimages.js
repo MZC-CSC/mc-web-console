@@ -160,9 +160,20 @@ export function hideDetail() {
   AppState.resources.selected = null;
 }
 
-export async function confirmDeleteImage() {
+export function confirmDeleteImage() {
   const item = AppState.resources.selected;
-  if (!item || !confirm(`Delete image "${item.name}"?`)) return;
+  if (!item) return;
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal',
+    'Delete Image',
+    `Delete image "${item.name}"?`,
+    'pages/settings/environment/cloudresources/serverimages.executeDeleteImage'
+  );
+}
+
+export async function executeDeleteImage() {
+  const item = AppState.resources.selected;
+  if (!item) return;
   try {
     await imageApi().del(SYSTEM_NS, item.name);
     showToast(TOAST_TYPES.SUCCESS, `Image "${item.name}" deleted successfully`);
@@ -298,6 +309,7 @@ webconsolejs[PAGE_KEY] = {
   searchImages,
   hideDetail,
   confirmDeleteImage,
+  executeDeleteImage,
   openImageSelectPopup,
   loadImageList,
   submitRegisterImage,

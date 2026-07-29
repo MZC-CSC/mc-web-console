@@ -151,11 +151,21 @@ export function hideDetail() {
   AppState.resources.selected = null;
 }
 
-export async function confirmDeleteDisk() {
+export function confirmDeleteDisk() {
+  const selected = AppState.resources.selected;
+  if (!selected) return;
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal',
+    'Delete Data Disk',
+    `Data Disk "${selected.name}" — confirm delete?`,
+    'pages/settings/environment/cloudresources/disks.executeDeleteDisk'
+  );
+}
+
+export async function executeDeleteDisk() {
   const selected = AppState.resources.selected;
   if (!selected) return;
   const id = diskId(selected);
-  if (!confirm(`Data Disk "${selected.name}" — confirm delete?`)) return;
   try {
     await diskApi().delDataDisk(AppState.ns, id);
     showToast(TOAST_TYPES.SUCCESS, `Data Disk "${selected.name}" deleted successfully`);
@@ -339,6 +349,7 @@ webconsolejs['pages/settings/environment/cloudresources/disks'] = {
   loadDiskList,
   hideDetail,
   confirmDeleteDisk,
+  executeDeleteDisk,
   executeCreateDisk,
   openImportDiskModal,
   executeImportDisk,

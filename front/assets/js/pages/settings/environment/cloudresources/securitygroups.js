@@ -187,10 +187,20 @@ export function hideDetail() {
 
 // ─── Delete ───────────────────────────────────────────────────────────────
 
-export async function confirmDeleteSG() {
+export function confirmDeleteSG() {
     const selected = AppState.resources.selected;
     if (!selected) return;
-    if (!confirm(`Delete SecurityGroup "${selected.name}"?`)) return;
+    webconsolejs['partials/layout/modal'].commonConfirmModal(
+        'commonDefaultModal',
+        'Delete Security Group',
+        `Delete SecurityGroup "${selected.name}"?`,
+        'pages/settings/environment/cloudresources/securitygroups.executeDeleteSG'
+    );
+}
+
+export async function executeDeleteSG() {
+    const selected = AppState.resources.selected;
+    if (!selected) return;
     try {
         await sgApi().del(AppState.ns, selected.name);
         showToast(TOAST_TYPES.SUCCESS, `SecurityGroup "${selected.name}" deleted.`);
@@ -436,6 +446,7 @@ webconsolejs['pages/settings/environment/cloudresources/securitygroups'] = {
     loadSGList,
     hideDetail,
     confirmDeleteSG,
+    executeDeleteSG,
     addFirewallRuleRow,
     executeCreateSG,
     openImportSGModal,
