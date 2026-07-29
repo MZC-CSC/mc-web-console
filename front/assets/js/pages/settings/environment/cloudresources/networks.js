@@ -3,6 +3,7 @@
 
 import { TabulatorFull as Tabulator } from "tabulator-tables";
 import { showToast, TOAST_TYPES } from "../../../../common/utils/toast.js";
+import { getProvider, getRegion } from "../../../../common/utils/cspResource.js";
 
 const vpcApi    = () => webconsolejs["common/api/services/vpc_api"];
 const importApi = () => webconsolejs["common/api/services/import_api"];
@@ -61,7 +62,8 @@ export async function loadVNetList() {
     if (!AppState.ns) return;
     try {
         const data = await vpcApi().getAllVNet(AppState.ns);
-        const vNets = data?.vNet || (Array.isArray(data) ? data : []);
+        const rawVNets = data?.vNet || (Array.isArray(data) ? data : []);
+        const vNets = rawVNets.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
         if (AppState.tables.vnetTable) {
             AppState.tables.vnetTable.replaceData(vNets);
         } else {
@@ -88,7 +90,8 @@ function initTable(vNets) {
         initialSort: [{ column: 'name', dir: 'asc' }],
         columns: [
             { title: 'Name',           field: 'name',           widthGrow: 2, sorter: 'string' },
-            { title: 'Connection',     field: 'connectionName', widthGrow: 1, sorter: 'string' },
+            { title: 'Provider',       field: '_provider',      widthGrow: 1, sorter: 'string' },
+            { title: 'Region',         field: '_region',        widthGrow: 1, sorter: 'string' },
             { title: 'CIDR',           field: 'cidrBlock',      widthGrow: 1 },
             { title: 'Subnet Count',      field: 'subnetInfoList',
               formatter: (cell) => `${(cell.getValue() || []).length}`,
@@ -120,7 +123,8 @@ function initTable(vNets) {
 function renderDetail(data) {
     document.getElementById('detail-name').textContent      = data.name || '-';
     document.getElementById('detail-vnet-name').textContent = data.name || '-';
-    document.getElementById('detail-vnet-connection').textContent = data.connectionName || '-';
+    document.getElementById('detail-vnet-provider').textContent = getProvider(data);
+    document.getElementById('detail-vnet-region').textContent = getRegion(data);
     document.getElementById('detail-vnet-cidr').textContent = data.cidrBlock || '-';
     document.getElementById('detail-vnet-csp-id').textContent = data.cspResourceId || '-';
 
@@ -171,7 +175,8 @@ export function showEditMode() {
     // read-only 필드 채우기
     document.getElementById('edit-name').textContent       = selected.name || '';
     document.getElementById('edit-vnet-name').value        = selected.name || '';
-    document.getElementById('edit-vnet-connection').value  = selected.connectionName || '';
+    document.getElementById('edit-vnet-provider').value  = getProvider(selected);
+    document.getElementById('edit-vnet-region').value    = getRegion(selected);
     document.getElementById('edit-vnet-cidr').value        = selected.cidrBlock || '';
 
     // 기존 Subnet 행 렌더링

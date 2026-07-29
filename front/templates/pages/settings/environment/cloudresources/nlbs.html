@@ -202,6 +202,8 @@
   </div>
 </div>
 
+{{ partial("partials/layout/pageloader.html") | raw }}
+
 {{ javascriptTag("common/api/services/nlb_api.js") | raw }}
 {{ javascriptTag("common/api/services/mci_api.js") | raw }}
 {{ javascriptTag("pages/settings/environment/cloudresources/nlbs.js") | raw }}

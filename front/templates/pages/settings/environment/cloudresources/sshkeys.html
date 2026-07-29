@@ -200,6 +200,8 @@
   </div>
 </div>
 
+{{ partial("partials/layout/pageloader.html") | raw }}
+
 {{ javascriptTag("common/api/services/sshkey_api.js") | raw }}
 {{ javascriptTag("common/api/services/import_api.js") | raw }}
 {{ javascriptTag("pages/settings/environment/cloudresources/sshkeys.js") | raw }}

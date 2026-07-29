@@ -37,7 +37,8 @@
                   <select id="filter-field" class="form-select form-select-sm">
                     <option value="">-- select --</option>
                     <option value="name">Name</option>
-                    <option value="connectionName">Connection</option>
+                    <option value="_provider">Provider</option>
+                    <option value="_region">Region</option>
                     <option value="cidrBlock">CIDR</option>
                   </select>
                 </div>
@@ -93,8 +94,12 @@
                   <div class="datagrid-content" id="detail-vnet-name">-</div>
                 </div>
                 <div class="datagrid-item">
-                  <div class="datagrid-title">Connection</div>
-                  <div class="datagrid-content" id="detail-vnet-connection">-</div>
+                  <div class="datagrid-title">Provider</div>
+                  <div class="datagrid-content" id="detail-vnet-provider">-</div>
+                </div>
+                <div class="datagrid-item">
+                  <div class="datagrid-title">Region</div>
+                  <div class="datagrid-content" id="detail-vnet-region">-</div>
                 </div>
                 <div class="datagrid-item">
                   <div class="datagrid-title">CIDR Block</div>
@@ -148,15 +153,19 @@
             <div class="card-body">
               <!-- Read-only 정보 -->
               <div class="row g-3 mb-4">
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label class="form-label text-muted">Name <span class="badge bg-secondary-lt ms-1">read-only</span></label>
                   <input type="text" class="form-control form-control-sm bg-light" id="edit-vnet-name" readonly>
                 </div>
-                <div class="col-md-4">
-                  <label class="form-label text-muted">Connection <span class="badge bg-secondary-lt ms-1">read-only</span></label>
-                  <input type="text" class="form-control form-control-sm bg-light" id="edit-vnet-connection" readonly>
+                <div class="col-md-3">
+                  <label class="form-label text-muted">Provider <span class="badge bg-secondary-lt ms-1">read-only</span></label>
+                  <input type="text" class="form-control form-control-sm bg-light" id="edit-vnet-provider" readonly>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                  <label class="form-label text-muted">Region <span class="badge bg-secondary-lt ms-1">read-only</span></label>
+                  <input type="text" class="form-control form-control-sm bg-light" id="edit-vnet-region" readonly>
+                </div>
+                <div class="col-md-3">
                   <label class="form-label text-muted">CIDR Block <span class="badge bg-secondary-lt ms-1">read-only</span></label>
                   <input type="text" class="form-control form-control-sm bg-light" id="edit-vnet-cidr" readonly>
                 </div>
@@ -293,6 +302,8 @@
     </div>
   </div>
 </div>
+
+{{ partial("partials/layout/pageloader.html") | raw }}
 
 {{ javascriptTag("common/api/services/vpc_api.js") | raw }}
 {{ javascriptTag("common/api/services/import_api.js") | raw }}
