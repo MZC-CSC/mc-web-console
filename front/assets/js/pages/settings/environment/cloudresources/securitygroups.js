@@ -127,7 +127,6 @@ function renderDetail(data) {
     document.getElementById('detail-sg-vnet').textContent       = data.vNetId || '-';
     document.getElementById('detail-sg-csp-id').textContent     = data.cspResourceId || '-';
     document.getElementById('detail-sg-csp-name').textContent   = data.cspResourceName || '-';
-    document.getElementById('detail-sg-uid').textContent        = data.uid || '-';
     document.getElementById('detail-sg-description').textContent = data.description || '-';
 
     document.getElementById('detail-sg-provider').textContent = getProvider(data);

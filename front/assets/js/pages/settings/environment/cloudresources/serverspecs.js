@@ -78,13 +78,15 @@ function initTable(data) {
     paginationSizeSelector: [10, 20, 50],
     paginationCounter: 'rows',
     movableColumns: true,
-    initialSort: [{ column: 'name', dir: 'asc' }],
+    initialSort: [{ column: 'cspSpecName', dir: 'asc' }],
     columns: [
-      { title: 'Spec Name', field: 'name', widthGrow: 2, sorter: 'string' },
+      { title: 'CSP Spec Name', field: 'cspSpecName', widthGrow: 2, sorter: 'string' },
       { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
       { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
       { title: 'vCPU', field: 'vCPU', hozAlign: 'center', width: 80, sorter: 'number' },
       { title: 'Memory (GiB)', field: 'memoryGiB', hozAlign: 'center', width: 120, sorter: 'number' },
+      { title: 'GPU', field: 'acceleratorCount', hozAlign: 'center', width: 80, sorter: 'number' },
+      { title: 'Disk', field: 'rootDiskSize', hozAlign: 'center', width: 90, sorter: 'number' },
     ],
   });
 

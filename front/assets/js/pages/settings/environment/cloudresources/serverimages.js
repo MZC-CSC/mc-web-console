@@ -41,41 +41,61 @@ document.addEventListener('DOMContentLoaded', async function () {
 });
 
 async function loadSearchConnections() {
-  const select = document.getElementById('search-connection');
-  if (!select) return;
+  const providerSelect = document.getElementById('search-provider');
+  if (!providerSelect) return;
   try {
     const resp = await webconsolejs['common/api/http'].commonAPIPost('/api/mc-infra-manager/GetConnConfigList', {});
     AppState.connections = resp?.data?.responseData?.connectionconfig || [];
-    for (const c of AppState.connections) {
+    const providers = [...new Set(AppState.connections.map((c) => c.providerName).filter(Boolean))].sort();
+    for (const p of providers) {
       const opt = document.createElement('option');
-      opt.value = c.configName;
-      opt.textContent = c.configName;
-      select.appendChild(opt);
+      opt.value = p;
+      opt.textContent = p;
+      providerSelect.appendChild(opt);
     }
   } catch (err) {
     console.error('Failed to load connection list', err);
   }
 }
 
+function updateSearchRegionOptions() {
+  const provider = document.getElementById('search-provider')?.value || '';
+  const regionSelect = document.getElementById('search-region');
+  if (!regionSelect) return;
+  regionSelect.innerHTML = '<option value="">-- all regions --</option>';
+  if (!provider) return;
+  const regions = [...new Set(
+    AppState.connections
+      .filter((c) => c.providerName === provider)
+      .map((c) => c.regionDetail?.regionName || c.regionDetail?.regionId)
+      .filter(Boolean)
+  )].sort();
+  for (const r of regions) {
+    const opt = document.createElement('option');
+    opt.value = r;
+    opt.textContent = r;
+    regionSelect.appendChild(opt);
+  }
+}
+
+document.getElementById('search-provider')?.addEventListener('change', updateSearchRegionOptions);
+
 export async function searchImages() {
-  const configName = document.getElementById('search-connection')?.value || '';
+  const provider = document.getElementById('search-provider')?.value || '';
+  const region = document.getElementById('search-region')?.value || '';
   const osType = document.getElementById('search-ostype')?.value.trim() || '';
   const basicOnly = document.getElementById('search-basic-only')?.checked ?? true;
 
-  if (!configName && !osType) {
-    showToast(TOAST_TYPES.WARNING, 'Select a connection or enter an OS type to search.');
+  if (!provider && !osType) {
+    showToast(TOAST_TYPES.WARNING, 'Select a provider or enter an OS type to search.');
     return;
   }
 
   const criteria = {};
   if (osType) criteria.osType = osType;
   if (basicOnly) criteria.includeBasicImageOnly = true;
-  const conn = AppState.connections.find((c) => c.configName === configName);
-  if (conn) {
-    criteria.providerName = conn.providerName;
-    const regionName = conn.regionDetail?.regionName || conn.regionDetail?.regionId;
-    if (regionName) criteria.regionName = regionName;
-  }
+  if (provider) criteria.providerName = provider;
+  if (region) criteria.regionName = region;
 
   const spinner = document.getElementById('search-image-spinner');
   const btn = document.getElementById('search-image-btn');
@@ -129,7 +149,16 @@ function initTable(data) {
     movableColumns: true,
     initialSort: [{ column: 'name', dir: 'asc' }],
     columns: [
-      { title: 'Image Name', field: 'name', widthGrow: 2, sorter: 'string' },
+      {
+        title: 'Image Name',
+        field: 'name',
+        widthGrow: 2,
+        sorter: 'string',
+        formatter: (cell) => {
+          const d = cell.getData();
+          return d.cspImageId || d.name || '-';
+        },
+      },
       { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
       { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
       { title: 'OS Type', field: 'osType', widthGrow: 1, sorter: 'string' },

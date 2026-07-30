@@ -22,10 +22,16 @@
             <div class="card-body border-bottom py-3">
               <!-- 서버 검색: system ns 이미지 17만+ 건이라 조건 검색 필수 -->
               <div class="row g-2 align-items-end pb-3 mb-3 border-bottom">
-                <div class="col-auto" style="min-width: 240px;">
-                  <label class="form-label mb-1">Connection (provider/region)</label>
-                  <select id="search-connection" class="form-select form-select-sm">
+                <div class="col-auto" style="min-width: 180px;">
+                  <label class="form-label mb-1">Provider</label>
+                  <select id="search-provider" class="form-select form-select-sm">
                     <option value="">-- all providers --</option>
+                  </select>
+                </div>
+                <div class="col-auto" style="min-width: 180px;">
+                  <label class="form-label mb-1">Region</label>
+                  <select id="search-region" class="form-select form-select-sm">
+                    <option value="">-- all regions --</option>
                   </select>
                 </div>
                 <div class="col-auto">
