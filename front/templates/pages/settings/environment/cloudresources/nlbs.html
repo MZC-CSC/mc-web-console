@@ -38,14 +38,26 @@
           <!-- Filter Panel -->
           <div class="collapse" id="filter-body">
             <div class="card-body border-bottom py-3">
+              <div class="row g-2 align-items-end pb-3 mb-3 border-bottom">
+                <div class="col-auto" style="min-width: 180px;">
+                  <label class="form-label mb-1">Provider</label>
+                  <select id="filter-provider" class="form-select form-select-sm">
+                    <option value="">-- all providers --</option>
+                  </select>
+                </div>
+                <div class="col-auto" style="min-width: 180px;">
+                  <label class="form-label mb-1">Region</label>
+                  <select id="filter-region" class="form-select form-select-sm">
+                    <option value="">-- all regions --</option>
+                  </select>
+                </div>
+              </div>
               <div class="row g-2 align-items-end">
                 <div class="col-auto">
                   <label class="form-label mb-1">Field</label>
                   <select id="filter-field" class="form-select form-select-sm">
                     <option value="">-- select --</option>
                     <option value="id">Id</option>
-                    <option value="_provider">Provider</option>
-                    <option value="_region">Region</option>
                     <option value="type">Type</option>
                     <option value="scope">Scope</option>
                   </select>

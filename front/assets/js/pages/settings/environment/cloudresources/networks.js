@@ -3,7 +3,7 @@
 
 import { TabulatorFull as Tabulator } from "tabulator-tables";
 import { showToast, TOAST_TYPES } from "../../../../common/utils/toast.js";
-import { getProvider, getRegion } from "../../../../common/utils/cspResource.js";
+import { getProvider, getRegion, populateProviderFilterOptions, populateRegionFilterOptions } from "../../../../common/utils/cspResource.js";
 
 const vpcApi    = () => webconsolejs["common/api/services/vpc_api"];
 const importApi = () => webconsolejs["common/api/services/import_api"];
@@ -12,7 +12,7 @@ const importApi = () => webconsolejs["common/api/services/import_api"];
 const AppState = {
     ns: '',
     tables: { vnetTable: null },
-    resources: { selected: null },
+    resources: { selected: null, all: [] },
     ui: { viewMode: false },
 };
 
@@ -64,6 +64,9 @@ export async function loadVNetList() {
         const data = await vpcApi().getAllVNet(AppState.ns);
         const rawVNets = data?.vNet || (Array.isArray(data) ? data : []);
         const vNets = rawVNets.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
+        AppState.resources.all = vNets;
+        populateProviderFilterOptions(vNets, 'filter-provider');
+        populateRegionFilterOptions(vNets, 'filter-provider', 'filter-region');
         if (AppState.tables.vnetTable) {
             AppState.tables.vnetTable.replaceData(vNets);
         } else {
@@ -393,24 +396,38 @@ export async function executeBulkDelete() {
 // ─── Filter (Tabulator 내장 setFilter) ───────────────────────────────────
 
 function initFilter() {
+    const providerEl = document.getElementById('filter-provider');
+    const regionEl   = document.getElementById('filter-region');
     const fieldEl = document.getElementById('filter-field');
     const typeEl  = document.getElementById('filter-type');
     const valueEl = document.getElementById('filter-value');
     if (!fieldEl || !typeEl || !valueEl) return;
 
     function updateFilter() {
-        const field = fieldEl.value;
-        const type  = typeEl.value;
-        if (field && AppState.tables.vnetTable) {
-            AppState.tables.vnetTable.setFilter(field, type, valueEl.value);
+        if (!AppState.tables.vnetTable) return;
+        const filters = [];
+        if (providerEl?.value) filters.push({ field: '_provider', type: '=', value: providerEl.value });
+        if (regionEl?.value) filters.push({ field: '_region', type: '=', value: regionEl.value });
+        if (fieldEl.value) filters.push({ field: fieldEl.value, type: typeEl.value, value: valueEl.value });
+        if (filters.length > 0) {
+            AppState.tables.vnetTable.setFilter(filters);
+        } else {
+            AppState.tables.vnetTable.clearFilter();
         }
     }
 
+    providerEl?.addEventListener('change', function () {
+        populateRegionFilterOptions(AppState.resources.all, 'filter-provider', 'filter-region');
+        updateFilter();
+    });
+    regionEl?.addEventListener('change', updateFilter);
     fieldEl.addEventListener('change', updateFilter);
     typeEl.addEventListener('change', updateFilter);
     valueEl.addEventListener('keyup', updateFilter);
 
     document.getElementById('filter-clear').addEventListener('click', function () {
+        if (providerEl) providerEl.value = '';
+        if (regionEl) regionEl.value = '';
         fieldEl.value = '';
         typeEl.value  = 'like';
         valueEl.value = '';
