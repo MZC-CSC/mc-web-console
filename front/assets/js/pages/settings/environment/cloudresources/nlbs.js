@@ -3,7 +3,7 @@
 
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import { showToast, TOAST_TYPES } from '../../../../common/utils/toast.js';
-import { getProvider, getRegion } from '../../../../common/utils/cspResource.js';
+import { getProvider, getRegion, populateProviderFilterOptions, populateRegionFilterOptions } from '../../../../common/utils/cspResource.js';
 
 const nlbApi = () => webconsolejs['common/api/services/nlb_api'];
 const mciApi = () => webconsolejs['common/api/services/mci_api'];
@@ -12,7 +12,7 @@ const AppState = {
   ns: '',
   infraId: '',
   tables: { nlbTable: null },
-  resources: { selected: null },
+  resources: { selected: null, all: [] },
   ui: { viewMode: false },
 };
 
@@ -71,7 +71,7 @@ async function loadInfraOptions() {
   if (!AppState.ns) return;
   try {
     const data = await mciApi().getMciList(AppState.ns);
-    const infras = data?.mci || (Array.isArray(data) ? data : []);
+    const infras = data?.infra || (Array.isArray(data) ? data : []);
     for (const infra of infras) {
       const opt = document.createElement('option');
       opt.value = infra.id || infra.name;
@@ -101,6 +101,9 @@ export async function loadNlbList() {
     const data = await nlbApi().getAllNLB(AppState.ns, AppState.infraId);
     const rawItems = data?.nlb || (Array.isArray(data) ? data : []);
     const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
+    AppState.resources.all = items;
+    populateProviderFilterOptions(items, 'filter-provider');
+    populateRegionFilterOptions(items, 'filter-provider', 'filter-region');
     if (AppState.tables.nlbTable) {
       AppState.tables.nlbTable.replaceData(items);
     } else {
@@ -312,24 +315,38 @@ export async function executeBulkDelete() {
 // ─── Filter ───────────────────────────────────────────────────────────────
 
 function initFilter() {
+  const providerEl = document.getElementById('filter-provider');
+  const regionEl = document.getElementById('filter-region');
   const fieldEl = document.getElementById('filter-field');
   const typeEl = document.getElementById('filter-type');
   const valueEl = document.getElementById('filter-value');
   if (!fieldEl || !typeEl || !valueEl) return;
 
   function updateFilter() {
-    const field = fieldEl.value;
-    const type = typeEl.value;
-    if (field && AppState.tables.nlbTable) {
-      AppState.tables.nlbTable.setFilter(field, type, valueEl.value);
+    if (!AppState.tables.nlbTable) return;
+    const filters = [];
+    if (providerEl?.value) filters.push({ field: '_provider', type: '=', value: providerEl.value });
+    if (regionEl?.value) filters.push({ field: '_region', type: '=', value: regionEl.value });
+    if (fieldEl.value) filters.push({ field: fieldEl.value, type: typeEl.value, value: valueEl.value });
+    if (filters.length > 0) {
+      AppState.tables.nlbTable.setFilter(filters);
+    } else {
+      AppState.tables.nlbTable.clearFilter();
     }
   }
 
+  providerEl?.addEventListener('change', function () {
+    populateRegionFilterOptions(AppState.resources.all, 'filter-provider', 'filter-region');
+    updateFilter();
+  });
+  regionEl?.addEventListener('change', updateFilter);
   fieldEl.addEventListener('change', updateFilter);
   typeEl.addEventListener('change', updateFilter);
   valueEl.addEventListener('keyup', updateFilter);
 
   document.getElementById('filter-clear').addEventListener('click', function () {
+    if (providerEl) providerEl.value = '';
+    if (regionEl) regionEl.value = '';
     fieldEl.value = '';
     typeEl.value = 'like';
     valueEl.value = '';
