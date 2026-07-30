@@ -729,10 +729,10 @@ serviceActions:
       method: delete
       resourcePath: /api/roles/csp/id/{roleId}
       description: "CSP Role 삭제"
-    UpdateCspRoleRecord:
+    UpdateCspRole:
       method: put
       resourcePath: /api/roles/csp/id/{roleId}
-      description: "CSP Role 수정 (mc-iam-manager 레지스트리의 updateCspRole 액션명은 잘못된 경로(/api/roles/csp-roles/id/{roleId}, 실제 미존재)를 가리켜 이름 충돌 회피를 위해 별도 이름 사용 — 실제 핸들러 UpdateCspRoleRecord와 동일 매칭)"
+      description: "CSP Role 수정"
     listCspPolicies:
       method: post
       resourcePath: /api/csp-policies/list

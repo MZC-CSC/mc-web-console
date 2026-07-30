@@ -66,9 +66,7 @@ export async function createCspRole(roleData) {
 
 // CSP Role 수정
 export async function updateCspRole(roleId, roleData) {
-    // mc-iam-manager 레지스트리의 "updateCspRole" 액션명은 잘못된 경로(/api/roles/csp-roles/id/{roleId},
-    // 실제 미존재 라우트)를 가리켜 대소문자 무관 이름 매칭 시 그 정의로 덮어써짐(405 유발) — 충돌 회피용 별도 이름
-    const controller = "/api/mc-iam-manager/UpdateCspRoleRecord";
+    const controller = "/api/mc-iam-manager/UpdateCspRole";
     const data = {
         pathParams: {
             roleId: roleId.toString()
