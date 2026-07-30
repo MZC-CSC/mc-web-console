@@ -6,6 +6,15 @@
           <div class="card-header">
             <h3 class="card-title">NLB List</h3>
             <div class="card-options ms-auto d-flex gap-2">
+              <!-- Check Health (selected) -->
+              <a class="btn-action" type="button" title="Check health of selected"
+                onclick="webconsolejs['pages/settings/environment/cloudresources/nlbs'].checkSelectedNlbHealth()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                  stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M3 12h4l3 8l4 -16l3 8h4"/>
+                </svg>
+              </a>
               <!-- Delete selected -->
               <a class="btn-action" type="button" title="Delete selected"
                 onclick="webconsolejs['pages/settings/environment/cloudresources/nlbs'].confirmBulkDelete()">
@@ -92,10 +101,6 @@
             <div class="card-header">
               <h3 class="card-title">NLB Detail — <span id="detail-name" class="text-primary"></span></h3>
               <div class="card-options">
-                <button class="btn btn-sm btn-outline-primary me-1" id="nlb-health-btn"
-                  onclick="webconsolejs['pages/settings/environment/cloudresources/nlbs'].checkNlbHealth()">Check Health</button>
-                <button class="btn btn-sm btn-outline-danger me-1"
-                  onclick="webconsolejs['pages/settings/environment/cloudresources/nlbs'].confirmDeleteNlb()">Delete</button>
                 <a href="#" class="card-options-remove"
                   onclick="webconsolejs['pages/settings/environment/cloudresources/nlbs'].hideDetail()">
                   <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"

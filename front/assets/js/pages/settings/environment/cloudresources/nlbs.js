@@ -211,15 +211,64 @@ function renderDetail(data) {
   document.getElementById('detail-nlb-scope').textContent = data.scope || '-';
   document.getElementById('detail-nlb-listener').textContent =
     listener.protocol || listener.port ? `${listener.protocol || ''}:${listener.port || ''}` : '-';
-  document.getElementById('detail-nlb-endpoint').textContent =
-    listener.dnsName || listener.ip || '-';
+  renderTruncatableCopyable('detail-nlb-endpoint', listener.dnsName || listener.ip || '-');
   document.getElementById('detail-nlb-nodegroup').textContent = target.subGroupId || '-';
   document.getElementById('detail-nlb-target-port').textContent = target.port || '-';
   document.getElementById('detail-nlb-healthchecker').textContent =
     hc.protocol || hc.port ? `${hc.protocol || ''}:${hc.port || ''} (interval ${hc.interval || '-'}, threshold ${hc.threshold || '-'})` : '-';
-  document.getElementById('detail-nlb-csp-id').textContent = data.cspResourceId || '-';
+  renderTruncatableCopyable('detail-nlb-csp-id', data.cspResourceId || '-');
   document.getElementById('detail-nlb-description').textContent = data.description || '-';
   document.getElementById('detail-nlb-health').textContent = '-';
+}
+
+// 길어서 "..."으로 잘리는 값(Listener IP/DNS, CSP Resource ID)을
+// 말줄임 + hover 시 title 툴팁 + 끝에 복사 아이콘으로 전체 내용을 확인/복사할 수 있게 한다.
+// target은 <div id="...">(endpoint)이거나 <code id="...">(csp-id)로 구조가 달라
+// target 자신을 flex 컨테이너로 만들어 [텍스트 span, 복사 아이콘]을 그 안에 넣는다.
+function renderTruncatableCopyable(targetId, fullText) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  target.innerHTML = '';
+
+  if (!fullText || fullText === '-') {
+    target.textContent = '-';
+    return;
+  }
+
+  target.style.display = 'inline-flex';
+  target.style.alignItems = 'center';
+  target.style.gap = '4px';
+  target.style.maxWidth = '100%';
+
+  const span = document.createElement('span');
+  span.textContent = fullText;
+  span.title = fullText;
+  span.style.maxWidth = '240px';
+  span.style.overflow = 'hidden';
+  span.style.textOverflow = 'ellipsis';
+  span.style.whiteSpace = 'nowrap';
+
+  const copyBtn = document.createElement('a');
+  copyBtn.href = '#';
+  copyBtn.className = 'copy-icon-btn flex-shrink-0';
+  copyBtn.title = 'Copy to clipboard';
+  copyBtn.innerHTML =
+    '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="16" height="16" viewBox="0 0 24 24" ' +
+    'stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path stroke="none" d="M0 0h24v24H0z" fill="none"/>' +
+    '<path d="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z"/>' +
+    '<path d="M16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"/>' +
+    '</svg>';
+  copyBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    navigator.clipboard
+      .writeText(fullText)
+      .then(() => showToast(TOAST_TYPES.SUCCESS, 'Copied to clipboard'))
+      .catch(() => showToast(TOAST_TYPES.ERROR, 'Failed to copy'));
+  });
+
+  target.appendChild(span);
+  target.appendChild(copyBtn);
 }
 
 function showDetail() {
@@ -234,54 +283,54 @@ export function hideDetail() {
   AppState.resources.selected = null;
 }
 
-// ─── Health Check ─────────────────────────────────────────────────────────
+// ─── Health Check (목록에서 선택 기반) ─────────────────────────────────────
+// 체크 결과는 toast로 표시하면 놓치기 쉬워, 확인 후 닫아야 하는 modal로 표시한다.
 
-export async function checkNlbHealth() {
-  const selected = AppState.resources.selected;
-  if (!selected) return;
-  const el = document.getElementById('detail-nlb-health');
-  el.textContent = 'checking...';
-  try {
-    const data = await nlbApi().getNLBHealth(AppState.ns, selected._infraId, nlbId(selected));
-    const hz = data?.healthz || data || {};
-    const all = hz.allVMs || [];
-    const healthy = hz.healthyVMs || [];
-    const unhealthy = hz.unHealthyVMs || hz.unhealthyVMs || [];
-    el.textContent = `healthy ${healthy.length} / unhealthy ${unhealthy.length} / total ${all.length}`;
-    showToast(TOAST_TYPES.SUCCESS, 'NLB health check completed');
-  } catch (err) {
-    console.error('NLB 헬스체크 실패:', err);
-    el.textContent = 'check failed';
-    showToast(TOAST_TYPES.ERROR, 'Failed to check NLB health: ' + (err.message || ''));
+export async function checkSelectedNlbHealth() {
+  const table = AppState.tables.nlbTable;
+  const selected = table ? table.getSelectedData() : [];
+  if (selected.length === 0) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Nothing Selected',
+      'Please select at least one item to check health.'
+    );
+    return;
   }
-}
 
-// ─── Delete ───────────────────────────────────────────────────────────────
-
-export function confirmDeleteNlb() {
-  const selected = AppState.resources.selected;
-  if (!selected) return;
-  const id = nlbId(selected);
-  webconsolejs['partials/layout/modal'].commonConfirmModal(
-    'commonDefaultModal',
-    'Delete NLB',
-    `NLB "${id}" — confirm delete?`,
-    'pages/settings/environment/cloudresources/nlbs.executeDeleteNlb'
+  const results = await Promise.allSettled(
+    selected.map((item) => nlbApi().getNLBHealth(AppState.ns, item._infraId, nlbId(item)))
   );
+
+  const lines = selected.map((item, idx) => {
+    const id = nlbId(item);
+    const result = results[idx];
+    if (result.status !== 'fulfilled') {
+      const line = `${id}: check failed (${result.reason?.message || 'error'})`;
+      _applyHealthToDetailIfShown(item, line);
+      return line;
+    }
+    const line = `${id}: ${formatHealthSummary(result.value)}`;
+    _applyHealthToDetailIfShown(item, formatHealthSummary(result.value));
+    return line;
+  });
+
+  webconsolejs['partials/layout/modal'].commonShowDefaultModal('NLB Health Check', lines.join('\n'));
 }
 
-export async function executeDeleteNlb() {
-  const selected = AppState.resources.selected;
-  if (!selected) return;
-  const id = nlbId(selected);
-  try {
-    await nlbApi().delNLB(AppState.ns, selected._infraId, id);
-    showToast(TOAST_TYPES.SUCCESS, `NLB "${id}" deleted successfully`);
-    hideDetail();
-    await loadNlbList();
-  } catch (err) {
-    console.error('NLB 삭제 실패:', err);
-    showToast(TOAST_TYPES.ERROR, 'Failed to delete NLB: ' + (err.message || ''));
+// GetNLBHealth 실제 응답은 { AllNodes, HealthyNodes, UnHealthyNodes } (PascalCase, healthz 래핑 없음).
+function formatHealthSummary(hz) {
+  const data = hz || {};
+  const all = data.AllNodes || [];
+  const healthy = data.HealthyNodes || [];
+  const unhealthy = data.UnHealthyNodes || [];
+  return `healthy ${healthy.length} / unhealthy ${unhealthy.length} / total ${all.length}`;
+}
+
+// 체크한 NLB가 현재 Detail 패널에 열려있는 것과 같으면 Health Status도 갱신한다.
+function _applyHealthToDetailIfShown(item, text) {
+  const shown = AppState.resources.selected;
+  if (shown && shown._infraId === item._infraId && nlbId(shown) === nlbId(item)) {
+    document.getElementById('detail-nlb-health').textContent = text;
   }
 }
 
@@ -539,9 +588,7 @@ if (typeof webconsolejs === 'undefined') { window.webconsolejs = {}; }
 webconsolejs['pages/settings/environment/cloudresources/nlbs'] = {
   loadNlbList,
   hideDetail,
-  checkNlbHealth,
-  confirmDeleteNlb,
-  executeDeleteNlb,
+  checkSelectedNlbHealth,
   confirmBulkDelete,
   executeBulkDelete,
   openCreateNlbModal,
