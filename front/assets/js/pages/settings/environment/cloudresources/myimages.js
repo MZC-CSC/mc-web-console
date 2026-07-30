@@ -2,6 +2,7 @@
 
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import { showToast, TOAST_TYPES } from '../../../../common/utils/toast.js';
+import { getProvider, getRegion } from '../../../../common/utils/cspResource.js';
 
 const myImageApi = () => webconsolejs['common/api/services/myimage_api'];
 
@@ -83,7 +84,8 @@ export async function loadImageList() {
   if (!AppState.ns) return;
   try {
     const data = await myImageApi().list(AppState.ns);
-    const items = data?.customImage || (Array.isArray(data) ? data : []);
+    const rawItems = data?.customImage || (Array.isArray(data) ? data : []);
+    const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
     if (AppState.tables.imageTable) {
       AppState.tables.imageTable.replaceData(items);
     } else {
@@ -112,7 +114,8 @@ function initTable(items) {
     columns: [
       { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
       { title: 'Name', field: 'name', widthGrow: 2, sorter: 'string' },
-      { title: 'Connection', field: 'connectionName', widthGrow: 1, sorter: 'string' },
+      { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
+      { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
       { title: 'CSP Image ID', field: 'cspImageId', widthGrow: 2 },
       {
         title: 'Status',
@@ -152,7 +155,8 @@ function initTable(items) {
 function renderDetail(data) {
   document.getElementById('detail-name').textContent = data.name || '-';
   document.getElementById('detail-image-name').textContent = data.name || '-';
-  document.getElementById('detail-image-connection').textContent = data.connectionName || '-';
+  document.getElementById('detail-image-provider').textContent = getProvider(data);
+  document.getElementById('detail-image-region').textContent = getRegion(data);
   document.getElementById('detail-image-csp-id').textContent = data.cspImageId || '-';
   document.getElementById('detail-image-status').innerHTML = statusBadge(data.imageStatus);
   document.getElementById('detail-image-source-node').textContent = data.sourceNodeUid || '-';

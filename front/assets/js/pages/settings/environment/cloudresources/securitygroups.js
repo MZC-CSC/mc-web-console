@@ -3,6 +3,7 @@
 
 import { TabulatorFull as Tabulator } from "tabulator-tables";
 import { showToast, TOAST_TYPES } from "../../../../common/utils/toast.js";
+import { getProvider, getRegion } from "../../../../common/utils/cspResource.js";
 
 const sgApi     = () => webconsolejs["common/api/services/securitygroup_api"];
 const importApi = () => webconsolejs["common/api/services/import_api"];
@@ -58,7 +59,8 @@ export async function loadSGList() {
     if (!AppState.ns) return;
     try {
         const data = await sgApi().list(AppState.ns);
-        const items = data?.securityGroup || (Array.isArray(data) ? data : []);
+        const rawItems = data?.securityGroup || (Array.isArray(data) ? data : []);
+        const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
         if (AppState.tables.sgTable) {
             AppState.tables.sgTable.replaceData(items);
         } else {
@@ -87,7 +89,8 @@ function initTable(items) {
         columns: [
             { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
             { title: 'Name',         field: 'name',           widthGrow: 2, sorter: 'string' },
-            { title: 'Connection',   field: 'connectionName', widthGrow: 1, sorter: 'string' },
+            { title: 'Provider',     field: '_provider',      widthGrow: 1, sorter: 'string' },
+            { title: 'Region',       field: '_region',        widthGrow: 1, sorter: 'string' },
             { title: 'VPC',          field: 'vNetId',         widthGrow: 1 },
             { title: 'Rules',        field: 'firewallRules',
               formatter: (cell) => {
@@ -121,17 +124,15 @@ function initTable(items) {
 function renderDetail(data) {
     document.getElementById('detail-name').textContent          = data.name || '-';
     document.getElementById('detail-sg-name').textContent       = data.name || '-';
-    document.getElementById('detail-sg-connection').textContent = data.connectionName || '-';
     document.getElementById('detail-sg-vnet').textContent       = data.vNetId || '-';
     document.getElementById('detail-sg-csp-id').textContent     = data.cspResourceId || '-';
     document.getElementById('detail-sg-csp-name').textContent   = data.cspResourceName || '-';
     document.getElementById('detail-sg-uid').textContent        = data.uid || '-';
     document.getElementById('detail-sg-description').textContent = data.description || '-';
 
-    const cc = data.connectionConfig;
-    document.getElementById('detail-sg-provider').textContent = cc?.providerName || '-';
-    document.getElementById('detail-sg-region').textContent   = cc?.regionZoneInfo?.assignedRegion || '-';
-    document.getElementById('detail-sg-zone').textContent     = cc?.regionZoneInfo?.assignedZone || '-';
+    document.getElementById('detail-sg-provider').textContent = getProvider(data);
+    document.getElementById('detail-sg-region').textContent   = getRegion(data);
+    document.getElementById('detail-sg-zone').textContent     = data.connectionConfig?.regionZoneInfo?.assignedZone || '-';
 
     // Firewall Rules
     const rules     = data.firewallRules || data.securityRuleList || [];

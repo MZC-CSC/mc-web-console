@@ -3,6 +3,7 @@
 
 import { TabulatorFull as Tabulator } from "tabulator-tables";
 import { showToast, TOAST_TYPES } from "../../../../common/utils/toast.js";
+import { getProvider, getRegion } from "../../../../common/utils/cspResource.js";
 
 const sshKeyApi = () => webconsolejs["common/api/services/sshkey_api"];
 const importApi = () => webconsolejs["common/api/services/import_api"];
@@ -58,7 +59,8 @@ export async function loadKeyList() {
     if (!AppState.ns) return;
     try {
         const data = await sshKeyApi().list(AppState.ns);
-        const items = data?.sshKey || (Array.isArray(data) ? data : []);
+        const rawItems = data?.sshKey || (Array.isArray(data) ? data : []);
+        const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
         if (AppState.tables.keyTable) {
             AppState.tables.keyTable.replaceData(items);
         } else {
@@ -87,7 +89,8 @@ function initTable(items) {
         columns: [
             { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
             { title: 'Name',        field: 'name',           widthGrow: 2, sorter: 'string' },
-            { title: 'Connection',  field: 'connectionName', widthGrow: 1, sorter: 'string' },
+            { title: 'Provider',    field: '_provider',      widthGrow: 1, sorter: 'string' },
+            { title: 'Region',      field: '_region',        widthGrow: 1, sorter: 'string' },
             { title: 'Fingerprint', field: 'fingerprint',    widthGrow: 2 },
             { title: 'CSP Resource ID', field: 'cspResourceId', widthGrow: 2 },
         ],
@@ -117,7 +120,8 @@ function initTable(items) {
 function renderDetail(data, privateKey) {
     document.getElementById('detail-name').textContent            = data.name || '-';
     document.getElementById('detail-key-name').textContent        = data.name || '-';
-    document.getElementById('detail-key-connection').textContent  = data.connectionName || '-';
+    document.getElementById('detail-key-provider').textContent    = getProvider(data);
+    document.getElementById('detail-key-region').textContent      = getRegion(data);
     document.getElementById('detail-key-fingerprint').textContent = data.fingerprint || '-';
     document.getElementById('detail-key-csp-id').textContent      = data.cspResourceId || '-';
 

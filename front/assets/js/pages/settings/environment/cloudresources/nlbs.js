@@ -3,6 +3,7 @@
 
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import { showToast, TOAST_TYPES } from '../../../../common/utils/toast.js';
+import { getProvider, getRegion } from '../../../../common/utils/cspResource.js';
 
 const nlbApi = () => webconsolejs['common/api/services/nlb_api'];
 const mciApi = () => webconsolejs['common/api/services/mci_api'];
@@ -98,7 +99,8 @@ export async function loadNlbList() {
   }
   try {
     const data = await nlbApi().getAllNLB(AppState.ns, AppState.infraId);
-    const items = data?.nlb || (Array.isArray(data) ? data : []);
+    const rawItems = data?.nlb || (Array.isArray(data) ? data : []);
+    const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
     if (AppState.tables.nlbTable) {
       AppState.tables.nlbTable.replaceData(items);
     } else {
@@ -131,6 +133,8 @@ function initTable(items) {
     columns: [
       { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
       { title: 'Id', field: 'id', widthGrow: 2, sorter: 'string' },
+      { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
+      { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
       { title: 'Type', field: 'type', width: 100 },
       { title: 'Scope', field: 'scope', width: 100 },
       {
@@ -186,6 +190,8 @@ function renderDetail(data) {
   document.getElementById('detail-name').textContent = nlbId(data) || '-';
   document.getElementById('detail-nlb-id').textContent = nlbId(data) || '-';
   document.getElementById('detail-nlb-infra').textContent = AppState.infraId || '-';
+  document.getElementById('detail-nlb-provider').textContent = getProvider(data);
+  document.getElementById('detail-nlb-region').textContent = getRegion(data);
   document.getElementById('detail-nlb-type').textContent = data.type || '-';
   document.getElementById('detail-nlb-scope').textContent = data.scope || '-';
   document.getElementById('detail-nlb-listener').textContent =

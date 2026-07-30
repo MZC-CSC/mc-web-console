@@ -3,6 +3,7 @@
 
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import { showToast, TOAST_TYPES } from '../../../../common/utils/toast.js';
+import { getProvider, getRegion } from '../../../../common/utils/cspResource.js';
 
 const diskApi = () => webconsolejs['common/api/services/disk_api'];
 const importApi = () => webconsolejs['common/api/services/import_api'];
@@ -57,7 +58,8 @@ export async function loadDiskList() {
   if (!AppState.ns) return;
   try {
     const data = await diskApi().getAllDataDisk(AppState.ns);
-    const items = data?.dataDisk || (Array.isArray(data) ? data : []);
+    const rawItems = data?.dataDisk || (Array.isArray(data) ? data : []);
+    const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
     if (AppState.tables.diskTable) {
       AppState.tables.diskTable.replaceData(items);
     } else {
@@ -96,7 +98,8 @@ function initTable(items) {
     columns: [
       { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
       { title: 'Name', field: 'name', widthGrow: 2, sorter: 'string' },
-      { title: 'Connection', field: 'connectionName', widthGrow: 1, sorter: 'string' },
+      { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
+      { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
       { title: 'Disk Type', field: 'diskType', widthGrow: 1 },
       {
         title: 'Size (GB)',
@@ -132,7 +135,8 @@ function initTable(items) {
 function renderDetail(data) {
   document.getElementById('detail-name').textContent = data.name || '-';
   document.getElementById('detail-disk-name').textContent = data.name || '-';
-  document.getElementById('detail-disk-connection').textContent = data.connectionName || '-';
+  document.getElementById('detail-disk-provider').textContent = getProvider(data);
+  document.getElementById('detail-disk-region').textContent = getRegion(data);
   document.getElementById('detail-disk-type').textContent = data.diskType || '-';
   document.getElementById('detail-disk-size').textContent =
     data.diskSize != null ? String(data.diskSize) : '-';

@@ -1,6 +1,7 @@
 // Server Spec 관리 — system namespace 고정 (프로젝트 NsId 사용 금지)
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import { showToast, TOAST_TYPES } from '../../../../common/utils/toast.js';
+import { getProvider, getRegion } from '../../../../common/utils/cspResource.js';
 
 const SYSTEM_NS = 'system';
 const PAGE_KEY = 'pages/settings/environment/cloudresources/serverspecs';
@@ -49,7 +50,8 @@ function updateNamespaceLabel() {
 export async function refreshSpecList() {
   try {
     const data = await specApi().list(SYSTEM_NS);
-    const items = data?.spec || [];
+    const rawItems = data?.spec || [];
+    const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
     if (AppState.tables.resourceTable) {
       AppState.tables.resourceTable.replaceData(items);
     } else {
@@ -79,9 +81,10 @@ function initTable(data) {
     initialSort: [{ column: 'name', dir: 'asc' }],
     columns: [
       { title: 'Spec Name', field: 'name', widthGrow: 2, sorter: 'string' },
+      { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
+      { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
       { title: 'vCPU', field: 'vCPU', hozAlign: 'center', width: 80, sorter: 'number' },
       { title: 'Memory (GiB)', field: 'memoryGiB', hozAlign: 'center', width: 120, sorter: 'number' },
-      { title: 'Connection', field: 'connectionName', widthGrow: 1, sorter: 'string' },
     ],
   });
 
@@ -98,6 +101,8 @@ function initTable(data) {
 function renderDetail(data) {
   document.getElementById('detail-name').textContent = data.name || '-';
   document.getElementById('detail-specName').textContent = data.name || '-';
+  document.getElementById('detail-provider').textContent = getProvider(data);
+  document.getElementById('detail-region').textContent = getRegion(data);
   document.getElementById('detail-vcpu').textContent = data.vCPU ?? '-';
   document.getElementById('detail-memory').textContent = data.memoryGiB ?? '-';
   document.getElementById('detail-gpu').textContent = data.acceleratorCount ?? '-';

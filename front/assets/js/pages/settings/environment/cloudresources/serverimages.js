@@ -1,6 +1,7 @@
 // Server Image 관리 — system namespace 고정 (프로젝트 NsId 사용 금지)
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import { showToast, TOAST_TYPES } from '../../../../common/utils/toast.js';
+import { getProvider, getRegion } from '../../../../common/utils/cspResource.js';
 
 const SYSTEM_NS = 'system';
 const PAGE_KEY = 'pages/settings/environment/cloudresources/serverimages';
@@ -83,7 +84,8 @@ export async function searchImages() {
   try {
     AppState.lastCriteria = criteria;
     const data = await imageApi().search(SYSTEM_NS, criteria);
-    const items = data?.imageList || [];
+    const rawItems = data?.imageList || [];
+    const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
     AppState.tables.resourceTable?.replaceData(items);
     showToast(TOAST_TYPES.SUCCESS, `Found ${data?.imageCount ?? items.length} images`);
   } catch (err) {
@@ -107,7 +109,9 @@ export async function refreshImageList() {
   if (!AppState.lastCriteria) return;
   try {
     const data = await imageApi().search(SYSTEM_NS, AppState.lastCriteria);
-    AppState.tables.resourceTable?.replaceData(data?.imageList || []);
+    const rawItems = data?.imageList || [];
+    const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
+    AppState.tables.resourceTable?.replaceData(items);
   } catch (err) {
     if (err?.response?.status !== 404) console.error('Failed to refresh images', err);
   }
@@ -126,9 +130,10 @@ function initTable(data) {
     initialSort: [{ column: 'name', dir: 'asc' }],
     columns: [
       { title: 'Image Name', field: 'name', widthGrow: 2, sorter: 'string' },
+      { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
+      { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
       { title: 'OS Type', field: 'osType', widthGrow: 1, sorter: 'string' },
       { title: 'Architecture', field: 'architecture', hozAlign: 'center', width: 120, sorter: 'string' },
-      { title: 'Connection', field: 'connectionName', widthGrow: 1, sorter: 'string' },
     ],
   });
 
@@ -145,6 +150,8 @@ function initTable(data) {
 function renderDetail(data) {
   document.getElementById('detail-name').textContent = data.name || '-';
   document.getElementById('detail-imageName').textContent = data.name || '-';
+  document.getElementById('detail-provider').textContent = getProvider(data);
+  document.getElementById('detail-region').textContent = getRegion(data);
   document.getElementById('detail-osType').textContent = data.osType || '-';
   document.getElementById('detail-architecture').textContent = data.architecture || '-';
   document.getElementById('detail-cspImageId').textContent = data.cspImageId || '-';
