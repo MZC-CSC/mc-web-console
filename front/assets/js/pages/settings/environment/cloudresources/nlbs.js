@@ -399,9 +399,64 @@ document.getElementById('create-nlb-infra')?.addEventListener('change', function
   _loadNodeGroupOptions(this.value);
 });
 
+document.getElementById('create-nlb-nodegroup')?.addEventListener('change', _updateNodeGroupStatus);
+
+// nodeGroupId -> [{ id, status }] — NLB 생성 전 대상 노드가 실제로 Running인지 확인하기 위한 캐시.
+// AWS 드라이버 등은 Running이 아닌 인스턴스를 NLB 타겟으로 등록하려 하면
+// "InvalidTarget: ... not in a running state"로 거부한다. 이를 API 호출 전에 미리 걸러낸다.
+let _nodeStatusByGroup = {};
+
+async function getNodeStatusesByGroup(ns, infraId) {
+  try {
+    const resp = await webconsolejs['common/api/http'].commonAPIPost('/api/mc-infra-manager/GetInfra', {
+      pathParams: { nsId: ns, infraId },
+    });
+    const nodes = resp?.data?.responseData?.node || [];
+    const map = {};
+    for (const n of nodes) {
+      if (!n.nodeGroupId) continue;
+      if (!map[n.nodeGroupId]) map[n.nodeGroupId] = [];
+      map[n.nodeGroupId].push({ id: n.id, status: n.status });
+    }
+    return map;
+  } catch (err) {
+    console.error('Infra 노드 상태 조회 실패:', err);
+    return {};
+  }
+}
+
+function _updateNodeGroupStatus() {
+  const nodeGroupId = document.getElementById('create-nlb-nodegroup').value;
+  const statusEl = document.getElementById('create-nlb-nodegroup-status');
+  const btn = document.getElementById('create-nlb-execute-btn');
+  const nodes = nodeGroupId ? _nodeStatusByGroup[nodeGroupId] || [] : [];
+
+  if (nodes.length === 0) {
+    statusEl.textContent = '';
+    statusEl.className = 'form-text';
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  const notRunning = nodes.filter((n) => n.status !== 'Running');
+  if (notRunning.length === 0) {
+    statusEl.textContent = `Node status: Running (${nodes.length}/${nodes.length})`;
+    statusEl.className = 'form-text text-success';
+    if (btn) btn.disabled = false;
+  } else {
+    statusEl.textContent =
+      `Node status: ${notRunning.map((n) => `${n.id}=${n.status}`).join(', ')} — ` +
+      'all nodes must be Running to create an NLB.';
+    statusEl.className = 'form-text text-danger';
+    if (btn) btn.disabled = true;
+  }
+}
+
 async function _loadNodeGroupOptions(infraId) {
   const select = document.getElementById('create-nlb-nodegroup');
   select.innerHTML = '<option value="">Select</option>';
+  _nodeStatusByGroup = {};
+  _updateNodeGroupStatus();
   if (!infraId) return;
   try {
     const data = await nlbApi().getInfraNodeGroupIds(AppState.ns, infraId);
@@ -415,6 +470,8 @@ async function _loadNodeGroupOptions(infraId) {
   } catch (err) {
     console.error('NodeGroup 목록 조회 실패:', err);
   }
+  _nodeStatusByGroup = await getNodeStatusesByGroup(AppState.ns, infraId);
+  _updateNodeGroupStatus();
 }
 
 export async function executeCreateNlb() {
@@ -427,6 +484,17 @@ export async function executeCreateNlb() {
 
   if (!infraId || !subGroupId || !listenerPort || !targetPort) {
     showToast(TOAST_TYPES.WARNING, 'Infra, Target NodeGroup, listener port, and target port are required.');
+    return;
+  }
+
+  // 버튼 disabled 우회(폼 submit 등) 대비 이중 체크 — Running이 아닌 노드가 있으면
+  // CSP 드라이버가 InvalidTarget으로 거부하므로 API 호출 전에 막는다.
+  const notRunning = (_nodeStatusByGroup[subGroupId] || []).filter((n) => n.status !== 'Running');
+  if (notRunning.length > 0) {
+    showToast(
+      TOAST_TYPES.WARNING,
+      `Target NodeGroup has node(s) not in Running state (${notRunning.map((n) => `${n.id}=${n.status}`).join(', ')}). Start them before creating an NLB.`
+    );
     return;
   }
 
