@@ -1238,6 +1238,22 @@
             </div>
           </div>
 
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label required">Auth Method</label>
+                <select class="form-select" id="addCspAuthMethod" required>
+                  <option value="OIDC">OIDC</option>
+                  <option value="SAML">SAML</option>
+                  <option value="SECRET_KEY">Secret Key</option>
+                </select>
+                <div class="form-hint">
+                  대상 CSP에 생성될 실제 신뢰 정책(trust policy) 종류를 결정합니다. 생성 후에는 변경할 수 없습니다.
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="mb-3">
             <label class="form-label">Description</label>
             <textarea

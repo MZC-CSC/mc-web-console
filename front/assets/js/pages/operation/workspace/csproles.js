@@ -1411,6 +1411,7 @@ async function saveEditedCspRole() {
 async function addSelectedCspRole() {
   const cspType = document.getElementById('addCspType').value.trim();
   const cspRoleName = document.getElementById('addCspRoleName').value.trim();
+  const authMethod = document.getElementById('addCspAuthMethod').value.trim();
   const description = document.getElementById('addCspRoleDescription').value.trim();
   const idpIdentifier = document.getElementById('addCspIdpIdentifier').value.trim();
   const iamIdentifier = document.getElementById('addCspIamIdentifier').value.trim();
@@ -1428,6 +1429,7 @@ async function addSelectedCspRole() {
       cspRoleName: cspRoleName,
       description: description,
       cspType: cspType,
+      authMethod: authMethod,
       idpIdentifier: idpIdentifier,
       iamIdentifier: iamIdentifier,
       iamRoleId: iamRoleId,
