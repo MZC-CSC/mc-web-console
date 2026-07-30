@@ -56,12 +56,30 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 // ─── Infra(MCI) 목록 ──────────────────────────────────────────────────────
 
+// cluster별 providerNames/regionNames를 "provider/region" 형태로 묶어 라벨을 만든다.
+// (멀티클라우드 infra처럼 cluster가 여러 개면 쉼표로 나열)
+function formatInfraLabel(id, infra) {
+  const parts = (infra.cluster || [])
+    .map((c) => {
+      const providers = (c.providerNames || []).join('/');
+      const regions = (c.regionNames || []).join('/');
+      return providers && regions ? `${providers}/${regions}` : providers || regions;
+    })
+    .filter(Boolean);
+  return parts.length > 0 ? `${id} — ${parts.join(', ')}` : id;
+}
+
 async function getInfraList() {
   if (!AppState.ns) return [];
   try {
     const data = await mciApi().getMciList(AppState.ns);
     const infras = data?.infra || (Array.isArray(data) ? data : []);
-    return infras.map((infra) => infra.id || infra.name).filter(Boolean);
+    return infras
+      .map((infra) => {
+        const id = infra.id || infra.name;
+        return id ? { id, label: formatInfraLabel(id, infra) } : null;
+      })
+      .filter(Boolean);
   } catch (err) {
     console.error('Infra 목록 조회 실패:', err);
     showToast(TOAST_TYPES.ERROR, 'Failed to load Infra list.');
@@ -76,22 +94,22 @@ async function getInfraList() {
 
 export async function loadNlbList() {
   if (!AppState.ns) return;
-  const infraIds = await getInfraList();
-  if (infraIds.length === 0) {
+  const infras = await getInfraList();
+  if (infras.length === 0) {
     AppState.resources.all = [];
     if (AppState.tables.nlbTable) AppState.tables.nlbTable.replaceData([]);
     return;
   }
   try {
     const results = await Promise.allSettled(
-      infraIds.map((infraId) => nlbApi().getAllNLB(AppState.ns, infraId))
+      infras.map((infra) => nlbApi().getAllNLB(AppState.ns, infra.id))
     );
     const items = [];
     results.forEach((result, idx) => {
       if (result.status !== 'fulfilled') return;
       const rawItems = result.value?.nlb || (Array.isArray(result.value) ? result.value : []);
       for (const v of rawItems) {
-        items.push({ ...v, _infraId: infraIds[idx], _provider: getProvider(v), _region: getRegion(v) });
+        items.push({ ...v, _infraId: infras[idx].id, _provider: getProvider(v), _region: getRegion(v) });
       }
     });
     AppState.resources.all = items;
@@ -366,14 +384,14 @@ export async function openCreateNlbModal() {
 async function _loadCreateInfraOptions() {
   const select = document.getElementById('create-nlb-infra');
   select.innerHTML = '<option value="">Select</option>';
-  const infraIds = await getInfraList();
-  for (const id of infraIds) {
+  const infras = await getInfraList();
+  for (const infra of infras) {
     const opt = document.createElement('option');
-    opt.value = id;
-    opt.textContent = id;
+    opt.value = infra.id;
+    opt.textContent = infra.label;
     select.appendChild(opt);
   }
-  if (infraIds.length === 1) select.value = infraIds[0];
+  if (infras.length === 1) select.value = infras[0].id;
   await _loadNodeGroupOptions(select.value);
 }
 
