@@ -5,11 +5,6 @@
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">NLB List</h3>
-            <div class="ms-3" style="min-width: 220px;">
-              <select class="form-select form-select-sm" id="nlb-infra-select" title="Target Infra">
-                <option value="">Select Infra</option>
-              </select>
-            </div>
             <div class="card-options ms-auto d-flex gap-2">
               <!-- Delete selected -->
               <a class="btn-action" type="button" title="Delete selected"
@@ -58,6 +53,7 @@
                   <select id="filter-field" class="form-select form-select-sm">
                     <option value="">-- select --</option>
                     <option value="id">Id</option>
+                    <option value="_infraId">Infra</option>
                     <option value="type">Type</option>
                     <option value="scope">Scope</option>
                   </select>
@@ -191,8 +187,8 @@
           NLB is created per target NodeGroup of the selected Infra. The NLB id follows the NodeGroup id.
         </div>
         <div class="mb-3">
-          <label class="form-label">Infra</label>
-          <input type="text" class="form-control" id="create-nlb-infra" readonly>
+          <label class="form-label required">Infra</label>
+          <select class="form-select" id="create-nlb-infra"></select>
         </div>
         <div class="mb-3">
           <label class="form-label required">Target NodeGroup</label>

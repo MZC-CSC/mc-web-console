@@ -10,7 +10,6 @@ const mciApi = () => webconsolejs['common/api/services/mci_api'];
 
 const AppState = {
   ns: '',
-  infraId: '',
   tables: { nlbTable: null },
   resources: { selected: null, all: [] },
   ui: { viewMode: false },
@@ -22,10 +21,9 @@ $('#select-current-project').on('change', async function () {
   if (this.value === '') return;
   const project = webconsolejs['common/api/services/workspace_api'].getCurrentProject();
   AppState.ns = project?.NsId || '';
-  AppState.infraId = '';
   hideDetail();
   if (AppState.tables.nlbTable) AppState.tables.nlbTable.replaceData([]);
-  if (AppState.ns) await loadInfraOptions();
+  if (AppState.ns) await loadNlbList();
 });
 
 document.addEventListener('DOMContentLoaded', async function () {
@@ -51,56 +49,51 @@ document.addEventListener('DOMContentLoaded', async function () {
   initFilter();
   initTable([]);
 
-  document.getElementById('nlb-infra-select')?.addEventListener('change', async function () {
-    AppState.infraId = this.value;
-    hideDetail();
-    await loadNlbList();
-  });
-
   if (selectedWorkspaceProject.projectId !== '') {
-    await loadInfraOptions();
+    await loadNlbList();
   }
 });
 
-// ─── Infra(MCI) 셀렉터 ────────────────────────────────────────────────────
+// ─── Infra(MCI) 목록 ──────────────────────────────────────────────────────
 
-async function loadInfraOptions() {
-  const select = document.getElementById('nlb-infra-select');
-  if (!select) return;
-  select.innerHTML = '<option value="">Select Infra</option>';
-  if (!AppState.ns) return;
+async function getInfraList() {
+  if (!AppState.ns) return [];
   try {
     const data = await mciApi().getMciList(AppState.ns);
     const infras = data?.infra || (Array.isArray(data) ? data : []);
-    for (const infra of infras) {
-      const opt = document.createElement('option');
-      opt.value = infra.id || infra.name;
-      opt.textContent = infra.id || infra.name;
-      select.appendChild(opt);
-    }
-    // infra가 1개면 자동 선택 후 목록 로드
-    if (infras.length === 1) {
-      select.value = infras[0].id || infras[0].name;
-      AppState.infraId = select.value;
-      await loadNlbList();
-    }
+    return infras.map((infra) => infra.id || infra.name).filter(Boolean);
   } catch (err) {
     console.error('Infra 목록 조회 실패:', err);
     showToast(TOAST_TYPES.ERROR, 'Failed to load Infra list.');
+    return [];
   }
 }
 
 // ─── NLB 목록 로드 ────────────────────────────────────────────────────────
+// Infra는 NLB 조회 API(nsId+infraId 필요)의 필수 경로 파라미터라 목록 화면
+// 자체를 특정 Infra 선택으로 가둘 수 없다. 대신 namespace의 전체 Infra
+// 목록을 먼저 조회한 뒤, Infra별로 NLB를 조회해 하나의 테이블에 합친다.
 
 export async function loadNlbList() {
-  if (!AppState.ns || !AppState.infraId) {
+  if (!AppState.ns) return;
+  const infraIds = await getInfraList();
+  if (infraIds.length === 0) {
+    AppState.resources.all = [];
     if (AppState.tables.nlbTable) AppState.tables.nlbTable.replaceData([]);
     return;
   }
   try {
-    const data = await nlbApi().getAllNLB(AppState.ns, AppState.infraId);
-    const rawItems = data?.nlb || (Array.isArray(data) ? data : []);
-    const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
+    const results = await Promise.allSettled(
+      infraIds.map((infraId) => nlbApi().getAllNLB(AppState.ns, infraId))
+    );
+    const items = [];
+    results.forEach((result, idx) => {
+      if (result.status !== 'fulfilled') return;
+      const rawItems = result.value?.nlb || (Array.isArray(result.value) ? result.value : []);
+      for (const v of rawItems) {
+        items.push({ ...v, _infraId: infraIds[idx], _provider: getProvider(v), _region: getRegion(v) });
+      }
+    });
     AppState.resources.all = items;
     populateProviderFilterOptions(items, 'filter-provider');
     populateRegionFilterOptions(items, 'filter-provider', 'filter-region');
@@ -125,7 +118,7 @@ function initTable(items) {
   AppState.tables.nlbTable = new Tabulator('#nlb-list-table', {
     data: items,
     layout: 'fitColumns',
-    placeholder: 'No NLBs. Select an Infra or create one.',
+    placeholder: 'No NLBs. Create one to get started.',
     pagination: 'local',
     paginationSize: 10,
     paginationSizeSelector: [10, 20, 50],
@@ -136,6 +129,7 @@ function initTable(items) {
     columns: [
       { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
       { title: 'Id', field: 'id', widthGrow: 2, sorter: 'string' },
+      { title: 'Infra', field: '_infraId', widthGrow: 1, sorter: 'string' },
       { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
       { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
       { title: 'Type', field: 'type', width: 100 },
@@ -173,10 +167,10 @@ function initTable(items) {
     renderDetail(data);
     showDetail();
     try {
-      const detail = await nlbApi().getNLB(AppState.ns, AppState.infraId, nlbId(data));
+      const detail = await nlbApi().getNLB(AppState.ns, data._infraId, nlbId(data));
       if (detail) {
-        AppState.resources.selected = detail;
-        renderDetail(detail);
+        AppState.resources.selected = { ...detail, _infraId: data._infraId };
+        renderDetail(AppState.resources.selected);
       }
     } catch (err) {
       console.error('NLB 상세 조회 실패:', err);
@@ -192,7 +186,7 @@ function renderDetail(data) {
   const hc = data.healthChecker || {};
   document.getElementById('detail-name').textContent = nlbId(data) || '-';
   document.getElementById('detail-nlb-id').textContent = nlbId(data) || '-';
-  document.getElementById('detail-nlb-infra').textContent = AppState.infraId || '-';
+  document.getElementById('detail-nlb-infra').textContent = data._infraId || '-';
   document.getElementById('detail-nlb-provider').textContent = getProvider(data);
   document.getElementById('detail-nlb-region').textContent = getRegion(data);
   document.getElementById('detail-nlb-type').textContent = data.type || '-';
@@ -230,7 +224,7 @@ export async function checkNlbHealth() {
   const el = document.getElementById('detail-nlb-health');
   el.textContent = 'checking...';
   try {
-    const data = await nlbApi().getNLBHealth(AppState.ns, AppState.infraId, nlbId(selected));
+    const data = await nlbApi().getNLBHealth(AppState.ns, selected._infraId, nlbId(selected));
     const hz = data?.healthz || data || {};
     const all = hz.allVMs || [];
     const healthy = hz.healthyVMs || [];
@@ -263,7 +257,7 @@ export async function executeDeleteNlb() {
   if (!selected) return;
   const id = nlbId(selected);
   try {
-    await nlbApi().delNLB(AppState.ns, AppState.infraId, id);
+    await nlbApi().delNLB(AppState.ns, selected._infraId, id);
     showToast(TOAST_TYPES.SUCCESS, `NLB "${id}" deleted successfully`);
     hideDetail();
     await loadNlbList();
@@ -298,7 +292,7 @@ export async function executeBulkDelete() {
   const items = AppState.resources.bulkSelected || [];
   if (items.length === 0) return;
   const results = await Promise.allSettled(
-    items.map((item) => nlbApi().delNLB(AppState.ns, AppState.infraId, nlbId(item)))
+    items.map((item) => nlbApi().delNLB(AppState.ns, item._infraId, nlbId(item)))
   );
   const failed = results.filter((r) => r.status === 'rejected').length;
   const succeeded = results.length - failed;
@@ -361,24 +355,38 @@ export async function openCreateNlbModal() {
     showToast(TOAST_TYPES.WARNING, 'Please select a project first.');
     return;
   }
-  if (!AppState.infraId) {
-    showToast(TOAST_TYPES.WARNING, 'Please select an Infra first.');
-    return;
-  }
-  document.getElementById('create-nlb-infra').value = AppState.infraId;
   document.getElementById('create-nlb-listener-port').value = '80';
   document.getElementById('create-nlb-target-port').value = '80';
   document.getElementById('create-nlb-protocol').value = 'TCP';
   document.getElementById('create-nlb-description').value = '';
-  await _loadNodeGroupOptions();
+  await _loadCreateInfraOptions();
   new bootstrap.Modal(document.getElementById('create-nlb-modal')).show();
 }
 
-async function _loadNodeGroupOptions() {
+async function _loadCreateInfraOptions() {
+  const select = document.getElementById('create-nlb-infra');
+  select.innerHTML = '<option value="">Select</option>';
+  const infraIds = await getInfraList();
+  for (const id of infraIds) {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = id;
+    select.appendChild(opt);
+  }
+  if (infraIds.length === 1) select.value = infraIds[0];
+  await _loadNodeGroupOptions(select.value);
+}
+
+document.getElementById('create-nlb-infra')?.addEventListener('change', function () {
+  _loadNodeGroupOptions(this.value);
+});
+
+async function _loadNodeGroupOptions(infraId) {
   const select = document.getElementById('create-nlb-nodegroup');
   select.innerHTML = '<option value="">Select</option>';
+  if (!infraId) return;
   try {
-    const data = await nlbApi().getInfraNodeGroupIds(AppState.ns, AppState.infraId);
+    const data = await nlbApi().getInfraNodeGroupIds(AppState.ns, infraId);
     const ids = data?.output || data?.subGroup || (Array.isArray(data) ? data : []);
     for (const id of ids) {
       const opt = document.createElement('option');
@@ -392,14 +400,15 @@ async function _loadNodeGroupOptions() {
 }
 
 export async function executeCreateNlb() {
+  const infraId = document.getElementById('create-nlb-infra').value;
   const subGroupId = document.getElementById('create-nlb-nodegroup').value;
   const listenerPort = document.getElementById('create-nlb-listener-port').value.trim();
   const targetPort = document.getElementById('create-nlb-target-port').value.trim();
   const protocol = document.getElementById('create-nlb-protocol').value;
   const description = document.getElementById('create-nlb-description').value.trim();
 
-  if (!subGroupId || !listenerPort || !targetPort) {
-    showToast(TOAST_TYPES.WARNING, 'Target NodeGroup, listener port, and target port are required.');
+  if (!infraId || !subGroupId || !listenerPort || !targetPort) {
+    showToast(TOAST_TYPES.WARNING, 'Infra, Target NodeGroup, listener port, and target port are required.');
     return;
   }
 
@@ -424,7 +433,7 @@ export async function executeCreateNlb() {
   if (description) body.description = description;
 
   try {
-    await nlbApi().postNLB(AppState.ns, AppState.infraId, body);
+    await nlbApi().postNLB(AppState.ns, infraId, body);
     showToast(TOAST_TYPES.SUCCESS, `NLB for "${subGroupId}" created successfully`);
     bootstrap.Modal.getInstance(document.getElementById('create-nlb-modal'))?.hide();
     await loadNlbList();
