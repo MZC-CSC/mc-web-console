@@ -421,13 +421,15 @@ export async function executeCreateNlb() {
     type: 'PUBLIC',
     scope: 'REGION',
     listener: { protocol, port: String(listenerPort) },
-    targetGroup: { protocol, port: String(targetPort), subGroupId },
+    // tumblebug model.NLBTargetGroupReq의 실제 필드명은 nodeGroupId다.
+    // subGroupId로 보내면 빈 문자열로 취급되어 500(CheckString - empty string)이 난다.
+    targetGroup: { protocol, port: String(targetPort), nodeGroupId: subGroupId },
+    // model.NLBHealthCheckerReq는 interval/timeout/threshold만 받는 int 필드이며,
+    // 0을 보내면 tumblebug가 자체 기본값을 적용한다("0 = use default").
     healthChecker: {
-      protocol,
-      port: String(targetPort),
-      interval: 'default',
-      timeout: 'default',
-      threshold: 'default',
+      interval: 0,
+      timeout: 0,
+      threshold: 0,
     },
   };
   if (description) body.description = description;
