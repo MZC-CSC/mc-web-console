@@ -1,5 +1,7 @@
 function showSection() {
-    const sections = document.querySelectorAll('.section');
+    // #pageloader도 편의상 class="section"을 재사용하고 있어 이 셀렉터에 같이 걸린다.
+    // pageloader의 active 상태는 http.js의 activePageLoader/deactivePageLoader가 전담해야 하므로 제외한다.
+    const sections = document.querySelectorAll('.section:not(#pageloader)');
     const subSections = document.querySelectorAll('.sub_section');
 
     sections.forEach(section => section.classList.remove('active'));

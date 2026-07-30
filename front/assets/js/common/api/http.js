@@ -290,7 +290,14 @@ export async function commonAPIPostWithoutRetry(url, data) {
     }
 }
 
+// 동시에 여러 API 호출이 겹칠 수 있어 단순 on/off 토글이면 안 됨 —
+// 먼저 끝난 호출의 deactivate가 아직 진행 중인 다른 호출의 로더까지 꺼버리는
+// 경쟁 상태가 발생한다(예: 페이지 진입 시 workspace/project 초기화 호출과
+// 목록 조회 호출이 동시에 뜨는 경우). 활성 요청 수를 세어 0이 될 때만 끈다.
+let activePageLoaderCount = 0;
+
 function activePageLoader(){
+    activePageLoaderCount++;
     try{
         document.getElementById("pageloader").classList.add('active');
     }catch(error){
@@ -299,6 +306,8 @@ function activePageLoader(){
 }
 
 function deactivePageLoader(){
+    activePageLoaderCount = Math.max(0, activePageLoaderCount - 1);
+    if (activePageLoaderCount > 0) return;
     try{
         document.getElementById("pageloader").classList.remove('active');
     }catch(error){
