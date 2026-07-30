@@ -126,8 +126,10 @@ function initTable(items) {
     paginationSizeSelector: [10, 20, 50],
     paginationCounter: 'rows',
     movableColumns: true,
+    selectableRows: true,
     initialSort: [{ column: 'id', dir: 'asc' }],
     columns: [
+      { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
       { title: 'Id', field: 'id', widthGrow: 2, sorter: 'string' },
       { title: 'Type', field: 'type', width: 100 },
       { title: 'Scope', field: 'scope', width: 100 },
@@ -262,6 +264,45 @@ export async function executeDeleteNlb() {
   }
 }
 
+// ─── 다중선택 삭제 ───────────────────────────────────────────────────────
+
+export function confirmBulkDelete() {
+  const table = AppState.tables.nlbTable;
+  const selected = table ? table.getSelectedData() : [];
+  if (selected.length === 0) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Nothing Selected',
+      'Please select at least one item to delete.'
+    );
+    return;
+  }
+  AppState.resources.bulkSelected = selected;
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal',
+    'Delete Selected',
+    `Delete ${selected.length} selected NLB(s)?`,
+    'pages/settings/environment/cloudresources/nlbs.executeBulkDelete'
+  );
+}
+
+export async function executeBulkDelete() {
+  const items = AppState.resources.bulkSelected || [];
+  if (items.length === 0) return;
+  const results = await Promise.allSettled(
+    items.map((item) => nlbApi().delNLB(AppState.ns, AppState.infraId, nlbId(item)))
+  );
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  const succeeded = results.length - failed;
+  showToast(
+    failed > 0 ? TOAST_TYPES.WARNING : TOAST_TYPES.SUCCESS,
+    `${succeeded} NLB(s) deleted${failed > 0 ? `, ${failed} failed` : ''}`
+  );
+  AppState.resources.bulkSelected = [];
+  AppState.tables.nlbTable?.deselectRow();
+  hideDetail();
+  await loadNlbList();
+}
+
 // ─── Filter ───────────────────────────────────────────────────────────────
 
 function initFilter() {
@@ -381,6 +422,8 @@ webconsolejs['pages/settings/environment/cloudresources/nlbs'] = {
   checkNlbHealth,
   confirmDeleteNlb,
   executeDeleteNlb,
+  confirmBulkDelete,
+  executeBulkDelete,
   openCreateNlbModal,
   executeCreateNlb,
 };

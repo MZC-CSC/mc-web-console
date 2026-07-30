@@ -82,8 +82,10 @@ function initTable(items) {
         paginationSizeSelector: [10, 20, 50],
         paginationCounter: 'rows',
         movableColumns: true,
+        selectableRows: true,
         initialSort: [{ column: 'name', dir: 'asc' }],
         columns: [
+            { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
             { title: 'Name',        field: 'name',           widthGrow: 2, sorter: 'string' },
             { title: 'Connection',  field: 'connectionName', widthGrow: 1, sorter: 'string' },
             { title: 'Fingerprint', field: 'fingerprint',    widthGrow: 2 },
@@ -190,6 +192,43 @@ export async function executeDeleteSshKey() {
         console.error('SSH Key 삭제 실패:', err);
         showToast(TOAST_TYPES.ERROR, 'Failed to delete SSH Key: ' + (err.message || ''));
     }
+}
+
+// ─── 다중선택 삭제 ───────────────────────────────────────────────────────
+
+export function confirmBulkDelete() {
+    const table = AppState.tables.keyTable;
+    const selected = table ? table.getSelectedData() : [];
+    if (selected.length === 0) {
+        webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+            'Nothing Selected',
+            'Please select at least one item to delete.'
+        );
+        return;
+    }
+    AppState.resources.bulkSelected = selected;
+    webconsolejs['partials/layout/modal'].commonConfirmModal(
+        'commonDefaultModal',
+        'Delete Selected',
+        `Delete ${selected.length} selected SSH Key(s)?`,
+        'pages/settings/environment/cloudresources/sshkeys.executeBulkDelete'
+    );
+}
+
+export async function executeBulkDelete() {
+    const items = AppState.resources.bulkSelected || [];
+    if (items.length === 0) return;
+    const results = await Promise.allSettled(items.map((item) => sshKeyApi().del(AppState.ns, item.name)));
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    const succeeded = results.length - failed;
+    showToast(
+        failed > 0 ? TOAST_TYPES.WARNING : TOAST_TYPES.SUCCESS,
+        `${succeeded} SSH Key(s) deleted${failed > 0 ? `, ${failed} failed` : ''}`
+    );
+    AppState.resources.bulkSelected = [];
+    AppState.tables.keyTable?.deselectRow();
+    hideDetail();
+    await loadKeyList();
 }
 
 // ─── Filter ───────────────────────────────────────────────────────────────
@@ -336,6 +375,8 @@ webconsolejs['pages/settings/environment/cloudresources/sshkeys'] = {
     togglePrivateKey,
     confirmDeleteSshKey,
     executeDeleteSshKey,
+    confirmBulkDelete,
+    executeBulkDelete,
     executeCreateSshKey,
     openImportSshKeyModal,
     executeImportSshKey,

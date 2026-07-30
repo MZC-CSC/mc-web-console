@@ -91,8 +91,10 @@ function initTable(items) {
     paginationSizeSelector: [10, 20, 50],
     paginationCounter: 'rows',
     movableColumns: true,
+    selectableRows: true,
     initialSort: [{ column: 'name', dir: 'asc' }],
     columns: [
+      { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
       { title: 'Name', field: 'name', widthGrow: 2, sorter: 'string' },
       { title: 'Connection', field: 'connectionName', widthGrow: 1, sorter: 'string' },
       { title: 'Disk Type', field: 'diskType', widthGrow: 1 },
@@ -175,6 +177,43 @@ export async function executeDeleteDisk() {
     console.error('Data Disk 삭제 실패:', err);
     showToast(TOAST_TYPES.ERROR, 'Failed to delete Data Disk: ' + extractErrorMessage(err));
   }
+}
+
+// ─── 다중선택 삭제 ───────────────────────────────────────────────────────
+
+export function confirmBulkDelete() {
+  const table = AppState.tables.diskTable;
+  const selected = table ? table.getSelectedData() : [];
+  if (selected.length === 0) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Nothing Selected',
+      'Please select at least one item to delete.'
+    );
+    return;
+  }
+  AppState.resources.bulkSelected = selected;
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal',
+    'Delete Selected',
+    `Delete ${selected.length} selected Data Disk(s)?`,
+    'pages/settings/environment/cloudresources/disks.executeBulkDelete'
+  );
+}
+
+export async function executeBulkDelete() {
+  const items = AppState.resources.bulkSelected || [];
+  if (items.length === 0) return;
+  const results = await Promise.allSettled(items.map((item) => diskApi().delDataDisk(AppState.ns, diskId(item))));
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  const succeeded = results.length - failed;
+  showToast(
+    failed > 0 ? TOAST_TYPES.WARNING : TOAST_TYPES.SUCCESS,
+    `${succeeded} Data Disk(s) deleted${failed > 0 ? `, ${failed} failed` : ''}`
+  );
+  AppState.resources.bulkSelected = [];
+  AppState.tables.diskTable?.deselectRow();
+  hideDetail();
+  await loadDiskList();
 }
 
 // ─── Filter ───────────────────────────────────────────────────────────────
@@ -350,6 +389,8 @@ webconsolejs['pages/settings/environment/cloudresources/disks'] = {
   hideDetail,
   confirmDeleteDisk,
   executeDeleteDisk,
+  confirmBulkDelete,
+  executeBulkDelete,
   executeCreateDisk,
   openImportDiskModal,
   executeImportDisk,

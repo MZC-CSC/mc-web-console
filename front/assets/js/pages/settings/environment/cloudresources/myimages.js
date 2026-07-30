@@ -107,8 +107,10 @@ function initTable(items) {
     paginationSizeSelector: [10, 20, 50],
     paginationCounter: 'rows',
     movableColumns: true,
+    selectableRows: true,
     initialSort: [{ column: 'name', dir: 'asc' }],
     columns: [
+      { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
       { title: 'Name', field: 'name', widthGrow: 2, sorter: 'string' },
       { title: 'Connection', field: 'connectionName', widthGrow: 1, sorter: 'string' },
       { title: 'CSP Image ID', field: 'cspImageId', widthGrow: 2 },
@@ -198,6 +200,43 @@ export async function executeDeleteCustomImage() {
     console.error('CustomImage 삭제 실패:', err);
     showToast(TOAST_TYPES.ERROR, 'Failed to delete Custom Image: ' + (err.message || ''));
   }
+}
+
+// ─── 다중선택 삭제 ───────────────────────────────────────────────────────
+
+export function confirmBulkDelete() {
+  const table = AppState.tables.imageTable;
+  const selected = table ? table.getSelectedData() : [];
+  if (selected.length === 0) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Nothing Selected',
+      'Please select at least one item to delete.'
+    );
+    return;
+  }
+  AppState.resources.bulkSelected = selected;
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal',
+    'Delete Selected',
+    `Delete ${selected.length} selected Custom Image(s)?`,
+    'pages/settings/environment/cloudresources/myimages.executeBulkDelete'
+  );
+}
+
+export async function executeBulkDelete() {
+  const items = AppState.resources.bulkSelected || [];
+  if (items.length === 0) return;
+  const results = await Promise.allSettled(items.map((item) => myImageApi().del(AppState.ns, item.name)));
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  const succeeded = results.length - failed;
+  showToast(
+    failed > 0 ? TOAST_TYPES.WARNING : TOAST_TYPES.SUCCESS,
+    `${succeeded} Custom Image(s) deleted${failed > 0 ? `, ${failed} failed` : ''}`
+  );
+  AppState.resources.bulkSelected = [];
+  AppState.tables.imageTable?.deselectRow();
+  hideDetail();
+  await loadImageList();
 }
 
 // ─── Register ─────────────────────────────────────────────────────────────
@@ -291,5 +330,7 @@ webconsolejs['pages/settings/environment/cloudresources/myimages'] = {
   hideDetail,
   confirmDeleteCustomImage,
   executeDeleteCustomImage,
+  confirmBulkDelete,
+  executeBulkDelete,
   executeRegisterCustomImage,
 };
