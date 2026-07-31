@@ -59,7 +59,10 @@ export async function loadDiskList() {
   try {
     const data = await diskApi().getAllDataDisk(AppState.ns);
     const rawItems = data?.dataDisk || (Array.isArray(data) ? data : []);
-    const items = rawItems.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
+    const items = rawItems.map((v) => {
+      const ref = attachedNodeRef(v);
+      return { ...v, _provider: getProvider(v), _region: getRegion(v), _attachedTo: ref ? `${ref.infraId} / ${ref.nodeId}` : '-' };
+    });
     AppState.resources.all = items;
     populateProviderFilterOptions(items, 'filter-provider');
     populateRegionFilterOptions(items, 'filter-provider', 'filter-region');
@@ -76,6 +79,20 @@ export async function loadDiskList() {
 
 function diskId(data) {
   return data?.id || data?.name;
+}
+
+// "/ns/default/infra/infra01/node/aws-ap-southeast-1-1" -> { nsId, infraId, nodeId }
+function parseNodeRef(resourcePath) {
+  const m = /^\/ns\/([^/]+)\/infra\/([^/]+)\/node\/([^/]+)$/.exec(resourcePath || '');
+  return m ? { nsId: m[1], infraId: m[2], nodeId: m[3] } : null;
+}
+
+function attachedNodeRef(disk) {
+  for (const ref of disk?.associatedObjectList || []) {
+    const parsed = parseNodeRef(ref);
+    if (parsed) return parsed;
+  }
+  return null;
 }
 
 // API 프록시는 백엔드(CSP SDK) 에러 메시지를 {responseData:{message},status:{...}} 로 감싼다.
@@ -112,6 +129,7 @@ function initTable(items) {
         sorter: 'number',
       },
       { title: 'Status', field: 'status', widthGrow: 1 },
+      { title: 'Attached To', field: '_attachedTo', widthGrow: 1.5, sorter: 'string' },
       { title: 'CSP Resource ID', field: 'cspResourceId', widthGrow: 2 },
     ],
   });
@@ -146,6 +164,11 @@ function renderDetail(data) {
   document.getElementById('detail-disk-status').textContent = data.status || '-';
   document.getElementById('detail-disk-csp-id').textContent = data.cspResourceId || '-';
   document.getElementById('detail-disk-description').textContent = data.description || '-';
+
+  const ref = attachedNodeRef(data);
+  document.getElementById('detail-disk-attached-to').textContent = ref ? `${ref.infraId} / ${ref.nodeId}` : '-';
+  document.getElementById('detail-attach-btn').classList.toggle('d-none', !!ref);
+  document.getElementById('detail-detach-btn').classList.toggle('d-none', !ref);
 }
 
 function showDetail() {
@@ -183,6 +206,150 @@ export async function executeDeleteDisk() {
   } catch (err) {
     console.error('Data Disk 삭제 실패:', err);
     showToast(TOAST_TYPES.ERROR, 'Failed to delete Data Disk: ' + extractErrorMessage(err));
+  }
+}
+
+// ─── Attach / Detach ───────────────────────────────────────────────────────
+
+export function confirmDetachDisk() {
+  const selected = AppState.resources.selected;
+  const ref = selected && attachedNodeRef(selected);
+  if (!ref) return;
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal',
+    'Detach Data Disk',
+    `Detach Data Disk "${selected.name}" from ${ref.infraId}/${ref.nodeId}?`,
+    'pages/settings/environment/cloudresources/disks.executeDetachDisk'
+  );
+}
+
+export async function executeDetachDisk() {
+  const selected = AppState.resources.selected;
+  const ref = selected && attachedNodeRef(selected);
+  if (!ref) return;
+  try {
+    await diskApi().detachDataDisk(AppState.ns, ref.infraId, ref.nodeId, diskId(selected));
+    showToast(TOAST_TYPES.SUCCESS, `Data Disk "${selected.name}" detached`);
+    hideDetail();
+    await loadDiskList();
+  } catch (err) {
+    console.error('Data Disk Detach 실패:', err);
+    showToast(TOAST_TYPES.ERROR, 'Failed to detach Data Disk: ' + extractErrorMessage(err));
+  }
+}
+
+export async function openAttachDiskModal() {
+  const selected = AppState.resources.selected;
+  if (!selected) return;
+  if (attachedNodeRef(selected)) {
+    showToast(TOAST_TYPES.WARNING, 'This disk is already attached. Detach it first.');
+    return;
+  }
+  document.getElementById('attach-disk-name').textContent = selected.name || '-';
+  document.getElementById('attach-disk-nodegroup').innerHTML = '<option value="">Select</option>';
+  document.getElementById('attach-disk-vm').innerHTML = '<option value="">Select</option>';
+  await _loadAttachMciOptions();
+  new bootstrap.Modal(document.getElementById('attach-disk-modal')).show();
+}
+
+async function _loadAttachMciOptions() {
+  const select = document.getElementById('attach-disk-mci');
+  select.innerHTML = '<option value="">Select</option>';
+  try {
+    const mciApi = webconsolejs['common/api/services/mci_api'];
+    const list = await mciApi.getMciList(AppState.ns);
+    const mcis = list?.infra || (Array.isArray(list) ? list : []);
+    for (const mci of mcis) {
+      const opt = document.createElement('option');
+      opt.value = mci.id || mci.name;
+      opt.textContent = mci.id || mci.name;
+      select.appendChild(opt);
+    }
+  } catch (err) {
+    console.error('Infra 목록 조회 실패:', err);
+  }
+}
+
+document.getElementById('attach-disk-mci')?.addEventListener('change', async function () {
+  await _loadAttachNodeGroupOptions(this.value);
+});
+
+async function _loadAttachNodeGroupOptions(infraId) {
+  const nodeGroupSelect = document.getElementById('attach-disk-nodegroup');
+  const vmSelect = document.getElementById('attach-disk-vm');
+  nodeGroupSelect.innerHTML = '<option value="">Select</option>';
+  vmSelect.innerHTML = '<option value="">Select</option>';
+  if (!infraId) return;
+  try {
+    const nlbApi = webconsolejs['common/api/services/nlb_api'];
+    const data = await nlbApi.getInfraNodeGroupIds(AppState.ns, infraId);
+    const ids = data?.output || data?.subGroup || (Array.isArray(data) ? data : []);
+    for (const id of ids) {
+      const nodeGroupId = typeof id === 'string' ? id : id?.id;
+      const opt = document.createElement('option');
+      opt.value = nodeGroupId;
+      opt.textContent = nodeGroupId;
+      nodeGroupSelect.appendChild(opt);
+    }
+  } catch (err) {
+    console.error('NodeGroup 목록 조회 실패:', err);
+  }
+}
+
+document.getElementById('attach-disk-nodegroup')?.addEventListener('change', async function () {
+  const infraId = document.getElementById('attach-disk-mci').value;
+  await _loadAttachVmOptions(infraId, this.value);
+});
+
+async function _loadAttachVmOptions(infraId, nodeGroupId) {
+  const select = document.getElementById('attach-disk-vm');
+  select.innerHTML = '<option value="">Select</option>';
+  if (!infraId || !nodeGroupId) return;
+  const selected = AppState.resources.selected;
+  try {
+    const mciApi = webconsolejs['common/api/services/mci_api'];
+    const mciResp = await mciApi.getMci(AppState.ns, infraId);
+    const nodes = mciResp?.responseData?.node || [];
+    const diskProvider = getProvider(selected);
+    const diskRegion = getRegion(selected);
+    for (const node of nodes) {
+      if (node.nodeGroupId !== nodeGroupId) continue;
+      if (getProvider(node) !== diskProvider || getRegion(node) !== diskRegion) continue;
+      const opt = document.createElement('option');
+      opt.value = node.id;
+      opt.textContent = `${node.id} (${node.status})`;
+      select.appendChild(opt);
+    }
+  } catch (err) {
+    console.error('Node 목록 조회 실패:', err);
+  }
+}
+
+export async function executeAttachDisk() {
+  const selected = AppState.resources.selected;
+  const infraId = document.getElementById('attach-disk-mci').value;
+  const nodeId = document.getElementById('attach-disk-vm').value;
+  if (!selected || !infraId || !nodeId) {
+    showToast(TOAST_TYPES.WARNING, 'Please select Infra, NodeGroup, and Node.');
+    return;
+  }
+
+  const spinner = document.getElementById('attach-disk-spinner');
+  const btn = document.getElementById('attach-disk-execute-btn');
+  spinner.classList.remove('d-none');
+  btn.disabled = true;
+
+  try {
+    await diskApi().attachDataDisk(AppState.ns, infraId, nodeId, diskId(selected));
+    showToast(TOAST_TYPES.SUCCESS, `Data Disk "${selected.name}" attached to ${nodeId}`);
+    bootstrap.Modal.getInstance(document.getElementById('attach-disk-modal'))?.hide();
+    await loadDiskList();
+  } catch (err) {
+    console.error('Data Disk Attach 실패:', err);
+    showToast(TOAST_TYPES.ERROR, 'Failed to attach Data Disk: ' + extractErrorMessage(err));
+  } finally {
+    spinner.classList.add('d-none');
+    btn.disabled = false;
   }
 }
 
@@ -410,6 +577,10 @@ webconsolejs['pages/settings/environment/cloudresources/disks'] = {
   hideDetail,
   confirmDeleteDisk,
   executeDeleteDisk,
+  confirmDetachDisk,
+  executeDetachDisk,
+  openAttachDiskModal,
+  executeAttachDisk,
   confirmBulkDelete,
   executeBulkDelete,
   executeCreateDisk,

@@ -102,6 +102,10 @@
             <div class="card-header">
               <h3 class="card-title">Data Disk Detail — <span id="detail-name" class="text-primary"></span></h3>
               <div class="card-options">
+                <button id="detail-attach-btn" class="btn btn-sm btn-outline-primary me-1"
+                  onclick="webconsolejs['pages/settings/environment/cloudresources/disks'].openAttachDiskModal()">Attach</button>
+                <button id="detail-detach-btn" class="btn btn-sm btn-outline-warning me-1 d-none"
+                  onclick="webconsolejs['pages/settings/environment/cloudresources/disks'].confirmDetachDisk()">Detach</button>
                 <button class="btn btn-sm btn-outline-danger me-1"
                   onclick="webconsolejs['pages/settings/environment/cloudresources/disks'].confirmDeleteDisk()">Delete</button>
                 <a href="#" class="card-options-remove"
@@ -139,6 +143,10 @@
                 <div class="datagrid-item">
                   <div class="datagrid-title">Status</div>
                   <div class="datagrid-content" id="detail-disk-status">-</div>
+                </div>
+                <div class="datagrid-item">
+                  <div class="datagrid-title">Attached To</div>
+                  <div class="datagrid-content" id="detail-disk-attached-to">-</div>
                 </div>
                 <div class="datagrid-item">
                   <div class="datagrid-title">CSP Resource ID</div>
@@ -234,8 +242,47 @@
   </div>
 </div>
 
+<!-- Attach Data Disk 모달 -->
+<div class="modal modal-blur fade" id="attach-disk-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Attach Data Disk</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Disk</label>
+          <input type="text" class="form-control" id="attach-disk-name" readonly>
+        </div>
+        <div class="mb-3">
+          <label class="form-label required">Infra</label>
+          <select class="form-select" id="attach-disk-mci"></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label required">NodeGroup</label>
+          <select class="form-select" id="attach-disk-nodegroup"></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label required">Node</label>
+          <select class="form-select" id="attach-disk-vm"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="attach-disk-execute-btn"
+          onclick="webconsolejs['pages/settings/environment/cloudresources/disks'].executeAttachDisk()">
+          <span id="attach-disk-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>Attach
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {{ partial("partials/layout/pageloader.html") | raw }}
 
 {{ javascriptTag("common/api/services/disk_api.js") | raw }}
 {{ javascriptTag("common/api/services/import_api.js") | raw }}
+{{ javascriptTag("common/api/services/mci_api.js") | raw }}
+{{ javascriptTag("common/api/services/nlb_api.js") | raw }}
 {{ javascriptTag("pages/settings/environment/cloudresources/disks.js") | raw }}
