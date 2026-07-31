@@ -83,7 +83,11 @@ async function initMci() {
   policyTabEl.addEventListener('shown.bs.tab', function (event) {
     initPolicyPage();
   });
-  
+  const nlbTabEl = document.querySelector('a[data-bs-toggle="tab"][href="#tabs-mci-nlb"]');
+  nlbTabEl?.addEventListener('shown.bs.tab', function (event) {
+    webconsolejs['partials/operation/manage/mcinlb']?.loadMciNlbList(false);
+  });
+
   // 모든 탭 전환 시 선택 상태 초기화
   const allTabElements = document.querySelectorAll('a[data-bs-toggle="tab"]');
   allTabElements.forEach(tabEl => {
@@ -265,6 +269,8 @@ function resetTabSelectionStates(hiddenTab) {
     resetPolicyTabSelections();
   } else if (hiddenTab === '#tabs-mci-labels') {
     resetLabelsTabSelections();
+  } else if (hiddenTab === '#tabs-mci-nlb') {
+    webconsolejs['partials/operation/manage/mcinlb']?.hideDetail();
   }
 }
 
@@ -2102,6 +2108,7 @@ function initMciTable() {
       this.selectRow(tempcurmciID);
       
       window.currentMciId = tempcurmciID;
+      webconsolejs['partials/operation/manage/mcinlb']?.resetForMciSwitch();
       // MCI 변경 시 이전 VM 선택 상태 초기화
       currentVmId = "";
       selectedVmId = null;

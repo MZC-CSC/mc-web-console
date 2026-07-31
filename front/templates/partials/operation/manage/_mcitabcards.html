@@ -18,6 +18,9 @@
                         <li class="nav-item" role="presentation">
                             <a href="#tabs-mci-labels" class="nav-link" data-bs-toggle="tab">Labels</a>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <a href="#tabs-mci-nlb" class="nav-link" data-bs-toggle="tab">NLB</a>
+                        </li>
                     </ul>
                 </div>
                 <div class="card-body">
@@ -29,12 +32,15 @@
                             <div class="tab-pane fade" id="tabs-mci-group" role="tabpanel">
                                 {{ partial("partials/operation/manage/subgroupvm_status.html") | raw }}
                             </div>
-                            
+
                             <div class="tab-pane fade" id="tabs-mci-policy" role="tabpanel">
-                                {{ partial("partials/operation/manage/mcipolicy.html") | raw }}            
+                                {{ partial("partials/operation/manage/mcipolicy.html") | raw }}
                             </div>
                             <div class="tab-pane fade" id="tabs-mci-labels" role="tabpanel">
-                                {{ partial("partials/operation/manage/mcilabels.html") | raw }}            
+                                {{ partial("partials/operation/manage/mcilabels.html") | raw }}
+                            </div>
+                            <div class="tab-pane fade" id="tabs-mci-nlb" role="tabpanel">
+                                {{ partial("partials/operation/manage/_mcinlb.html") | raw }}
                             </div>
                         </div>
                     </div>
