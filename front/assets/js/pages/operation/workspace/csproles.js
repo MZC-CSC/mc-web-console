@@ -25,7 +25,10 @@ export async function refreshCspRolesList() {
 
 // Tabulator 테이블 초기화
 function initCspRolesTable() {
-  var tableObjParams = {};
+  // Tabulator 자체에 height를 지정해야 헤더/페이지네이션 footer는 고정되고
+  // 데이터 영역만 내부적으로 스크롤된다(외부 div에 overflow를 거는 방식은
+  // 헤더·footer까지 통째로 스크롤되어 버림).
+  var tableObjParams = { height: "400px" };
   var columns = [
     {
       formatter: "rowSelection",
@@ -124,6 +127,7 @@ function setCspRolesTabulator(
   var columnHeaderVertAlign = "middle";
   var paginationCounter = "rows";
   var layout = "fitColumns";
+  var height = undefined;
 
   if (tableObjParamMap.hasOwnProperty("placeholder")) {
     placeholder = tableObjParamMap.placeholder;
@@ -157,6 +161,10 @@ function setCspRolesTabulator(
     layout = tableObjParamMap.layout;
   }
 
+  if (tableObjParamMap.hasOwnProperty("height")) {
+    height = tableObjParamMap.height;
+  }
+
   var tabulatorTable = new Tabulator("#" + tableObjId, {
     placeholder,
     pagination,
@@ -168,6 +176,7 @@ function setCspRolesTabulator(
     columnHeaderVertAlign,
     paginationCounter,
     layout,
+    height,
     columns: columnsParams,
     selectableRows: isMultiSelect == false ? 1 : true,
   });
@@ -1411,6 +1420,7 @@ async function saveEditedCspRole() {
 async function addSelectedCspRole() {
   const cspType = document.getElementById('addCspType').value.trim();
   const cspRoleName = document.getElementById('addCspRoleName').value.trim();
+  const authMethod = document.getElementById('addCspAuthMethod').value.trim();
   const description = document.getElementById('addCspRoleDescription').value.trim();
   const idpIdentifier = document.getElementById('addCspIdpIdentifier').value.trim();
   const iamIdentifier = document.getElementById('addCspIamIdentifier').value.trim();
@@ -1428,6 +1438,7 @@ async function addSelectedCspRole() {
       cspRoleName: cspRoleName,
       description: description,
       cspType: cspType,
+      authMethod: authMethod,
       idpIdentifier: idpIdentifier,
       iamIdentifier: iamIdentifier,
       iamRoleId: iamRoleId,
