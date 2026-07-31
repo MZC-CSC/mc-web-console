@@ -15,11 +15,7 @@ const AppState = {
 };
 
 // ─── 페이지 초기화 ────────────────────────────────────────────────────────
-
-$('#select-current-project').on('change', function () {
-  if (this.value === '') return;
-  hideDetail();
-});
+// Image는 system 네임스페이스 고정 리소스라 project(=namespace) 선택과 무관하다.
 
 document.addEventListener('DOMContentLoaded', async function () {
   const btnList = document.getElementById('page-header-btn-list');
@@ -147,8 +143,10 @@ function initTable(data) {
     paginationSizeSelector: [10, 20, 50],
     paginationCounter: 'rows',
     movableColumns: true,
+    selectableRows: true,
     initialSort: [{ column: 'name', dir: 'asc' }],
     columns: [
+      { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
       {
         title: 'Image Name',
         field: 'name',
@@ -196,29 +194,39 @@ export function hideDetail() {
   AppState.resources.selected = null;
 }
 
-export function confirmDeleteImage() {
-  const item = AppState.resources.selected;
-  if (!item) return;
+export function confirmBulkDelete() {
+  const table = AppState.tables.resourceTable;
+  const selected = table ? table.getSelectedData() : [];
+  if (selected.length === 0) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Nothing Selected',
+      'Please select at least one item to delete.'
+    );
+    return;
+  }
+  AppState.resources.bulkSelected = selected;
   webconsolejs['partials/layout/modal'].commonConfirmModal(
     'commonDefaultModal',
-    'Delete Image',
-    `Delete image "${item.name}"?`,
-    'pages/settings/environment/cloudresources/serverimages.executeDeleteImage'
+    'Delete Selected',
+    `Delete ${selected.length} selected Image(s)?`,
+    'pages/settings/environment/cloudresources/serverimages.executeBulkDelete'
   );
 }
 
-export async function executeDeleteImage() {
-  const item = AppState.resources.selected;
-  if (!item) return;
-  try {
-    await imageApi().del(SYSTEM_NS, item.name);
-    showToast(TOAST_TYPES.SUCCESS, `Image "${item.name}" deleted successfully`);
-    hideDetail();
-    await refreshImageList();
-  } catch (err) {
-    console.error('Image delete failed:', err);
-    showToast(TOAST_TYPES.ERROR, 'Failed to delete image: ' + (err?.response?.data?.message || err.message));
-  }
+export async function executeBulkDelete() {
+  const items = AppState.resources.bulkSelected || [];
+  if (items.length === 0) return;
+  const results = await Promise.allSettled(items.map((item) => imageApi().del(SYSTEM_NS, item.name)));
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  const succeeded = results.length - failed;
+  showToast(
+    failed > 0 ? TOAST_TYPES.WARNING : TOAST_TYPES.SUCCESS,
+    `${succeeded} Image(s) deleted${failed > 0 ? `, ${failed} failed` : ''}`
+  );
+  AppState.resources.bulkSelected = [];
+  AppState.tables.resourceTable?.deselectRow();
+  hideDetail();
+  await refreshImageList();
 }
 
 // ─── Filter ───────────────────────────────────────────────────────────────
@@ -344,8 +352,8 @@ webconsolejs[PAGE_KEY] = {
   refreshImageList,
   searchImages,
   hideDetail,
-  confirmDeleteImage,
-  executeDeleteImage,
+  confirmBulkDelete,
+  executeBulkDelete,
   openImageSelectPopup,
   loadImageList,
   submitRegisterImage,

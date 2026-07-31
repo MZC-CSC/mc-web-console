@@ -8,6 +8,20 @@
             <h3 class="card-title">Server Image List</h3>
             <div class="card-options ms-auto d-flex gap-2 align-items-center">
               <span id="serverimages-context-label" class="badge bg-blue-lt">Namespace: system</span>
+              <!-- Delete selected -->
+              <a class="btn-action" type="button" title="Delete selected"
+                onclick="webconsolejs['pages/settings/environment/cloudresources/serverimages'].confirmBulkDelete()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                  stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M4 7l16 0"/>
+                  <path d="M10 11l0 6"/>
+                  <path d="M14 11l0 6"/>
+                  <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                  <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                </svg>
+              </a>
+              <!-- Filter toggle -->
               <a class="btn-action" type="button" data-bs-toggle="collapse" data-bs-target="#filter-body" aria-expanded="false">
                 <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
                   stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -93,8 +107,6 @@
             <div class="card-header">
               <h3 class="card-title">Image Info — <span id="detail-name" class="text-primary"></span></h3>
               <div class="card-options">
-                <button class="btn btn-sm btn-outline-danger me-1"
-                  onclick="webconsolejs['pages/settings/environment/cloudresources/serverimages'].confirmDeleteImage()">Delete</button>
                 <a href="#" class="card-options-remove"
                   onclick="webconsolejs['pages/settings/environment/cloudresources/serverimages'].hideDetail()">
                   <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"

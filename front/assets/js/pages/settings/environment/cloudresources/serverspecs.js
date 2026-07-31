@@ -13,12 +13,7 @@ const AppState = {
 };
 
 // ─── 페이지 초기화 ────────────────────────────────────────────────────────
-
-$('#select-current-project').on('change', async function () {
-  if (this.value === '') return;
-  hideDetail();
-  await refreshSpecList();
-});
+// Spec은 system 네임스페이스 고정 리소스라 project(=namespace) 선택과 무관하다.
 
 document.addEventListener('DOMContentLoaded', async function () {
   const btnList = document.getElementById('page-header-btn-list');
@@ -34,10 +29,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   updateNamespaceLabel();
   initFilter();
-
-  if (selectedWorkspaceProject.projectId !== '') {
-    await refreshSpecList();
-  }
+  await refreshSpecList();
 });
 
 function updateNamespaceLabel() {
@@ -78,8 +70,10 @@ function initTable(data) {
     paginationSizeSelector: [10, 20, 50],
     paginationCounter: 'rows',
     movableColumns: true,
+    selectableRows: true,
     initialSort: [{ column: 'cspSpecName', dir: 'asc' }],
     columns: [
+      { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
       { title: 'CSP Spec Name', field: 'cspSpecName', widthGrow: 2, sorter: 'string' },
       { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
       { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
@@ -122,29 +116,39 @@ export function hideDetail() {
   AppState.resources.selected = null;
 }
 
-export function confirmDeleteSpec() {
-  const item = AppState.resources.selected;
-  if (!item) return;
+export function confirmBulkDelete() {
+  const table = AppState.tables.resourceTable;
+  const selected = table ? table.getSelectedData() : [];
+  if (selected.length === 0) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Nothing Selected',
+      'Please select at least one item to delete.'
+    );
+    return;
+  }
+  AppState.resources.bulkSelected = selected;
   webconsolejs['partials/layout/modal'].commonConfirmModal(
     'commonDefaultModal',
-    'Delete Spec',
-    `Delete spec "${item.name}"?`,
-    'pages/settings/environment/cloudresources/serverspecs.executeDeleteSpec'
+    'Delete Selected',
+    `Delete ${selected.length} selected Spec(s)?`,
+    'pages/settings/environment/cloudresources/serverspecs.executeBulkDelete'
   );
 }
 
-export async function executeDeleteSpec() {
-  const item = AppState.resources.selected;
-  if (!item) return;
-  try {
-    await specApi().del(SYSTEM_NS, item.name);
-    showToast(TOAST_TYPES.SUCCESS, `Spec "${item.name}" deleted successfully`);
-    hideDetail();
-    await refreshSpecList();
-  } catch (err) {
-    console.error('Spec delete failed:', err);
-    showToast(TOAST_TYPES.ERROR, 'Failed to delete spec: ' + (err?.response?.data?.message || err.message));
-  }
+export async function executeBulkDelete() {
+  const items = AppState.resources.bulkSelected || [];
+  if (items.length === 0) return;
+  const results = await Promise.allSettled(items.map((item) => specApi().del(SYSTEM_NS, item.name)));
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  const succeeded = results.length - failed;
+  showToast(
+    failed > 0 ? TOAST_TYPES.WARNING : TOAST_TYPES.SUCCESS,
+    `${succeeded} Spec(s) deleted${failed > 0 ? `, ${failed} failed` : ''}`
+  );
+  AppState.resources.bulkSelected = [];
+  AppState.tables.resourceTable?.deselectRow();
+  hideDetail();
+  await refreshSpecList();
 }
 
 // ─── Filter ───────────────────────────────────────────────────────────────
@@ -269,8 +273,8 @@ if (typeof webconsolejs === 'undefined') { window.webconsolejs = {}; }
 webconsolejs[PAGE_KEY] = {
   refreshSpecList,
   hideDetail,
-  confirmDeleteSpec,
-  executeDeleteSpec,
+  confirmBulkDelete,
+  executeBulkDelete,
   openSpecSelectPopup,
   loadSpecList,
   submitRegisterSpec,
