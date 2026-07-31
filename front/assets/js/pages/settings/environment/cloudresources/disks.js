@@ -167,7 +167,6 @@ function renderDetail(data) {
 
   const ref = attachedNodeRef(data);
   document.getElementById('detail-disk-attached-to').textContent = ref ? `${ref.infraId} / ${ref.nodeId}` : '-';
-  document.getElementById('detail-attach-btn').classList.toggle('d-none', !!ref);
   document.getElementById('detail-detach-btn').classList.toggle('d-none', !ref);
 }
 
@@ -181,32 +180,6 @@ export function hideDetail() {
   document.getElementById('view-mode-cards')?.classList.remove('show');
   AppState.ui.viewMode = false;
   AppState.resources.selected = null;
-}
-
-export function confirmDeleteDisk() {
-  const selected = AppState.resources.selected;
-  if (!selected) return;
-  webconsolejs['partials/layout/modal'].commonConfirmModal(
-    'commonDefaultModal',
-    'Delete Data Disk',
-    `Data Disk "${selected.name}" — confirm delete?`,
-    'pages/settings/environment/cloudresources/disks.executeDeleteDisk'
-  );
-}
-
-export async function executeDeleteDisk() {
-  const selected = AppState.resources.selected;
-  if (!selected) return;
-  const id = diskId(selected);
-  try {
-    await diskApi().delDataDisk(AppState.ns, id);
-    showToast(TOAST_TYPES.SUCCESS, `Data Disk "${selected.name}" deleted successfully`);
-    hideDetail();
-    await loadDiskList();
-  } catch (err) {
-    console.error('Data Disk 삭제 실패:', err);
-    showToast(TOAST_TYPES.ERROR, 'Failed to delete Data Disk: ' + extractErrorMessage(err));
-  }
 }
 
 // ─── Attach / Detach ───────────────────────────────────────────────────────
@@ -238,6 +211,21 @@ export async function executeDetachDisk() {
   }
 }
 
+// List에서 Attach 아이콘 클릭 시 — 체크된 행이 정확히 1개일 때만 진행
+export function openAttachFromList() {
+  const table = AppState.tables.diskTable;
+  const rows = table ? table.getSelectedData() : [];
+  if (rows.length !== 1) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Selection Required',
+      'Please select exactly one Data Disk to attach.'
+    );
+    return;
+  }
+  AppState.resources.selected = rows[0];
+  openAttachDiskModal();
+}
+
 export async function openAttachDiskModal() {
   const selected = AppState.resources.selected;
   if (!selected) return;
@@ -245,21 +233,25 @@ export async function openAttachDiskModal() {
     showToast(TOAST_TYPES.WARNING, 'This disk is already attached. Detach it first.');
     return;
   }
-  document.getElementById('attach-disk-name').textContent = selected.name || '-';
+  document.getElementById('attach-disk-name').value = selected.name || '-';
   document.getElementById('attach-disk-nodegroup').innerHTML = '<option value="">Select</option>';
   document.getElementById('attach-disk-vm').innerHTML = '<option value="">Select</option>';
   await _loadAttachMciOptions();
   new bootstrap.Modal(document.getElementById('attach-disk-modal')).show();
 }
 
+// 디스크와 동일 CSP(provider)를 가진 노드가 하나라도 있는 Infra만 후보로 노출
 async function _loadAttachMciOptions() {
   const select = document.getElementById('attach-disk-mci');
   select.innerHTML = '<option value="">Select</option>';
+  const diskProvider = getProvider(AppState.resources.selected);
   try {
     const mciApi = webconsolejs['common/api/services/mci_api'];
     const list = await mciApi.getMciList(AppState.ns);
     const mcis = list?.infra || (Array.isArray(list) ? list : []);
     for (const mci of mcis) {
+      const nodes = mci.node || [];
+      if (!nodes.some((n) => n?.connectionConfig?.providerName === diskProvider)) continue;
       const opt = document.createElement('option');
       opt.value = mci.id || mci.name;
       opt.textContent = mci.id || mci.name;
@@ -315,6 +307,7 @@ async function _loadAttachVmOptions(infraId, nodeGroupId) {
     for (const node of nodes) {
       if (node.nodeGroupId !== nodeGroupId) continue;
       if (getProvider(node) !== diskProvider || getRegion(node) !== diskRegion) continue;
+      if (String(node.status || '').toLowerCase() !== 'running') continue; // 중지된 VM은 attach 불가
       const opt = document.createElement('option');
       opt.value = node.id;
       opt.textContent = `${node.id} (${node.status})`;
@@ -575,10 +568,9 @@ if (typeof webconsolejs === 'undefined') { window.webconsolejs = {}; }
 webconsolejs['pages/settings/environment/cloudresources/disks'] = {
   loadDiskList,
   hideDetail,
-  confirmDeleteDisk,
-  executeDeleteDisk,
   confirmDetachDisk,
   executeDetachDisk,
+  openAttachFromList,
   openAttachDiskModal,
   executeAttachDisk,
   confirmBulkDelete,
