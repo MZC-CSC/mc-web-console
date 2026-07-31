@@ -1487,7 +1487,7 @@ export async function nodeGroup_vmDetailInfo(vmId) {
 
 function _diskContext(context) {
   if (context === 'group') {
-    return { infraId: window.currentMciId, nodeId: currentSubGroupVmId, blockDeviceElId: 'subgroup_block_device_section' }
+    return { infraId: window.currentMciId, nodeId: currentNodeGroupVmId, blockDeviceElId: 'nodegroup_block_device_section' }
   }
   return { infraId: window.currentMciId, nodeId: currentVmId, blockDeviceElId: 'block_device_section' }
 }
@@ -1734,7 +1734,7 @@ function clearServerInfo() {
   // $("#manage_mci_popup_user_name").val("")
 
   $("#block_device_section").empty()
-  $("#subgroup_block_device_section").empty()
+  $("#nodegroup_block_device_section").empty()
   // $("#attachedDiskList").empty()
 
   $("#server_detail_view_root_device_type").val("");
