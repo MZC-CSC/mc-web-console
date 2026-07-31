@@ -30,10 +30,10 @@ var totalVmStatusMap = new Map();
 window.window.currentNsId = "";
 window.currentMciId = "";
 var currentVmId = "";
-var currentSubGroupId = "";
-var currentSubGroupVmId = "";
+var currentNodeGroupId = "";
+var currentNodeGroupVmId = "";
 var currentGroupedVmList = [];
-var vmListGroupedBySubGroup = [];
+var vmListGroupedByNodeGroup = [];
 
 var mciListTable;
 export var checked_array = [];
@@ -204,9 +204,9 @@ function resetPolicyInfoState() {
   // Policy Info 내용 초기화
   const policyInfoFields = [
     'policy-mciId', 'policy-mciName', 'policy-actionLog',
-    'subgroup-name', 'subgroup-label', 'subgroup-size', 'subgroup-description', 
-    'subgroup-currentVmCount', 'subgroup-minMaxSize',
-    'summary-subgroupSize', 'summary-currentVmCount', 'summary-minMaxSize',
+    'nodegroup-name', 'nodegroup-label', 'nodegroup-size', 'nodegroup-description',
+    'nodegroup-currentVmCount', 'nodegroup-minMaxSize',
+    'summary-nodegroupSize', 'summary-currentVmCount', 'summary-minMaxSize',
     'policy-type', 'policy-algorithm',
     'condition-metric', 'condition-operator', 'condition-operand',
     'vm-spec', 'vm-os', 'vm-csp', 'vm-disk', 'vm-connection'
@@ -314,9 +314,9 @@ function resetDefaultTabSelections() {
 
 // Group 탭 선택 상태 초기화
 function resetGroupTabSelections() {
-  // SubGroup 선택 상태 초기화
-  const subgroupItems = document.querySelectorAll('#subgroup_info_box .vmStatus-item');
-  subgroupItems.forEach(item => {
+  // NodeGroup 선택 상태 초기화
+  const nodegroupItems = document.querySelectorAll('#nodegroup_info_box .vmStatus-item');
+  nodegroupItems.forEach(item => {
     item.classList.remove('selected');
   });
   
@@ -333,7 +333,7 @@ function resetGroupTabSelections() {
   }
   
   // Terminal 모달이 열려있다면 닫기
-  const terminalModal = document.getElementById('subgroup-cmdtestmodal');
+  const terminalModal = document.getElementById('nodegroup-cmdtestmodal');
   if (terminalModal && terminalModal.classList.contains('show')) {
     const modal = bootstrap.Modal.getInstance(terminalModal);
     if (modal) {
@@ -374,9 +374,9 @@ function resetTabInternalTableSelections() {
     window.vmListTable.deselectRow();
   }
   
-  // SubGroup 목록 테이블 선택 상태 초기화 (만약 있다면)
-  if (typeof window.subgroupTable !== 'undefined' && window.subgroupTable) {
-    window.subgroupTable.deselectRow();
+  // NodeGroup 목록 테이블 선택 상태 초기화 (만약 있다면)
+  if (typeof window.nodegroupTable !== 'undefined' && window.nodegroupTable) {
+    window.nodegroupTable.deselectRow();
   }
 }
 
@@ -422,23 +422,23 @@ function resetServerTabState() {
   }
 }
 
-// SubGroup VM Info 탭 상태 초기화 함수
-function resetSubGroupVmTabState() {
-  // SubGroup VM Info 탭에서 모든 탭 링크의 active 클래스 제거
-  const subGroupVmTabLinks = document.querySelectorAll('#subGroup_vm_info .nav-link');
-  subGroupVmTabLinks.forEach(tabLink => {
+// NodeGroup VM Info 탭 상태 초기화 함수
+function resetNodeGroupVmTabState() {
+  // NodeGroup VM Info 탭에서 모든 탭 링크의 active 클래스 제거
+  const nodeGroupVmTabLinks = document.querySelectorAll('#nodeGroup_vm_info .nav-link');
+  nodeGroupVmTabLinks.forEach(tabLink => {
     tabLink.classList.remove('active');
   });
   
-  // SubGroup VM Info 탭에서 모든 탭 패널의 active, show 클래스 제거
-  const subGroupVmTabPanes = document.querySelectorAll('#subGroup_vm_info .tab-pane');
-  subGroupVmTabPanes.forEach(tabPane => {
+  // NodeGroup VM Info 탭에서 모든 탭 패널의 active, show 클래스 제거
+  const nodeGroupVmTabPanes = document.querySelectorAll('#nodeGroup_vm_info .tab-pane');
+  nodeGroupVmTabPanes.forEach(tabPane => {
     tabPane.classList.remove('active', 'show');
   });
   
   // 첫 번째 탭(Detail)을 활성화
-  const detailTabLink = document.querySelector('#subGroup_vm_info .nav-link[href="#tabs-subgroupvm-details"]');
-  const detailTabPane = document.getElementById('tabs-subgroupvm-details');
+  const detailTabLink = document.querySelector('#nodeGroup_vm_info .nav-link[href="#tabs-nodegroupvm-details"]');
+  const detailTabPane = document.getElementById('tabs-nodegroupvm-details');
   
   if (detailTabLink && detailTabPane) {
     detailTabLink.classList.add('active');
@@ -476,8 +476,8 @@ export async function getSelectedMciData() {
     // SET MCIS Info page
     setMciInfoData(mciData)
 
-    // SubGroup Terminal 버튼 초기 상태 설정
-    updateSubGroupRemoteCmdButtonState();
+    // NodeGroup Terminal 버튼 초기 상태 설정
+    updateNodeGroupRemoteCmdButtonState();
     
     // MCI Terminal 버튼 상태 설정
     updateMciRemoteCmdButtonState();
@@ -763,8 +763,8 @@ function displayServerStatusList(mciID, vmList) {
   }
 }
 
-// subGroup 단위로 묶음
-function groupBySubGroup(vmList) {
+// nodeGroup 단위로 묶음
+function groupByNodeGroup(vmList) {
   const grouped = vmList.reduce((acc, vm) => {
     const key = vm.nodeGroupId;
     if (!acc[key]) acc[key] = [];
@@ -772,45 +772,45 @@ function groupBySubGroup(vmList) {
     return acc;
   }, {});
 
-  vmListGroupedBySubGroup = Object.entries(grouped).map(([subGroupId, vms]) => ({
-    subGroupId,
+  vmListGroupedByNodeGroup = Object.entries(grouped).map(([nodeGroupId, vms]) => ({
+    nodeGroupId,
     vms
   }));
-  return vmListGroupedBySubGroup
+  return vmListGroupedByNodeGroup
 }
 
 function displayServerGroupStatusList(mciID, vmList) {
-  var vmListGroupedBySubGroup = groupBySubGroup(vmList);
+  var vmListGroupedByNodeGroup = groupByNodeGroup(vmList);
   var mciName = mciID;
   var vmGroupLi = "";
-  vmListGroupedBySubGroup.forEach(aSubGroup => {
+  vmListGroupedByNodeGroup.forEach(aNodeGroup => {
 
-    var subGroupId = aSubGroup.subGroupId
-    var vmCount = aSubGroup.vms.length
-    var vmList = aSubGroup.vms
+    var nodeGroupId = aNodeGroup.nodeGroupId
+    var vmCount = aNodeGroup.vms.length
+    var vmList = aNodeGroup.vms
     var vmGroupStatus = webconsolejs["common/api/services/mci_api"].getVmGroupStatusFormatter(vmList);
     var vmGroupStatusClass = webconsolejs["common/api/services/mci_api"].getVmGroupStatusStyleClass(vmGroupStatus);
 
     vmGroupLi += `
-      <li id="serverGroup_status_icon_${subGroupId}" 
+      <li id="serverGroup_status_icon_${nodeGroupId}" 
           class="card ${vmGroupStatusClass} d-flex align-items-center" 
           style="display: flex; flex-direction: row; align-items: center; justify-content: center; padding: 5px;" 
-          onclick="webconsolejs['pages/operation/manage/mci'].toggleCheck('vmGroup', '${subGroupId}')">
+          onclick="webconsolejs['pages/operation/manage/mci'].toggleCheck('vmGroup', '${nodeGroupId}')">
         
         <input type="checkbox" 
-               id="checkbox_vmGroup_${subGroupId}" 
+               id="checkbox_vmGroup_${nodeGroupId}" 
                class="vmgroup-checkbox" 
                style="width: 20px; height: 20px; margin-right: 10px; flex-shrink: 0;" 
-               onchange="webconsolejs['pages/operation/manage/mci'].handleCheck('vmGroup', '${subGroupId}')" 
+               onchange="webconsolejs['pages/operation/manage/mci'].handleCheck('vmGroup', '${nodeGroupId}')" 
                onclick="event.stopPropagation()">
         
-        <span class="h3 mb-0 me-2">${subGroupId}(${vmCount})</span>
+        <span class="h3 mb-0 me-2">${nodeGroupId}(${vmCount})</span>
       </li>
     `;
   });
 
-  $("#subgroup_info_box").empty();
-  $("#subgroup_info_box").append(vmGroupLi);
+  $("#nodegroup_info_box").empty();
+  $("#nodegroup_info_box").append(vmGroupLi);
 
   // 선택한 vm이 있는 경우 해당 vm의 정보도 갱신한다.
   // if (currentVmGroupId) {
@@ -821,7 +821,7 @@ function displayServerGroupStatusList(mciID, vmList) {
 // 체크박스를 선택하면 선택된 VM ID 업데이트 (단일 선택)
 var selectedVmId = null;
 var selectedVmGroupId = null;
-var selectedSubGroupVmId = null;
+var selectedNodeGroupVmId = null;
 // 체크박스를 클릭했을 때 선택 상태를 반전시킴
 export function toggleCheck(type, id) {
 
@@ -851,21 +851,21 @@ export function handleCheck(type, id) {
         webconsolejs["partials/layout/navigatePages"].toggleElement(div);
       }
     }
-  } else if (type === 'vmGroup') { // subgroup
+  } else if (type === 'vmGroup') { // nodegroup
 
     if (checkbox.prop("checked")) {
       // 같은 항목 재선택인지 확인
       if (selectedVmGroupId === id) {
         // 같은 항목 재선택 - 토글 닫기
         selectedVmGroupId = null;
-        currentSubGroupId = null;
+        currentNodeGroupId = null;
         clearServerInfo();
-        const div = document.getElementById("subgroup_vm");
+        const div = document.getElementById("nodegroup_vm");
         if (div.classList.contains("active")) {
           webconsolejs["partials/layout/navigatePages"].toggleElement(div);
         }
         // Server Info도 닫기
-        const serverInfoDiv = document.getElementById("subGroup_vm_info");
+        const serverInfoDiv = document.getElementById("nodeGroup_vm_info");
         if (serverInfoDiv && serverInfoDiv.classList.contains("active")) {
           webconsolejs["partials/layout/navigatePages"].toggleElement(serverInfoDiv);
         }
@@ -875,61 +875,61 @@ export function handleCheck(type, id) {
           $(`#checkbox_vmGroup_${selectedVmGroupId}`).prop("checked", false);
         }
         selectedVmGroupId = id;
-        currentSubGroupId = id;
+        currentNodeGroupId = id;
         // Server Info 닫기 (다른 항목 선택 시)
-        const serverInfoDiv = document.getElementById("subGroup_vm_info");
+        const serverInfoDiv = document.getElementById("nodeGroup_vm_info");
         if (serverInfoDiv && serverInfoDiv.classList.contains("active")) {
           webconsolejs["partials/layout/navigatePages"].toggleElement(serverInfoDiv);
         }
-        vmListInSubGroup(currentSubGroupId);
+        vmListInNodeGroup(currentNodeGroupId);
       }
     } else {
       selectedVmGroupId = null;
-      currentSubGroupId = null;
+      currentNodeGroupId = null;
       clearServerInfo();
       // 체크 해제 시 토글 닫기
-      const div = document.getElementById("subgroup_vm");
+      const div = document.getElementById("nodegroup_vm");
       if (div.classList.contains("active")) {
         webconsolejs["partials/layout/navigatePages"].toggleElement(div);
       }
       // Server Info도 닫기
-      const serverInfoDiv = document.getElementById("subGroup_vm_info");
+      const serverInfoDiv = document.getElementById("nodeGroup_vm_info");
       if (serverInfoDiv && serverInfoDiv.classList.contains("active")) {
         webconsolejs["partials/layout/navigatePages"].toggleElement(serverInfoDiv);
       }
     }
-  } else if (type === 'subgroup_vm') {
+  } else if (type === 'nodegroup_vm') {
     if (checkbox.prop("checked")) {
       // 같은 항목 재선택인지 확인
-      if (selectedSubGroupVmId === id) {
+      if (selectedNodeGroupVmId === id) {
         // 같은 항목 재선택 - 토글 닫기
-        selectedSubGroupVmId = null;
-        currentSubGroupVmId = null;
+        selectedNodeGroupVmId = null;
+        currentNodeGroupVmId = null;
         clearServerInfo();
-        const div = document.getElementById("subGroup_vm_info");
+        const div = document.getElementById("nodeGroup_vm_info");
         if (div && div.classList.contains("active")) {
           webconsolejs["partials/layout/navigatePages"].toggleElement(div);
         }
       } else {
         // 다른 항목 선택 - 기존 선택 해제 후 새 항목 선택
-        if (selectedSubGroupVmId && selectedSubGroupVmId !== id) {
-          $(`#checkbox_subgroup_vm_${selectedSubGroupVmId}`).prop("checked", false);
+        if (selectedNodeGroupVmId && selectedNodeGroupVmId !== id) {
+          $(`#checkbox_nodegroup_vm_${selectedNodeGroupVmId}`).prop("checked", false);
         }
-        selectedSubGroupVmId = id;
-        currentSubGroupVmId = id;
-        webconsolejs['pages/operation/manage/mci'].subGroup_vmDetailInfo(currentSubGroupVmId);
+        selectedNodeGroupVmId = id;
+        currentNodeGroupVmId = id;
+        webconsolejs['pages/operation/manage/mci'].nodeGroup_vmDetailInfo(currentNodeGroupVmId);
         // Server Info 토글 (c 버튼 역할)
-        const div = document.getElementById("subGroup_vm_info");
+        const div = document.getElementById("nodeGroup_vm_info");
         if (div && !div.classList.contains("active")) {
           webconsolejs["partials/layout/navigatePages"].toggleElement(div);
         }
       }
     } else {
-      selectedSubGroupVmId = null;
-      currentSubGroupVmId = null;
+      selectedNodeGroupVmId = null;
+      currentNodeGroupVmId = null;
       clearServerInfo();
       // 체크 해제 시 토글 닫기
-      const div = document.getElementById("subGroup_vm_info");
+      const div = document.getElementById("nodeGroup_vm_info");
       if (div && div.classList.contains("active")) {
         webconsolejs["partials/layout/navigatePages"].toggleElement(div);
       }
@@ -938,8 +938,8 @@ export function handleCheck(type, id) {
   // 마지막 선택된 VM 강조 표시
   highlightSelected(type);
   
-  // SubGroup Terminal 버튼 상태 업데이트
-  updateSubGroupRemoteCmdButtonState();
+  // NodeGroup Terminal 버튼 상태 업데이트
+  updateNodeGroupRemoteCmdButtonState();
 }
 
 
@@ -954,16 +954,16 @@ function highlightSelected(type) {
     }
   }
   else if (type === 'vmGroup') {
-    $("#subgroup_info_box li").css("border", "none");
+    $("#nodegroup_info_box li").css("border", "none");
     if (selectedVmGroupId) {
       $(`#serverGroup_status_icon_${selectedVmGroupId}`)
         .css("border", "2px solid blue");
     }
   }
-  else if (type === 'subgroup_vm') {
-    $("#subgroup_vm_info_box li").css("border", "none");
-    if (selectedSubGroupVmId) {
-      $(`#subgroup_vm_status_icon_${selectedSubGroupVmId}`)
+  else if (type === 'nodegroup_vm') {
+    $("#nodegroup_vm_info_box li").css("border", "none");
+    if (selectedNodeGroupVmId) {
+      $(`#nodegroup_vm_status_icon_${selectedNodeGroupVmId}`)
         .css("border", "2px solid blue");
     }
   }
@@ -980,16 +980,16 @@ function highlightSelected(type) {
   // }
 }
 
-function vmListInSubGroup(subGroupId) {
-  var div = document.getElementById("subgroup_vm");
+function vmListInNodeGroup(nodeGroupId) {
+  var div = document.getElementById("nodegroup_vm");
   
   // 토글이 닫혀있을 때만 열기
   if (!div.classList.contains("active")) {
     webconsolejs["partials/layout/navigatePages"].toggleElement(div);
   }
 
-  // subGroupId의 vmList 정렬
-  var groupedVm = vmListGroupedBySubGroup.find(item => item.subGroupId === subGroupId);
+  // nodeGroupId의 vmList 정렬
+  var groupedVm = vmListGroupedByNodeGroup.find(item => item.nodeGroupId === nodeGroupId);
   var groupedVmList = groupedVm.vms
   currentGroupedVmList = groupedVmList
 
@@ -1004,16 +1004,16 @@ function vmListInSubGroup(subGroupId) {
     var vmStatusClass = webconsolejs["common/api/services/mci_api"].getVmStatusStyleClass(vmDispStatus);
 
     vmLi += `
-      <li id="subgroup_vm_status_icon_${vmID}" 
+      <li id="nodegroup_vm_status_icon_${vmID}" 
           class="card ${vmStatusClass} d-flex align-items-center" 
           style="display: flex; flex-direction: row; align-items: center; justify-content: center; padding: 5px;" 
-          onclick="webconsolejs['pages/operation/manage/mci'].toggleCheck('subgroup_vm', '${vmID}')">
+          onclick="webconsolejs['pages/operation/manage/mci'].toggleCheck('nodegroup_vm', '${vmID}')">
         
         <input type="checkbox" 
-               id="checkbox_subgroup_vm_${vmID}" 
+               id="checkbox_nodegroup_vm_${vmID}" 
                class="vm-checkbox" 
                style="width: 20px; height: 20px; margin-right: 10px; flex-shrink: 0;" 
-               onchange="webconsolejs['pages/operation/manage/mci'].handleCheck('subgroup_vm', '${vmID}')" 
+               onchange="webconsolejs['pages/operation/manage/mci'].handleCheck('nodegroup_vm', '${vmID}')" 
                onclick="event.stopPropagation()">
         
         <span class="h3 mb-0 me-2">${vmName}</span>
@@ -1021,12 +1021,12 @@ function vmListInSubGroup(subGroupId) {
     `;
   });
 
-  $("#subgroup_vm_info_box").empty();
-  $("#subgroup_vm_info_box").append(vmLi);
+  $("#nodegroup_vm_info_box").empty();
+  $("#nodegroup_vm_info_box").append(vmLi);
 
   // 선택한 vm이 있는 경우 해당 vm의 정보도 갱신한다.
-  // if (currentSubGroupVmId) {
-  //   webconsolejs['pages/operation/manage/mci'].vmDetailInfo(currentSubGroupVmId);
+  // if (currentNodeGroupVmId) {
+  //   webconsolejs['pages/operation/manage/mci'].vmDetailInfo(currentNodeGroupVmId);
   // }
   // displayServerStatusList(currentMciId, groupedVmList.vms);
 }
@@ -1049,7 +1049,7 @@ export async function vmDetailInfo(vmId) {
   try {
     var response = await webconsolejs["common/api/services/mci_api"].getMciVm(window.currentNsId, currentMciId, vmId);
     var aVm = response.responseData
-    var subGroupId = aVm.nodeGroupId
+    var nodeGroupId = aVm.nodeGroupId
     var cspVMID = aVm.uid
     var responseVmId = response.id;
     // 전체를 관리하는 obj 갱신
@@ -1137,7 +1137,7 @@ export async function vmDetailInfo(vmId) {
   $("#mci_server_info_connection").empty()
   $("#mci_server_info_connection").append(vmProviderIcon)
 
-  $("#server_info_text").text(' [ ' + subGroupId + ' / ' + vmName + ' ]')
+  $("#server_info_text").text(' [ ' + nodeGroupId + ' / ' + vmName + ' ]')
   $("#server_info_name").text(vmName + "/" + vmId)
   $("#server_info_desc").text(vmDescription)
 
@@ -1261,17 +1261,17 @@ export async function vmDetailInfo(vmId) {
   webconsolejs["partials/operation/manage/server_monitoring"].monitoringDataInit()
 }
 
-export async function subGroup_vmDetailInfo(vmId) {
-  currentSubGroupVmId = vmId
+export async function nodeGroup_vmDetailInfo(vmId) {
+  currentNodeGroupVmId = vmId
   // Server Info는 c 버튼으로만 제어되므로 자동 토글 제거
-  // var div = document.getElementById("subGroup_vm_info");
+  // var div = document.getElementById("nodeGroup_vm_info");
   // const hasActiveClass = div.classList.contains("active");
   // if (!hasActiveClass) {
   //   webconsolejs["partials/layout/navigatePages"].toggleElement(div)
   // }
 
-  // SubGroup VM Info 탭 상태 초기화 (Detail 탭으로 리셋)
-  resetSubGroupVmTabState();
+  // NodeGroup VM Info 탭 상태 초기화 (Detail 탭으로 리셋)
+  resetNodeGroupVmTabState();
 
   // get mci vm  
   try {
@@ -1313,7 +1313,7 @@ export async function subGroup_vmDetailInfo(vmId) {
 
     for (var vmIndex in vmList) {
       var aVm = vmList[vmIndex];
-      if (currentSubGroupVmId == aVm.id) {
+      if (currentNodeGroupVmId == aVm.id) {
         data = aVm;
         vmExist = true;
         break;
@@ -1339,7 +1339,7 @@ export async function subGroup_vmDetailInfo(vmId) {
     // var operatingSystem = await webconsolejs["common/api/services/vmimage_api"].getCommonVmImageInfo(imageId)
     // var operatingSystem = data.imageId
     var operatingSystem = "Ubuntu"
-    $("#subgroup_server_info_os").text(operatingSystem)
+    $("#nodegroup_server_info_os").text(operatingSystem)
   } catch (e) {
     console.error(e)
   }
@@ -1359,48 +1359,48 @@ export async function subGroup_vmDetailInfo(vmId) {
   var mciStatusIcon = webconsolejs["common/api/services/mci_api"].getMciStatusIconFormatter(vmDispStatus);
 
   //vm info
-  $("#subgroup_mci_server_info_status_img").attr("src", "/assets/images/common/" + mciStatusIcon)
-  $("#subgroup_mci_server_info_connection").empty()
-  $("#subgroup_mci_server_info_connection").append(vmProviderIcon)
+  $("#nodegroup_mci_server_info_status_img").attr("src", "/assets/images/common/" + mciStatusIcon)
+  $("#nodegroup_mci_server_info_connection").empty()
+  $("#nodegroup_mci_server_info_connection").append(vmProviderIcon)
 
   // CSP 정보 설정
-  $("#subgroup_server_info_csp").text(providerName)
+  $("#nodegroup_server_info_csp").text(providerName)
 
 
-  $("#subgroup_server_info_text").text(' [ ' + currentSubGroupId + ' / ' + vmName + ' ]')
-  $("#subgroup_server_info_name").text(vmName + "/" + vmId)
-  $("#subgroup_server_info_desc").text(vmDescription)
+  $("#nodegroup_server_info_text").text(' [ ' + currentNodeGroupId + ' / ' + vmName + ' ]')
+  $("#nodegroup_server_info_name").text(vmName + "/" + vmId)
+  $("#nodegroup_server_info_desc").text(vmDescription)
 
-  $("#subgroup_server_info_start_time").text(startTime)
-  $("#subgroup_server_info_private_ip").text(privateIp)
+  $("#nodegroup_server_info_start_time").text(startTime)
+  $("#nodegroup_server_info_private_ip").text(privateIp)
   // $("#server_info_cspVMID").text(data.cspResourceName)
-  $("#subgroup_server_info_cspVMID").text(cspVMID)
+  $("#nodegroup_server_info_cspVMID").text(cspVMID)
 
   // ip information
-  $("#subgroup_server_info_public_ip").text(vmPublicIp)
-  $("#subgroup_server_detail_info_public_ip_text").text("Public IP : " + vmPublicIp)
-  $("#subgroup_server_info_public_dns").text(data.publicDNS)
+  $("#nodegroup_server_info_public_ip").text(vmPublicIp)
+  $("#nodegroup_server_detail_info_public_ip_text").text("Public IP : " + vmPublicIp)
+  $("#nodegroup_server_info_public_dns").text(data.publicDNS)
   // $("#server_info_private_ip").val(data.privateIP)
-  $("#subgroup_server_info_private_dns").text(data.privateDNS)
+  $("#nodegroup_server_info_private_dns").text(data.privateDNS)
 
-  $("#subgroup_server_detail_view_public_ip").text(vmPublicIp)
-  $("#subgroup_server_detail_view_public_dns").text(data.publicDNS)
-  $("#subgroup_server_detail_view_private_ip").text(data.privateIP)
-  $("#subgroup_server_detail_view_private_dns").text(data.privateDNS)
+  $("#nodegroup_server_detail_view_public_ip").text(vmPublicIp)
+  $("#nodegroup_server_detail_view_public_dns").text(data.publicDNS)
+  $("#nodegroup_server_detail_view_private_ip").text(data.privateIP)
+  $("#nodegroup_server_detail_view_private_dns").text(data.privateDNS)
 
   // detail tab
-  $("#subgroup_server_detail_info_text").text(' [' + vmName + '/' + mciName + ']')
-  $("#subgroup_server_detail_view_server_id").text(vmId)
-  $("#subgroup_server_detail_view_server_status").text(vmStatus);
+  $("#nodegroup_server_detail_info_text").text(' [' + vmName + '/' + mciName + ']')
+  $("#nodegroup_server_detail_view_server_id").text(vmId)
+  $("#nodegroup_server_detail_view_server_status").text(vmStatus);
   // $("#server_detail_view_public_dns").text(data.publicDNS)
   // $("#server_detail_view_public_ip").text(vmPublicIp)
   // $("#server_detail_view_private_ip").text(data.privateIP)
-  $("#subgroup_server_detail_view_security_group_text").text(securityGroupID)
+  $("#nodegroup_server_detail_view_security_group_text").text(securityGroupID)
   // $("#server_detail_view_private_dns").text(data.privateDNS)
   // $("#server_detail_view_private_ip").text(data.privateIP)
-  $("#subgroup_server_detail_view_image_id").text(imageId)
-  $("#subgroup_server_detail_view_os").text(operatingSystem);
-  $("#subgroup_server_detail_view_user_id_pass").text(data.nodeUserName ? data.nodeUserName + ' / ***' : (data.vmUserAccount ? data.vmUserAccount + ' / ***' : '-'))
+  $("#nodegroup_server_detail_view_image_id").text(imageId)
+  $("#nodegroup_server_detail_view_os").text(operatingSystem);
+  $("#nodegroup_server_detail_view_user_id_pass").text(data.nodeUserName ? data.nodeUserName + ' / ***' : (data.vmUserAccount ? data.vmUserAccount + ' / ***' : '-'))
 
   var region = data.region?.region ?? data.region?.Region ?? ''
 
@@ -1413,24 +1413,24 @@ export async function subGroup_vmDetailInfo(vmId) {
   var locationInfo = data.location;
   var cloudType = locationInfo.cloudType;
 
-  $("#subgroup_server_connection_view_connection_name").text(connectionName)
-  $("#subgroup_server_connection_view_credential_name").text(credentialName)
-  $("#subgroup_server_connection_view_csp").text(providerName)
-  $("#subgroup_server_connection_view_driver_name").text(driverName)
-  $("#subgroup_server_connection_view_region").text(providerName + " : " + region)
-  $("#subgroup_server_connection_view_zone").text(zone)
+  $("#nodegroup_server_connection_view_connection_name").text(connectionName)
+  $("#nodegroup_server_connection_view_credential_name").text(credentialName)
+  $("#nodegroup_server_connection_view_csp").text(providerName)
+  $("#nodegroup_server_connection_view_driver_name").text(driverName)
+  $("#nodegroup_server_connection_view_region").text(providerName + " : " + region)
+  $("#nodegroup_server_connection_view_zone").text(zone)
 
   // region zone locate
-  $("#subgroup_server_info_region").text(providerName + ":" + region)
-  $("#subgroup_server_info_zone").text(zone)
+  $("#nodegroup_server_info_region").text(providerName + ":" + region)
+  $("#nodegroup_server_info_zone").text(zone)
 
 
-  $("#subgroup_server_detail_view_region").text(providerName + " : " + region)
-  $("#subgroup_server_detail_view_zone").text(zone)
+  $("#nodegroup_server_detail_view_region").text(providerName + " : " + region)
+  $("#nodegroup_server_detail_view_zone").text(zone)
 
   // connection name
   var connectionName = data.connectionName;
-  $("#subgroup_server_info_connection_name").text(connectionName)
+  $("#nodegroup_server_info_connection_name").text(connectionName)
 
   var vmDetail = data.cspViewVmDetail;
   // var vmDetailKeyValueList = vmDetail.KeyValueList
@@ -1455,22 +1455,22 @@ export async function subGroup_vmDetailInfo(vmId) {
   var subnetSystemId = data.subnetId
   var eth = data.networkInterface
 
-  $("#subgroup_server_info_archi").text(architecture)
+  $("#nodegroup_server_info_archi").text(architecture)
   // detail tab
-  $("#subgroup_server_detail_view_archi").text(architecture)
-  $("#subgroup_server_detail_view_vpc_id").text(vpcId + "(" + vpcSystemId + ")")
-  $("#subgroup_server_detail_view_subnet_id").text(subnetId + "(" + subnetSystemId + ")")
-  $("#subgroup_server_detail_view_eth").text(eth)
-  $("#subgroup_server_detail_view_root_device_type").text(data.rootDiskType);
-  $("#subgroup_server_detail_view_root_device").text(data.RootDeviceName ?? data.rootDeviceName ?? '');
-  $("#subgroup_server_detail_view_keypair_name").text(data.sshKeyId)
-  $("#subgroup_server_detail_view_access_id_pass").text(data.vmUserName ? data.vmUserName + ' / ***' : '-')
+  $("#nodegroup_server_detail_view_archi").text(architecture)
+  $("#nodegroup_server_detail_view_vpc_id").text(vpcId + "(" + vpcSystemId + ")")
+  $("#nodegroup_server_detail_view_subnet_id").text(subnetId + "(" + subnetSystemId + ")")
+  $("#nodegroup_server_detail_view_eth").text(eth)
+  $("#nodegroup_server_detail_view_root_device_type").text(data.rootDiskType);
+  $("#nodegroup_server_detail_view_root_device").text(data.RootDeviceName ?? data.rootDeviceName ?? '');
+  $("#nodegroup_server_detail_view_keypair_name").text(data.sshKeyId)
+  $("#nodegroup_server_detail_view_access_id_pass").text(data.vmUserName ? data.vmUserName + ' / ***' : '-')
 
 
   // server spec
   // var vmSecName = data.VmSpecName
-  $("#subgroup_server_info_vmspec_name").text(vmSpecName)
-  $("#subgroup_server_detail_view_server_spec").text(vmSpecName) // detail tab
+  $("#nodegroup_server_info_vmspec_name").text(vmSpecName)
+  $("#nodegroup_server_detail_view_server_spec").text(vmSpecName) // detail tab
 
   webconsolejs["partials/operation/manage/server_monitoring"].monitoringDataInit()
 }
@@ -1494,20 +1494,20 @@ function clearServerInfo() {
   $("#server_info_public_ip").text("")
   $("#server_info_private_ip").text("")
 
-  // subgroup 필드들 초기화
-  $("#subgroup_server_info_csp").text("")
-  $("#subgroup_server_info_region").text("")
-  $("#subgroup_server_info_zone").text("")
-  $("#subgroup_server_info_connection_name").text("")
-  $("#subgroup_server_info_cspVMID").text("")
-  $("#subgroup_server_info_vmspec_name").text("")
-  $("#subgroup_server_info_archi").text("")
-  $("#subgroup_server_info_public_ip").text("")
-  $("#subgroup_server_info_private_ip").text("")
-  $("#subgroup_server_info_os").text("")
-  $("#subgroup_server_info_start_time").text("")
-  $("#subgroup_server_info_public_dns").text("")
-  $("#subgroup_server_info_private_dns").text("")
+  // nodegroup 필드들 초기화
+  $("#nodegroup_server_info_csp").text("")
+  $("#nodegroup_server_info_region").text("")
+  $("#nodegroup_server_info_zone").text("")
+  $("#nodegroup_server_info_connection_name").text("")
+  $("#nodegroup_server_info_cspVMID").text("")
+  $("#nodegroup_server_info_vmspec_name").text("")
+  $("#nodegroup_server_info_archi").text("")
+  $("#nodegroup_server_info_public_ip").text("")
+  $("#nodegroup_server_info_private_ip").text("")
+  $("#nodegroup_server_info_os").text("")
+  $("#nodegroup_server_info_start_time").text("")
+  $("#nodegroup_server_info_public_dns").text("")
+  $("#nodegroup_server_info_private_dns").text("")
 
   // ip information
   $("#server_detail_info_public_ip_text").text("")
@@ -2096,7 +2096,7 @@ function providerFormatterString(data) {
   const toggleBtn = document.getElementById('scaleGroupToggle');
   const collapseEl = document.getElementById('scaleGroupSettings');
   const formListUl = document.getElementById('scaleGroupFormList');
-  const listBox = document.getElementById('subgroup_info_box');
+  const listBox = document.getElementById('nodegroup_info_box');
   if (!toggleBtn || !collapseEl || !formListUl || !listBox) return;
 
   // collapse 수동 인스턴스
@@ -2174,7 +2174,7 @@ function providerFormatterString(data) {
       var numVMsToAdd = parseInt(inputBox.value, 10)
       
       // fire-and-forget: requestId tracker가 ScaleOut progress/결과 toast 표시
-      webconsolejs["common/api/services/mci_api"].postScaleOutSubGroup(window.currentNsId, currentMciId, currentSubGroupId, numVMsToAdd);
+      webconsolejs["common/api/services/mci_api"].postScaleOutNodeGroup(window.currentNsId, currentMciId, currentNodeGroupId, numVMsToAdd);
     });
     li.appendChild(btnOk);
     
@@ -2476,7 +2476,7 @@ function initPolicyTable() {
     },
     { title: "Infra Name", field: "mciName", width: 120 },
     { title: "Infra ID", field: "mciId", width: 120 },
-    { title: "NodeGroup Size", field: "subGroupSize", width: 120 },
+    { title: "NodeGroup Size", field: "nodeGroupSize", width: 120 },
     { title: "Condition", field: "condition", width: 150 },
     { title: "Period(s)", field: "evaluationPeriod", width: 100 },
     { title: "Action", field: "actionType", width: 100 },
@@ -2544,19 +2544,19 @@ function setPolicyInfoData(selectedPolicyData) {
   document.getElementById('policy-mciName').textContent = policy.mciName || '-';
   document.getElementById('policy-actionLog').textContent = policy.actionLog || '-';
 
-  // --- SubGroup Info ---
-  // Name: using VM name as subgroup display name
-  document.getElementById('subgroup-name').textContent = policy.vmName || '-';
+  // --- NodeGroup Info ---
+  // Name: using VM name as nodegroup display name
+  document.getElementById('nodegroup-name').textContent = policy.vmName || '-';
   // Label: createdBy label (or stringify full label object)
-  document.getElementById('subgroup-label').textContent = policy.label?.createdBy || JSON.stringify(policy.label) || '-';
-  document.getElementById('subgroup-size').textContent = policy.subGroupSize || '-';
-  document.getElementById('subgroup-description').textContent = policy.description || '-';
+  document.getElementById('nodegroup-label').textContent = policy.label?.createdBy || JSON.stringify(policy.label) || '-';
+  document.getElementById('nodegroup-size').textContent = policy.nodeGroupSize || '-';
+  document.getElementById('nodegroup-description').textContent = policy.description || '-';
   // current VM count & min/max size – if you have those values in your context, substitute them here
-  document.getElementById('subgroup-currentVmCount').textContent = policy.currentVmCount ?? '-';
-  document.getElementById('subgroup-minMaxSize').textContent = policy.minMaxSize || '-';
+  document.getElementById('nodegroup-currentVmCount').textContent = policy.currentVmCount ?? '-';
+  document.getElementById('nodegroup-minMaxSize').textContent = policy.minMaxSize || '-';
 
   // --- MCI Scale Summary ---
-  document.getElementById('summary-subgroupSize').textContent = policy.subGroupSize || '-';
+  document.getElementById('summary-nodegroupSize').textContent = policy.nodeGroupSize || '-';
   document.getElementById('summary-currentVmCount').textContent = policy.currentVmCount ?? '-';
   document.getElementById('summary-minMaxSize').textContent = policy.minMaxSize || '-';
 
@@ -2624,7 +2624,7 @@ function transformPolicyResponse(resp) {
         description: vmDescription = '',
         label = {},
         name: vmName = '',
-        nodeGroupSize: subGroupSize = ''
+        nodeGroupSize = ''
       } = nodeGroupDynamicReq;
       
       // API 응답에 없는 필드들은 기본값으로 설정
@@ -2664,7 +2664,7 @@ function transformPolicyResponse(resp) {
         vmName,
         rootDiskSize,
         rootDiskType,
-        subGroupSize,
+        nodeGroupSize,
 
         // Auto Condition 레벨
         condition,
@@ -2774,8 +2774,8 @@ export async function initremotecmdModal(target) {
   
   if (target === 'vm'){
     currentVmId = currentVmId;
-  }else if (target === 'subgroupvm'){
-    currentVmId = currentSubGroupVmId;
+  }else if (target === 'nodegroupvm'){
+    currentVmId = currentNodeGroupVmId;
   }
   
   await webconsolejs["partials/operation/manage/remotecmd"].initTerminal('xterm-container', nsId, currentMciId, currentVmId, 'vm') // vmStatus 별로 상태 색상 set
@@ -2784,13 +2784,13 @@ export async function initremotecmdModal(target) {
   modalInstance.show();
 }
 
-export async function initSubGroupRemoteCmdModal() {
+export async function initNodeGroupRemoteCmdModal() {
   const nsId = webconsolejs["common/api/services/workspace_api"].getCurrentProject().NsId
   
-  // 현재 선택된 SubGroup이 있는지 확인
-  if (!currentSubGroupId) {
+  // 현재 선택된 NodeGroup이 있는지 확인
+  if (!currentNodeGroupId) {
     if (selectedVmGroupId) {
-      currentSubGroupId = selectedVmGroupId;
+      currentNodeGroupId = selectedVmGroupId;
     } else {
       alert("Please select a NodeGroup first.");
       return;
@@ -2799,9 +2799,9 @@ export async function initSubGroupRemoteCmdModal() {
   
   try {
     // 새로운 단발성 명령어 실행 방식으로 초기화
-    await webconsolejs["partials/operation/manage/remotecmd"].initBatchCommandTerminal('subgroup-xterm-container', nsId, currentMciId, currentSubGroupId, 'subgroup');
+    await webconsolejs["partials/operation/manage/remotecmd"].initBatchCommandTerminal('nodegroup-xterm-container', nsId, currentMciId, currentNodeGroupId, 'nodegroup');
     
-    const modalElement = document.getElementById('subgroup-cmdtestmodal');
+    const modalElement = document.getElementById('nodegroup-cmdtestmodal');
     if (modalElement) {
       const modalInstance = new bootstrap.Modal(modalElement);
       modalInstance.show();
@@ -2959,7 +2959,7 @@ function collectPolicyData() {
     name: $("#policy_ep_name").val() || "",
     rootDiskSize: $("#policy_ep_root_disk_size").val() || "",
     rootDiskType: $("#policy_ep_root_disk_type").val() || "",
-    subGroupSize: $("#policy_ep_vm_add_cnt").val() || "1",
+    nodeGroupSize: $("#policy_ep_vm_add_cnt").val() || "1",
 
     // AutoCondition 데이터
     evaluationPeriod: $("#policy_ep_evaluationPeriod").val() || "10",
@@ -3035,7 +3035,7 @@ function buildPolicyRequestData(data) {
           name: data.name,
           rootDiskSize: data.rootDiskSize,
           rootDiskType: data.rootDiskType,
-          nodeGroupSize: data.subGroupSize,
+          nodeGroupSize: data.nodeGroupSize,
           vmUserPassword: ""
         }
       },
@@ -3050,19 +3050,19 @@ function buildPolicyRequestData(data) {
   };
 }
 
-// SubGroup Terminal 버튼 상태 업데이트
-function updateSubGroupRemoteCmdButtonState() {
-  // _subgroupvm_status.html에 있는 SubGroup Terminal 버튼 찾기
-  const subGroupRemoteCmdBtn = document.querySelector('#subgroup_vm .card-actions a[onclick*="initSubGroupRemoteCmdModal"]');
-  if (subGroupRemoteCmdBtn) {
+// NodeGroup Terminal 버튼 상태 업데이트
+function updateNodeGroupRemoteCmdButtonState() {
+  // _nodegroupvm_status.html에 있는 NodeGroup Terminal 버튼 찾기
+  const nodeGroupRemoteCmdBtn = document.querySelector('#nodegroup_vm .card-actions a[onclick*="initNodeGroupRemoteCmdModal"]');
+  if (nodeGroupRemoteCmdBtn) {
     if (selectedVmGroupId) {
-      subGroupRemoteCmdBtn.classList.remove('disabled');
-      subGroupRemoteCmdBtn.style.pointerEvents = 'auto';
-      subGroupRemoteCmdBtn.title = 'Connect to selected NodeGroup';
+      nodeGroupRemoteCmdBtn.classList.remove('disabled');
+      nodeGroupRemoteCmdBtn.style.pointerEvents = 'auto';
+      nodeGroupRemoteCmdBtn.title = 'Connect to selected NodeGroup';
     } else {
-      subGroupRemoteCmdBtn.classList.add('disabled');
-      subGroupRemoteCmdBtn.style.pointerEvents = 'none';
-      subGroupRemoteCmdBtn.title = 'Please select a NodeGroup first';
+      nodeGroupRemoteCmdBtn.classList.add('disabled');
+      nodeGroupRemoteCmdBtn.style.pointerEvents = 'none';
+      nodeGroupRemoteCmdBtn.title = 'Please select a NodeGroup first';
     }
   }
 }

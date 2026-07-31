@@ -41,7 +41,7 @@ async function testNextImage() {
   
   // 사용자에게 수동 작업 안내
   console.log('📋 다음 단계를 수동으로 진행해주세요:');
-  console.log('1. SubGroup 클릭 (또는 +SubGroup)');
+  console.log('1. NodeGroup 클릭 (또는 +NodeGroup)');
   console.log('2. Server Name 입력');
   console.log(`3. Spec 선택: ${azureSpec.specName} (${azureSpec.provider}, ${azureSpec.price})`);
   console.log(`4. Image 선택: ${currentImage.id}`);
