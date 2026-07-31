@@ -173,9 +173,54 @@ function renderDetail(data) {
     kvTbody.innerHTML = '';
     for (const kv of (data.keyValueList || [])) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td class="text-muted" style="width:40%">${kv.key}</td><td>${kv.value || '-'}</td>`;
+        tr.innerHTML = `<td class="text-muted" style="width:40%">${escapeHtml(kv.key)}</td><td>${formatKvValue(kv.value)}</td>`;
         kvTbody.appendChild(tr);
     }
+}
+
+function escapeHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+// Properties 같은 값이 JSON 문자열이면 pretty-print.
+// CSP 드라이버가 Go map을 quote 없이 stringify해서 주는 경우(유효 JSON 아님)도 있어,
+// 그런 경우는 값을 바꾸지 않고 중괄호/대괄호 깊이 기준으로 줄바꿈만 넣어 구조를 알아볼 수 있게 한다.
+function formatKvValue(value) {
+    if (value == null || value === '') return '-';
+    try {
+        const parsed = JSON.parse(value);
+        if (typeof parsed === 'object' && parsed !== null) {
+            return `<pre class="mb-0 small">${escapeHtml(JSON.stringify(parsed, null, 2))}</pre>`;
+        }
+    } catch {
+        // not valid JSON — 아래 폴백으로
+    }
+    if (/^[{[]/.test(value.trim())) {
+        return `<pre class="mb-0 small">${escapeHtml(indentBraceString(value))}</pre>`;
+    }
+    return escapeHtml(value);
+}
+
+function indentBraceString(str) {
+    let depth = 0;
+    let out = '';
+    for (const ch of str) {
+        if (ch === '{' || ch === '[') {
+            depth++;
+            out += ch + '\n' + '  '.repeat(depth);
+        } else if (ch === '}' || ch === ']') {
+            depth = Math.max(depth - 1, 0);
+            out += '\n' + '  '.repeat(depth) + ch;
+        } else if (ch === ',') {
+            out += ch + '\n' + '  '.repeat(depth);
+        } else {
+            out += ch;
+        }
+    }
+    return out;
 }
 
 function showDetail() {
