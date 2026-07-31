@@ -330,7 +330,7 @@ menus:
 
   - id: mciworkloads
     parentid: workloads
-    displayname: MCI Workloads
+    displayname: Infra Workloads
     restype: menu
     isaction: true
     priority: 2
@@ -338,7 +338,7 @@ menus:
 
   - id: pmkworkloads
     parentid: workloads
-    displayname: PMK Workloads
+    displayname: K8s Workloads
     restype: menu
     isaction: true
     priority: 2

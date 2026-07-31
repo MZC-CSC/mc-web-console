@@ -154,7 +154,7 @@ export function mciLifeCycle(type, currentMciId, nsId) {
   let controller = "/api/" + "mc-infra-manager/" + "GetControlInfra";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'GetControlInfra',
-    'MCI ' + type + ': ' + currentMciId
+    'Infra ' + type + ': ' + currentMciId
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -179,7 +179,7 @@ export function mciDelete(currentMciId, nsId) {
   let controller = "/api/" + "mc-infra-manager/" + "DelInfra";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'DelInfra',
-    'MCI delete: ' + currentMciId
+    'Infra delete: ' + currentMciId
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -204,7 +204,7 @@ export function vmDelete(mciId, nsId, vmId) {
   let controller = "/api/" + "mc-infra-manager/" + "DelInfraNode";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'DelInfraNode',
-    'VM delete: ' + vmId
+    'Node delete: ' + vmId
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -231,7 +231,7 @@ export function vmLifeCycle(type, mciId, nsId, vmid) {
   let controller = "/api/" + "mc-infra-manager/" + "GetControlInfraNode";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'GetControlInfraNode',
-    'VM ' + type + ': ' + vmid
+    'Node ' + type + ': ' + vmid
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -245,7 +245,7 @@ export function vmLifeCycle(type, mciId, nsId, vmid) {
 export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_Arr, nsId) {
 
   // 새로운 인터페이스에 맞게 데이터 변환 (mciDynamic과 동일)
-  const subGroups = Express_Server_Config_Arr.map(config => ({
+  const nodeGroups = Express_Server_Config_Arr.map(config => ({
     specId: config.commonSpec,
     imageId: config.commonImage,
     name: config.name,
@@ -280,7 +280,7 @@ export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_A
         "command": command,
         "userName": "cb-user"
       },
-      "nodeGroups": subGroups,
+      "nodeGroups": nodeGroups,
       "systemLabel": ""
     }
   }
@@ -297,7 +297,7 @@ export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_A
 export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, nsId, policyOnPartialFailure) {
 
   // 새로운 인터페이스에 맞게 데이터 변환
-  const subGroups = Express_Server_Config_Arr.map(config => ({
+  const nodeGroups = Express_Server_Config_Arr.map(config => ({
     specId: config.commonSpec,
     imageId: config.commonImage,
     name: config.name,
@@ -325,7 +325,7 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
     Request: {
       "name": mciName,
       "description": mciDesc,
-      "nodeGroups": subGroups,
+      "nodeGroups": nodeGroups,
       "policyOnPartialFailure": policyOnPartialFailure,
       "postCommand": {
         "command": command,
@@ -337,7 +337,7 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
   var controller = "/api/" + "mc-infra-manager/" + "PostInfraDynamic";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'PostInfraDynamic',
-    'MCI create: ' + mciName
+    'Infra create: ' + mciName
   );
   webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -766,7 +766,7 @@ export function calculateVmStatusCount(aMci) {
 }
 
 // ScaleOut API 관련
-export async function postScaleOutSubGroup(nsId, mciId, subgroupId, numVMsToAdd) {
+export async function postScaleOutNodeGroup(nsId, mciId, nodegroupId, numVMsToAdd) {
   if (nsId == "") {
     alert("Project has not set")
     return;
@@ -776,7 +776,7 @@ export async function postScaleOutSubGroup(nsId, mciId, subgroupId, numVMsToAdd)
     pathParams: {
       nsId: nsId,
       infraId: mciId,
-      nodegroupId: subgroupId
+      nodegroupId: nodegroupId
     },
     queryParams: {
       async: "true"
@@ -789,7 +789,7 @@ export async function postScaleOutSubGroup(nsId, mciId, subgroupId, numVMsToAdd)
   var controller = "/api/" + "mc-infra-manager/" + "PostInfraNodeGroupScaleOut";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'PostInfraNodeGroupScaleOut',
-    'ScaleOut: ' + subgroupId + ' +' + numVMsToAdd
+    'ScaleOut: ' + nodegroupId + ' +' + numVMsToAdd
   );
   webconsolejs["common/api/http"].commonAPIPost(controller, data, false, tracked.httpOptions)
     .catch(err => console.error("ScaleOut background error:", err));

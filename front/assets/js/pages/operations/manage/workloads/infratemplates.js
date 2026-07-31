@@ -167,7 +167,7 @@ window.extractFromMci = async function () {
   const ns = AppState.ns;
   const infraId = document.getElementById('create-mci-select').value;
   if (!ns) { webconsolejs['common/util'].showToast('Please select a project first.', 'error'); return; }
-  if (!infraId) { webconsolejs['common/util'].showToast('Please select an MCI.', 'error'); return; }
+  if (!infraId) { webconsolejs['common/util'].showToast('Please select an Infra.', 'error'); return; }
   try {
     const req = await webconsolejs['common/api/services/infratemplate_api'].getInfraReqFromInfra(ns, infraId);
     document.getElementById('create-json').value = JSON.stringify(req, null, 2);

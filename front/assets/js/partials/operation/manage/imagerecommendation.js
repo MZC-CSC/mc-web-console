@@ -175,7 +175,7 @@ export async function getRecommendImageInfo() {
 
 	// 전역 변수에서 spec 정보 확인
 	if (!window.selectedSpecInfo) {
-		alert("Please select a server specification first.");
+		alert("Please select a node specification first.");
 		return;
 	}
 
@@ -380,7 +380,7 @@ export function validateAndOpenImageModal(event) {
 	
 	if (!specValue || specValue.trim() === "") {
 		console.warn("No spec selected - validation failed");
-		alert("Please select a server specification first before opening the image recommendation modal.");
+		alert("Please select a node specification first before opening the image recommendation modal.");
 		// 이벤트 전파 중단 및 기본 동작 방지
 		event.preventDefault();
 		event.stopPropagation();
@@ -390,7 +390,7 @@ export function validateAndOpenImageModal(event) {
 	// 전역 변수에서 spec 정보 확인
 	if (!window.selectedSpecInfo) {
 		console.warn("No spec info in global variable - validation failed");
-		alert("Please select a server specification first before opening the image recommendation modal.");
+		alert("Please select a node specification first before opening the image recommendation modal.");
 		// 이벤트 전파 중단 및 기본 동작 방지
 		event.preventDefault();
 		event.stopPropagation();
@@ -421,7 +421,7 @@ export function validateAndOpenImageModal(event) {
 					var imageModal = new bootstrap.Modal(imageModalEl);
 					imageModal.show();
 				} else {
-					throw new Error("MCI Image modal element not found");
+					throw new Error("Infra Image modal element not found");
 				}
 			} else {
 				console.error("Bootstrap is not loaded.");
@@ -430,7 +430,7 @@ export function validateAndOpenImageModal(event) {
 			
 		} catch (error) {
 			console.error("Error opening MCI image modal:", error);
-			alert("Error opening MCI image recommendation modal. Please try again.");
+			alert("Error opening Infra image recommendation modal. Please try again.");
 		}
 	}, 100); // 100ms 지연으로 이벤트 처리 완료 후 모달 열기
 	

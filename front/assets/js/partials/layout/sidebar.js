@@ -1,3 +1,5 @@
+import { refreshAvailableMenus } from "../../common/api/services/menus_api";
+
 document.addEventListener("DOMContentLoaded", function () {
     updatemenu();
     bindSidebarClicks();
@@ -6,7 +8,12 @@ document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener("refresh-sidebar", function () {
         updatemenu();
         bindSidebarClicks();
+        setActiveMenu();
     });
+
+    // localStorage 메뉴는 로그인 시점 캐시라 DB 메뉴 변경(displayName 등)이 재로그인 전까지
+    // 반영되지 않는다 — 페이지 로드마다 백그라운드로 재동기화 (실패 시 기존 캐시 유지)
+    refreshAvailableMenus().catch(function () { /* keep cached menu */ });
 });
 
 function bindSidebarClicks() {

@@ -63,7 +63,7 @@ export async function deployFromTemplate(ns, templateId, applyReq, option, optio
   const labelName = (applyReq && applyReq.name) ? applyReq.name : templateId;
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'PostInfraDynamicFromTemplate',
-    'MCI from template: ' + labelName
+    'Infra from template: ' + labelName
   );
 
   const mergedOptions = Object.assign({}, options || {}, {

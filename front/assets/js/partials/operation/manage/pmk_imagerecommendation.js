@@ -197,7 +197,7 @@ export function setImageSelectionCallbackPmk(callback) {
 export async function getRecommendImageInfoPmk() {
 	// PMK용 전역 변수에서 spec 정보 확인
 	if (!window.selectedPmkSpecInfo) {
-		alert("Please select a server specification first.");
+		alert("Please select a node specification first.");
 		return;
 	}
 
