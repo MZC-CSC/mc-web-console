@@ -193,13 +193,13 @@ function formatKvValue(value) {
     try {
         const parsed = JSON.parse(value);
         if (typeof parsed === 'object' && parsed !== null) {
-            return `<pre class="mb-0 small">${escapeHtml(JSON.stringify(parsed, null, 2))}</pre>`;
+            return `<pre class="mb-0 small" style="max-height:320px;overflow-y:auto;">${escapeHtml(JSON.stringify(parsed, null, 2))}</pre>`;
         }
     } catch {
         // not valid JSON — 아래 폴백으로
     }
     if (/^[{[]/.test(value.trim())) {
-        return `<pre class="mb-0 small">${escapeHtml(indentBraceString(value))}</pre>`;
+        return `<pre class="mb-0 small" style="max-height:320px;overflow-y:auto;">${escapeHtml(indentBraceString(value))}</pre>`;
     }
     return escapeHtml(value);
 }
