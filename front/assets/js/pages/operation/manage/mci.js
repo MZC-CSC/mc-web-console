@@ -1259,6 +1259,7 @@ export async function vmDetailInfo(vmId) {
   $("#server_detail_view_server_spec").text(vmSpecName) // detail tab
 
   webconsolejs["partials/operation/manage/server_monitoring"].monitoringDataInit()
+  await renderBlockDeviceSection('default')
 }
 
 export async function subGroup_vmDetailInfo(vmId) {
@@ -1473,6 +1474,166 @@ export async function subGroup_vmDetailInfo(vmId) {
   $("#subgroup_server_detail_view_server_spec").text(vmSpecName) // detail tab
 
   webconsolejs["partials/operation/manage/server_monitoring"].monitoringDataInit()
+  await renderBlockDeviceSection('group')
+}
+
+// ─── Data Disk Attach/Detach (Default 탭 Node Detail + Group 탭 Node Detail 공유) ──
+
+function _diskContext(context) {
+  if (context === 'group') {
+    return { infraId: window.currentMciId, nodeId: currentSubGroupVmId, blockDeviceElId: 'subgroup_block_device_section' }
+  }
+  return { infraId: window.currentMciId, nodeId: currentVmId, blockDeviceElId: 'block_device_section' }
+}
+
+let _attachDiskContext = 'default'
+
+// GetVmDataDisk는 명세와 달리 이 노드에 "실제 연결된" 것이 아니라 연결 후보군을
+// 반환한다(다른 provider 디스크까지 포함되는 것을 확인함). Disks 화면과 동일하게
+// associatedObjectList(신뢰 가능한 유일한 소스)로 실제 연결 여부를 판단해
+// 두 화면이 항상 같은 기준으로 일치된 정보를 보여주게 한다.
+async function renderBlockDeviceSection(context) {
+  const { infraId, nodeId, blockDeviceElId } = _diskContext(context)
+  const el = document.getElementById(blockDeviceElId)
+  if (!el || !infraId || !nodeId) return
+  try {
+    const diskApi = webconsolejs['common/api/services/disk_api']
+    const data = await diskApi.getAllDataDisk(window.currentNsId)
+    const allDisks = data?.dataDisk || (Array.isArray(data) ? data : [])
+    const nodeSuffix = `/infra/${infraId}/node/${nodeId}`
+    const disks = allDisks.filter((d) => (d.associatedObjectList || []).some((ref) => ref.endsWith(nodeSuffix)))
+    el.innerHTML = disks.length === 0
+      ? '<span class="text-muted">No attached disks</span>'
+      : disks.map((d) => `<div class="mb-1">${d.name || d.id}
+          <a class="btn btn-sm btn-outline-warning ms-1"
+             onclick="webconsolejs['pages/operation/manage/mci'].confirmDetachDisk('${context}','${d.id || d.name}')">Detach</a>
+        </div>`).join('')
+    el.innerHTML += `<a class="btn btn-sm btn-outline-primary mt-1"
+        onclick="webconsolejs['pages/operation/manage/mci'].openAttachDiskModal('${context}')">+ Attach Disk</a>`
+  } catch (err) {
+    console.error('Block device 조회 실패:', err)
+    el.innerHTML = '<span class="text-danger">Failed to load disks</span>'
+  }
+}
+
+document.getElementById('node-attach-mode-existing')?.addEventListener('change', _toggleAttachDiskMode)
+document.getElementById('node-attach-mode-new')?.addEventListener('change', _toggleAttachDiskMode)
+
+function _toggleAttachDiskMode() {
+  const isNew = document.getElementById('node-attach-mode-new').checked
+  document.getElementById('node-attach-existing-fields').classList.toggle('d-none', isNew)
+  document.getElementById('node-attach-new-fields').classList.toggle('d-none', !isNew)
+}
+
+export async function openAttachDiskModal(context) {
+  const { infraId, nodeId } = _diskContext(context)
+  if (!infraId || !nodeId) return
+  _attachDiskContext = context
+
+  document.getElementById('node-attach-disk-target').value = `${infraId} / ${nodeId}`
+  document.getElementById('node-attach-mode-existing').checked = true
+  document.getElementById('node-attach-new-name').value = ''
+  document.getElementById('node-attach-new-size').value = ''
+  document.getElementById('node-attach-new-type').value = ''
+  document.getElementById('node-attach-new-description').value = ''
+  _toggleAttachDiskMode()
+
+  const select = document.getElementById('node-attach-disk-select')
+  select.innerHTML = '<option value="">Select</option>'
+  try {
+    const diskApi = webconsolejs['common/api/services/disk_api']
+    const mciApi = webconsolejs['common/api/services/mci_api']
+    const [allDisks, mciResp] = await Promise.all([
+      diskApi.getAllDataDisk(window.currentNsId),
+      mciApi.getMci(window.currentNsId, infraId),
+    ])
+    const disks = allDisks?.dataDisk || (Array.isArray(allDisks) ? allDisks : [])
+    const node = (mciResp?.responseData?.node || []).find((n) => n.id === nodeId)
+    const nodeProvider = node?.connectionConfig?.providerName
+    const nodeRegion = node?.connectionConfig?.regionDetail?.regionName
+    for (const d of disks) {
+      if ((d.associatedObjectList || []).length > 0) continue // 이미 attach된 디스크 제외
+      const diskProvider = d?.connectionConfig?.providerName
+      const diskRegion = d?.connectionConfig?.regionDetail?.regionName
+      if (nodeProvider && diskProvider !== nodeProvider) continue
+      if (nodeRegion && diskRegion !== nodeRegion) continue
+      const opt = document.createElement('option')
+      opt.value = d.id || d.name
+      opt.textContent = d.name || d.id
+      select.appendChild(opt)
+    }
+  } catch (err) {
+    console.error('디스크 목록 조회 실패:', err)
+  }
+
+  new bootstrap.Modal(document.getElementById('node-attach-disk-modal')).show()
+}
+
+export async function executeAttachDiskToNode() {
+  const context = _attachDiskContext
+  const { infraId, nodeId } = _diskContext(context)
+  if (!infraId || !nodeId) return
+
+  const diskApi = webconsolejs['common/api/services/disk_api']
+  const isNewMode = document.getElementById('node-attach-mode-new').checked
+  const spinner = document.getElementById('node-attach-disk-spinner')
+  const btn = document.getElementById('node-attach-disk-execute-btn')
+  spinner.classList.remove('d-none')
+  btn.disabled = true
+
+  try {
+    if (isNewMode) {
+      const name = document.getElementById('node-attach-new-name').value.trim()
+      const diskSize = parseInt(document.getElementById('node-attach-new-size').value, 10)
+      const diskType = document.getElementById('node-attach-new-type').value.trim()
+      const description = document.getElementById('node-attach-new-description').value.trim()
+      if (!name || !diskSize) {
+        webconsolejs['common/utils/toast'].showToast(webconsolejs['common/utils/toast'].TOAST_TYPES.WARNING, 'Disk name and size are required.')
+        return
+      }
+      const body = { name, diskSize }
+      if (diskType) body.diskType = diskType
+      if (description) body.description = description
+      await diskApi.postVmDataDisk(window.currentNsId, infraId, nodeId, body)
+    } else {
+      const dataDiskId = document.getElementById('node-attach-disk-select').value
+      if (!dataDiskId) {
+        webconsolejs['common/utils/toast'].showToast(webconsolejs['common/utils/toast'].TOAST_TYPES.WARNING, 'Please select a disk.')
+        return
+      }
+      await diskApi.attachDataDisk(window.currentNsId, infraId, nodeId, dataDiskId)
+    }
+    webconsolejs['common/utils/toast'].showToast(webconsolejs['common/utils/toast'].TOAST_TYPES.SUCCESS, 'Disk attached successfully')
+    bootstrap.Modal.getInstance(document.getElementById('node-attach-disk-modal'))?.hide()
+    await renderBlockDeviceSection(context)
+  } catch (err) {
+    console.error('Disk Attach 실패:', err)
+    const msg = err?.response?.data?.responseData?.message || err?.message || String(err)
+    webconsolejs['common/utils/toast'].showToast(webconsolejs['common/utils/toast'].TOAST_TYPES.ERROR, 'Failed to attach disk: ' + msg)
+  } finally {
+    spinner.classList.add('d-none')
+    btn.disabled = false
+  }
+}
+
+export function confirmDetachDisk(context, dataDiskId) {
+  webconsolejs['partials/layout/modal'].commonConfirmModal(
+    'commonDefaultModal', 'Detach Disk', `Detach disk "${dataDiskId}"?`,
+    'pages/operation/manage/mci.executeDetachDiskFromNode', `${context}|${dataDiskId}`
+  )
+}
+
+export async function executeDetachDiskFromNode(arg) {
+  const [context, dataDiskId] = arg.split('|')
+  const { infraId, nodeId } = _diskContext(context)
+  try {
+    await webconsolejs['common/api/services/disk_api'].detachDataDisk(window.currentNsId, infraId, nodeId, dataDiskId)
+    await renderBlockDeviceSection(context)
+  } catch (err) {
+    console.error('Disk Detach 실패:', err)
+    const msg = err?.response?.data?.responseData?.message || err?.message || String(err)
+    webconsolejs['common/utils/toast'].showToast(webconsolejs['common/utils/toast'].TOAST_TYPES.ERROR, 'Failed to detach disk: ' + msg)
+  }
 }
 
 // vm 세부 정보 초기화
@@ -1567,6 +1728,7 @@ function clearServerInfo() {
   // $("#manage_mci_popup_user_name").val("")
 
   $("#block_device_section").empty()
+  $("#subgroup_block_device_section").empty()
   // $("#attachedDiskList").empty()
 
   $("#server_detail_view_root_device_type").val("");
