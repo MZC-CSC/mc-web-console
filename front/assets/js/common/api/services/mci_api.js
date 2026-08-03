@@ -782,7 +782,7 @@ export async function postScaleOutSubGroup(nsId, mciId, subgroupId, numVMsToAdd)
       async: "true"
     },
     Request: {
-      "numVMsToAdd": numVMsToAdd,
+      "numNodesToAdd": numVMsToAdd,
     }
   };
 
