@@ -118,7 +118,7 @@ var pmkListTable;// div로 선언한 pmk table
 var checked_array = [];
 var currentPmkId = "";
 var currentNodeGroupName = ""
-var currentProvider = ""
+export var currentProvider = ""
 
 initPmkTable(); // init tabulator
 
@@ -1546,8 +1546,48 @@ export async function changeCloudConnectionDynamic(connectionName) {
     // 동적 생성에서는 VPC, Subnet, Security Group 선택이 필요 없음
     // Cloud Connection만 설정하고 추가 API 호출 없이 처리
     if (!connectionName) {
+        resetNodeGroupRootDiskTypeDynamic();
         return;
     }
+
+    const provider = $("#cluster_provider_dynamic").val();
+    if (!provider) {
+        resetNodeGroupRootDiskTypeDynamic();
+        return;
+    }
+
+    try {
+        const diskResp = await webconsolejs["common/api/services/disk_api"]
+            .getCommonLookupDiskInfo(provider, connectionName);
+        applyNodeGroupRootDiskTypeDynamic(provider, diskResp);
+    } catch (error) {
+        console.error("Failed to look up disk types:", error);
+        resetNodeGroupRootDiskTypeDynamic();
+    }
+}
+
+// provider/connectionName에 맞는 Root Disk Type 옵션으로 드롭다운을 채운다
+function applyNodeGroupRootDiskTypeDynamic(provider, diskInfoList) {
+    const providerId = provider.toUpperCase();
+    const matched = Array.isArray(diskInfoList)
+        ? diskInfoList.find(item => item.providerId === providerId)
+        : null;
+
+    let html = '<option value="">Select Root Disk Type</option><option value="default">default</option>';
+    if (matched && Array.isArray(matched.rootdisktype)) {
+        matched.rootdisktype.forEach(type => {
+            html += `<option value="${type}">${type}</option>`;
+        });
+    }
+
+    $("#nodegroup_rootdisk_dynamic").empty().append(html);
+}
+
+// Root Disk Type 드롭다운을 기본 상태로 되돌린다
+function resetNodeGroupRootDiskTypeDynamic() {
+    $("#nodegroup_rootdisk_dynamic").empty().append(
+        '<option value="">Select Root Disk Type</option><option value="default">default</option>'
+    );
 }
 
 // Dynamic 폼용 Provider 변경 이벤트
