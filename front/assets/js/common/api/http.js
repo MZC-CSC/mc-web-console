@@ -148,7 +148,9 @@ export async function commonAPIPost(url, data, attempt, options = {}) {
         } else if (loaderType === 'page') {
           deactivePageLoader();
         }
-        return error;
+        // return error 는 호출부의 await가 정상 resolve된 것처럼 보이게 만들어
+        // try/catch로 실패를 판단하는 모든 호출부가 성공 분기를 타는 버그의 원인이었음 — throw로 전파
+        throw error;
       }
       // 404 에러는 데이터가 없는 정상적인 상황이므로 토큰 갱신하지 않음
       if (error.response && error.response.status === 404) {
@@ -159,7 +161,8 @@ export async function commonAPIPost(url, data, attempt, options = {}) {
         } else if (loaderType === 'page') {
           deactivePageLoader();
         }
-        return error;
+        // 호출부가 catch(err) { if (err?.response?.status !== 404) ... } 패턴으로 throw를 전제하므로 throw 유지
+        throw error;
       }
       // 401 Unauthorized는 토큰 만료 또는 인증 실패
       if (error.response && error.response.status === 401) {
@@ -188,7 +191,7 @@ export async function commonAPIPost(url, data, attempt, options = {}) {
           deactivePageLoader();
         }
         webconsolejs["common/util"].showToast("Insufficient permissions. Please contact your administrator.", 'error');
-        return error;
+        throw error;
       }
       // 500 Internal Server Error는 서버 오류
       if (error.response && error.response.status === 500) {
@@ -199,7 +202,7 @@ export async function commonAPIPost(url, data, attempt, options = {}) {
           deactivePageLoader();
         }
         webconsolejs["common/util"].showToast("Server error occurred. Please try again later.", 'error');
-        return error;
+        throw error;
       }
     }
     
@@ -228,8 +231,8 @@ export async function commonAPIPost(url, data, attempt, options = {}) {
         webconsolejs["common/util"].showToast("An error occurred while processing the request: " + error.message, 'error');
       }
     }
-    
-    return error;
+
+    throw error;
   }
 }
 
@@ -287,7 +290,14 @@ export async function commonAPIPostWithoutRetry(url, data) {
     }
 }
 
+// 동시에 여러 API 호출이 겹칠 수 있어 단순 on/off 토글이면 안 됨 —
+// 먼저 끝난 호출의 deactivate가 아직 진행 중인 다른 호출의 로더까지 꺼버리는
+// 경쟁 상태가 발생한다(예: 페이지 진입 시 workspace/project 초기화 호출과
+// 목록 조회 호출이 동시에 뜨는 경우). 활성 요청 수를 세어 0이 될 때만 끈다.
+let activePageLoaderCount = 0;
+
 function activePageLoader(){
+    activePageLoaderCount++;
     try{
         document.getElementById("pageloader").classList.add('active');
     }catch(error){
@@ -296,6 +306,8 @@ function activePageLoader(){
 }
 
 function deactivePageLoader(){
+    activePageLoaderCount = Math.max(0, activePageLoaderCount - 1);
+    if (activePageLoaderCount > 0) return;
     try{
         document.getElementById("pageloader").classList.remove('active');
     }catch(error){

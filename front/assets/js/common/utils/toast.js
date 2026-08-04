@@ -28,9 +28,10 @@ export const TOAST_OPTIONS = {
     },
     [TOAST_TYPES.WARNING]: {
         bgClass: 'bg-warning',
-        icon: 'spinner-border spinner-border-sm',
-        autohide: false,
-        closeButton: true
+        icon: 'ti ti-alert-triangle',
+        autohide: true,
+        delay: 4000,
+        closeButton: false
     },
     [TOAST_TYPES.ERROR]: {
         bgClass: 'bg-danger',

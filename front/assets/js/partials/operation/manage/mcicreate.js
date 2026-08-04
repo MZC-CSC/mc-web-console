@@ -3,7 +3,7 @@ import { TabulatorFull as Tabulator } from "tabulator-tables";
 //document.addEventListener("DOMContentLoaded", initMciCreate) // page가 아닌 partials에서는 제거
 
 // 새로운 MCI API 인터페이스에 맞는 데이터 변환 헬퍼 함수
-function transformServerConfigToSubGroups(serverConfigArr) {
+function transformServerConfigToNodeGroups(serverConfigArr) {
   return serverConfigArr.map(config => ({
     specId: config.commonSpec,
     imageId: config.commonImage,
@@ -311,7 +311,7 @@ var currentEditingIndex = -1 // 현재 수정 중인 서버의 인덱스 (-1: �
 // isExpert의 체크 여부에 따라 바뀜.
 // newServers 와 simpleServers가 있음.
 export async function displayNewServerForm() {
-  // +SubGroup 버튼 클릭 시 수정 모드 플래그 초기화 (신규 추가 모드)
+  // +NodeGroup 버튼 클릭 시 수정 모드 플래그 초기화 (신규 추가 모드)
   currentEditingIndex = -1;
   
   // 화면별 select 참조 — Create MCI는 #mci_deploy_algorithm, Extend VM은 #vm_deploy_algorithm
@@ -575,7 +575,7 @@ function resetModals() {
 }
 
 export function view_express(cnt) {
-  // SubGroup 리스트 아이템 클릭 시 해당 서버 정보를 폼에 채워서 수정 모드로 전환
+  // NodeGroup 리스트 아이템 클릭 시 해당 서버 정보를 폼에 채워서 수정 모드로 전환
   
   currentEditingIndex = parseInt(cnt); // 수정 모드 플래그 설정
   
@@ -1089,7 +1089,7 @@ function vmCreateCallback(resultVmKey, resultStatus) {
 	commonResultAlert("Node creation request completed");
 }
 
-// SubGroup Size
+// NodeGroup Size
 (function () {
 	// ep_vm_add_cnt 처리 (PMK 스타일 input-number-container)
 	const input = document.getElementById('ep_vm_add_cnt');
@@ -1368,7 +1368,7 @@ export async function deployFromSelectedTemplate() {
 	}
 }
 
-// 선택한 template의 nodeGroups를 기존 SubGroup 목록에 추가(append) — 수정 후 배포용 프리필
+// 선택한 template의 nodeGroups를 기존 NodeGroup 목록에 추가(append) — 수정 후 배포용 프리필
 // infra 단위 값(description/policyOnPartialFailure/installMonAgent/sgTemplateId/vNetTemplateId/postCommand.userName·timeoutMinutes)은
 // 이 모듈 상태에 보관만 하고, 실제 배포 payload 병합은 WEB-TECH-019(FR-05-02)에서 처리한다.
 let templatePrefillInfraState = null;
@@ -1399,7 +1399,7 @@ export function addTemplateToForm() {
 		express_form["commonImage"] = g.imageId || "";
 		express_form["imageId"] = g.imageId || "";
 		express_form["specId"] = g.specId || "";
-		// infra 단위 postCommand는 첫 SubGroup에만 반영(기존 command 처리 관례와 동일)
+		// infra 단위 postCommand는 첫 NodeGroup에만 반영(기존 command 처리 관례와 동일)
 		express_form["command"] = idx === 0 ? (req.postCommand?.command || []).join("\n") : "";
 
 		// 정식 매핑 승격 5필드(CreateNodeGroupDynamicReq) — template에 값이 있을 때만 carry-through

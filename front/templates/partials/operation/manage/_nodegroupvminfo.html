@@ -1,8 +1,8 @@
 <!-- Group 탭 -->
-<div class="card section" id="subGroup_vm_info">
+<div class="card section" id="nodeGroup_vm_info">
   <div class="card-header">
     <h3 class="card-title">
-      Node Info<span id="subgroup_server_info_text" class="text-info"> </span>
+      Node Info<span id="nodegroup_server_info_text" class="text-info"> </span>
     </h3>
     <div class="card-actions btn-actions gap-2">
       <!-- <a href="#" class="btn" data-bs-toggle="modal" data-bs-target="#cmdtestmodal">
@@ -41,7 +41,7 @@
         <!-- Left Column: Connection Info -->
         <div class="col-lg-2">
           <div class="form-group mb-2">
-            <span id="subgroup_mci_server_info_connection"></span>
+            <span id="nodegroup_mci_server_info_connection"></span>
           </div>
         </div>
 
@@ -58,7 +58,7 @@
           >
             <div class="datagrid-item mb-3">
               <div class="datagrid-title">CSP</div>
-              <div class="datagrid-content" id="subgroup_server_info_csp"></div>
+              <div class="datagrid-content" id="nodegroup_server_info_csp"></div>
             </div>
           </div>
 
@@ -73,15 +73,15 @@
           >
             <div class="datagrid-item mb-3">
               <div class="datagrid-title">Region</div>
-              <div class="datagrid-content" id="subgroup_server_info_region"></div>
+              <div class="datagrid-content" id="nodegroup_server_info_region"></div>
             </div>
             <div class="datagrid-item mb-3">
               <div class="datagrid-title">Zone</div>
-              <div class="datagrid-content" id="subgroup_server_info_zone"></div>
+              <div class="datagrid-content" id="nodegroup_server_info_zone"></div>
             </div>
             <div class="datagrid-item mb-3">
               <div class="datagrid-title">Config Name</div>
-              <div class="datagrid-content" id="subgroup_server_info_connection_name"></div>
+              <div class="datagrid-content" id="nodegroup_server_info_connection_name"></div>
             </div>
           </div>
 
@@ -96,15 +96,15 @@
           >
             <div class="datagrid-item mb-3">
               <div class="datagrid-title">VMID</div>
-              <div class="datagrid-content" id="subgroup_server_info_cspVMID"></div>
+              <div class="datagrid-content" id="nodegroup_server_info_cspVMID"></div>
             </div>
             <div class="datagrid-item mb-3">
               <div class="datagrid-title">Node Spec</div>
-              <div class="datagrid-content" id="subgroup_server_info_vmspec_name"></div>
+              <div class="datagrid-content" id="nodegroup_server_info_vmspec_name"></div>
             </div>
             <div class="datagrid-item mb-3">
               <div class="datagrid-title">Architecture</div>
-              <div class="datagrid-content" id="subgroup_server_info_archi"></div>
+              <div class="datagrid-content" id="nodegroup_server_info_archi"></div>
             </div>
           </div>
 
@@ -120,12 +120,12 @@
             <div class="datagrid-item mb-3">
               <div class="datagrid-title">Public IP</div>
               <div class="datagrid-content d-flex align-items-center">
-                <span id="subgroup_server_info_public_ip" class="me-2"></span>
+                <span id="nodegroup_server_info_public_ip" class="me-2"></span>
                 <a
                   class="btn btn-sm btn-outline-primary"
                   data-bs-toggle="modal"
                   data-bs-target="#commonDefaultModal"
-                  onclick="webconsolejs['partials/layout/modal'].commonModal(this,'Terminal', 'Would you like to connect?', 'pages/operation/manage/mci.initremotecmdModal', 'subgroupvm')"
+                  onclick="webconsolejs['partials/layout/modal'].commonModal(this,'Terminal', 'Would you like to connect?', 'pages/operation/manage/mci.initremotecmdModal', 'nodegroupvm')"
                 >
                   Terminal
                 </a>
@@ -133,7 +133,7 @@
             </div>
             <div class="datagrid-item mb-3">
               <div class="datagrid-title">Private IP</div>
-              <div class="datagrid-content" id="subgroup_server_info_private_ip"></div>
+              <div class="datagrid-content" id="nodegroup_server_info_private_ip"></div>
             </div>
             <!-- Empty column to maintain alignment -->
             <div class="datagrid-item mb-3">
@@ -144,7 +144,7 @@
         </div>
       </div>
     </div>
-    {{ partial("partials/operation/manage/subgroup_servertabcards.html") | raw }}
+    {{ partial("partials/operation/manage/nodegroup_servertabcards.html") | raw }}
   </div>
   <!-- body end -->
 </div>

@@ -20,8 +20,8 @@ export async function postRemoteCmd(nsid, resourceId, targetId, cmdarr, targetTy
                 userName: "cb-user"
             }
         };
-    } else if (targetType === 'subgroup') {
-        // SubGroup 로직
+    } else if (targetType === 'nodegroup') {
+        // NodeGroup 로직
         data = {
             pathParams: {
                 nsId: nsid,
@@ -111,7 +111,7 @@ export async function postFileToMci(nsId, mciId, file, targetPath, targetType, t
     };
 
     // targetType에 따른 query parameter 추가
-    if (targetType === 'subgroup' && targetId) {
+    if (targetType === 'nodegroup' && targetId) {
         data.queryParams = { subGroupId: targetId };
     } else if (targetType === 'vm' && targetId) {
         data.queryParams = { vmId: targetId };

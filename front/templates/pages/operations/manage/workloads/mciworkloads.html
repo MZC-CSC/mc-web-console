@@ -1798,10 +1798,68 @@
   </div>
 </div>
 
+<!-- Node Data Disk Attach 팝업 (Default/Group 탭 Node Detail에서 공유) -->
+<div class="modal modal-blur fade" id="node-attach-disk-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Attach Data Disk</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Target Node</label>
+          <input type="text" class="form-control" id="node-attach-disk-target" readonly>
+        </div>
+        <div class="mb-3">
+          <div class="btn-group w-100" role="group">
+            <input type="radio" class="btn-check" name="node-attach-disk-mode" id="node-attach-mode-existing" checked>
+            <label class="btn btn-outline-primary" for="node-attach-mode-existing">Existing Disk</label>
+            <input type="radio" class="btn-check" name="node-attach-disk-mode" id="node-attach-mode-new">
+            <label class="btn btn-outline-primary" for="node-attach-mode-new">Create New</label>
+          </div>
+        </div>
+        <div id="node-attach-existing-fields">
+          <div class="mb-2">
+            <label class="form-label required">Disk</label>
+            <select class="form-select" id="node-attach-disk-select"></select>
+          </div>
+        </div>
+        <div id="node-attach-new-fields" class="d-none">
+          <div class="mb-3">
+            <label class="form-label required">Disk Name</label>
+            <input type="text" class="form-control" id="node-attach-new-name" placeholder="e.g. my-data-disk">
+          </div>
+          <div class="mb-3">
+            <label class="form-label required">Disk Size (GB)</label>
+            <input type="number" class="form-control" id="node-attach-new-size" min="1" placeholder="e.g. 100">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Disk Type</label>
+            <input type="text" class="form-control" id="node-attach-new-type" placeholder="optional">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Description</label>
+            <input type="text" class="form-control" id="node-attach-new-description" placeholder="optional">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="node-attach-disk-execute-btn"
+          onclick="webconsolejs['pages/operation/manage/mci'].executeAttachDiskToNode()">
+          <span id="node-attach-disk-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>Attach
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- pageloader-->
 {{ partial("partials/layout/pageloader.html") | raw }}
 {{ javascriptTag("pages/operation/manage/mci.js") | raw }}
 {{ javascriptTag("common/api/services/mci_api.js") | raw }}
+{{ javascriptTag("common/api/services/disk_api.js") | raw }}
 {{ javascriptTag("common/api/services/vmimage_api.js") | raw }}
 {{ javascriptTag("common/api/services/import_api.js") | raw }}
 {{ javascriptTag("pages/operation/manage/importvm.js") | raw }}
