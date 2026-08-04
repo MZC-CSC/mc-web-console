@@ -30,3 +30,12 @@ export async function del(ns, name) {
   });
   return response?.data;
 }
+
+export async function update(ns, name, body) {
+  const controller = '/api/mc-infra-manager/PutSecurityGroup';
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
+    pathParams: { nsId: ns, securityGroupId: name },
+    request: body
+  });
+  return response?.data;
+}

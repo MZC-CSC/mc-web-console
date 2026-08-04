@@ -90,7 +90,7 @@ function initTable(vNets) {
         paginationSizeSelector: [10, 20, 50],
         paginationCounter: 'rows',
         movableColumns: true,
-        selectableRows: true,
+        selectableRows: true, // false로 두면 Tabulator 내부 cap-check 버그(isNaN(false)===false)로 다중선택 자체가 깨진다
         initialSort: [{ column: 'name', dir: 'asc' }],
         columns: [
             { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
@@ -106,6 +106,14 @@ function initTable(vNets) {
     });
 
     AppState.tables.vnetTable.on('rowClick', async function (e, row) {
+        // selectableRows:true는 row 아무데나 클릭해도 체크박스를 토글하는 내장 동작이 있다.
+        // 체크박스 자체를 클릭한 게 아니면 그 토글을 즉시 되돌려, row 클릭은 Detail Panel 오픈 전용으로 만든다.
+        const clickedCell = row.getCells().find(c => c.getElement().contains(e.target));
+        const isCheckboxCol = clickedCell?.getColumn()?.getDefinition()?.formatter === 'rowSelection';
+        if (!isCheckboxCol) {
+            row.toggleSelect();
+        }
+
         const data = row.getData();
         AppState.resources.selected = data;
         renderDetail(data);
@@ -158,6 +166,8 @@ function renderDetail(data) {
 }
 
 function showDetail() {
+    document.getElementById('edit-mode-cards')?.classList.remove('show');
+    AppState.ui.editMode = false;
     const el = document.getElementById('view-mode-cards');
     if (el) el.classList.add('show');
     AppState.ui.viewMode = true;
@@ -331,29 +341,32 @@ export async function saveVNet() {
     await loadVNetList();
 }
 
-export function confirmDeleteVNet() {
-    const selected = AppState.resources.selected;
-    if (!selected) return;
-    webconsolejs['partials/layout/modal'].commonConfirmModal(
-        'commonDefaultModal',
-        'Delete VPC',
-        `Delete VPC "${selected.name}"?`,
-        'pages/settings/environment/cloudresources/networks.executeDeleteVNet'
-    );
-}
+// ─── Table 선택 기반 Edit ─────────────────────────────────────────────────
 
-export async function executeDeleteVNet() {
-    const selected = AppState.resources.selected;
-    if (!selected) return;
-    try {
-        await vpcApi().del(AppState.ns, selected.name);
-        showToast(TOAST_TYPES.SUCCESS, `VPC "${selected.name}" deleted successfully`);
-        hideDetail();
-        await loadVNetList();
-    } catch (err) {
-        console.error('VPC Delete 실패:', err);
-        showToast(TOAST_TYPES.ERROR, 'Failed to delete VPC: ' + (err.message || ''));
+export async function triggerEditSelected() {
+    const table = AppState.tables.vnetTable;
+    const selected = table ? table.getSelectedData() : [];
+    if (selected.length !== 1) {
+        webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+            'Validation',
+            selected.length === 0
+                ? 'Please select a VPC to edit.'
+                : 'Please select only one VPC to edit.'
+        );
+        return;
     }
+
+    const data = selected[0];
+    AppState.resources.selected = data;
+    // GetVNet으로 최신 subnet 정보까지 로드 후 Edit 모드 진입 (rowClick 핸들러와 동일 패턴)
+    try {
+        const detail = await vpcApi().get(AppState.ns, data.name);
+        if (detail) AppState.resources.selected = detail;
+    } catch (err) {
+        console.error('VNet 상세 조회 실패:', err);
+    }
+    showEditMode();
+    table.deselectRow();
 }
 
 // ─── 다중선택 삭제 ───────────────────────────────────────────────────────
@@ -657,10 +670,9 @@ webconsolejs['pages/settings/environment/cloudresources/networks'] = {
     addSubnetRow,
     executeCreateVNet,
     hideDetail,
-    confirmDeleteVNet,
-    executeDeleteVNet,
     confirmBulkDelete,
     executeBulkDelete,
+    triggerEditSelected,
     showEditMode,
     cancelEditMode,
     addEditSubnetRow,

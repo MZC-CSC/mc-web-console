@@ -87,7 +87,7 @@ function initTable(items) {
         paginationSizeSelector: [10, 20, 50],
         paginationCounter: 'rows',
         movableColumns: true,
-        selectableRows: true,
+        selectableRows: true, // false로 두면 Tabulator 내부 cap-check 버그(isNaN(false)===false)로 다중선택 자체가 깨진다
         initialSort: [{ column: 'name', dir: 'asc' }],
         columns: [
             { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
@@ -106,6 +106,14 @@ function initTable(items) {
     });
 
     AppState.tables.sgTable.on('rowClick', async function (e, row) {
+        // selectableRows:true는 row 아무데나 클릭해도 체크박스를 토글하는 내장 동작이 있다.
+        // 체크박스 자체를 클릭한 게 아니면 그 토글을 즉시 되돌려, row 클릭은 Detail Panel 오픈 전용으로 만든다.
+        const clickedCell = row.getCells().find(c => c.getElement().contains(e.target));
+        const isCheckboxCol = clickedCell?.getColumn()?.getDefinition()?.formatter === 'rowSelection';
+        if (!isCheckboxCol) {
+            row.toggleSelect();
+        }
+
         const data = row.getData();
         AppState.resources.selected = data;
         renderDetail(data);
@@ -224,6 +232,8 @@ function indentBraceString(str) {
 }
 
 function showDetail() {
+    document.getElementById('edit-mode-cards')?.classList.remove('show');
+    AppState.ui.editMode = false;
     const el = document.getElementById('view-mode-cards');
     if (el) el.classList.add('show');
     AppState.ui.viewMode = true;
@@ -231,34 +241,201 @@ function showDetail() {
 
 export function hideDetail() {
     document.getElementById('view-mode-cards')?.classList.remove('show');
+    document.getElementById('edit-mode-cards')?.classList.remove('show');
     AppState.ui.viewMode = false;
+    AppState.ui.editMode = false;
     AppState.resources.selected = null;
 }
 
-// ─── Delete ───────────────────────────────────────────────────────────────
+// ─── Table 선택 기반 Edit ─────────────────────────────────────────────────
 
-export function confirmDeleteSG() {
-    const selected = AppState.resources.selected;
-    if (!selected) return;
-    webconsolejs['partials/layout/modal'].commonConfirmModal(
-        'commonDefaultModal',
-        'Delete Security Group',
-        `Delete SecurityGroup "${selected.name}"?`,
-        'pages/settings/environment/cloudresources/securitygroups.executeDeleteSG'
-    );
+export async function triggerEditSelected() {
+    const table = AppState.tables.sgTable;
+    const selected = table ? table.getSelectedData() : [];
+    if (selected.length !== 1) {
+        webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+            'Validation',
+            selected.length === 0
+                ? 'Please select a SecurityGroup to edit.'
+                : 'Please select only one SecurityGroup to edit.'
+        );
+        return;
+    }
+
+    const data = selected[0];
+    AppState.resources.selected = data;
+    try {
+        const detail = await sgApi().get(AppState.ns, data.name);
+        if (detail) AppState.resources.selected = detail;
+    } catch (err) {
+        console.error('SG 상세 조회 실패:', err);
+    }
+    showEditMode();
+    table.deselectRow();
 }
 
-export async function executeDeleteSG() {
+// ─── Edit Mode ────────────────────────────────────────────────────────────
+
+// tumblebug UpdateFirewallRules(securitygroup.go:788)는 ICMP만 포트 검증을 건너뛰고
+// ALL은 예외 처리가 빠져 있어, ALL 규칙이 있는 SG는 Update 호출 시 항상 500이 난다 (Create는 정상 허용).
+function _hasUnsupportedAllRule(rules) {
+    return (rules || []).some(r => String(r.Protocol || r.protocol || '').toUpperCase() === 'ALL');
+}
+
+export function showEditMode() {
     const selected = AppState.resources.selected;
     if (!selected) return;
+
+    document.getElementById('edit-name').textContent    = selected.name || '';
+    document.getElementById('edit-sg-name').value       = selected.name || '';
+    document.getElementById('edit-sg-vnet').value       = selected.vNetId || '';
+    document.getElementById('edit-sg-provider').value   = getProvider(selected);
+    document.getElementById('edit-sg-region').value     = getRegion(selected);
+
+    const rules = selected.firewallRules || selected.securityRuleList || [];
+    const blocked = _hasUnsupportedAllRule(rules);
+    document.getElementById('edit-sg-all-warning')?.classList.toggle('d-none', !blocked);
+    const saveBtn = document.getElementById('edit-save-btn');
+    if (saveBtn) saveBtn.disabled = blocked;
+
+    _renderEditRuleTable(rules);
+
+    document.getElementById('view-mode-cards')?.classList.remove('show');
+    document.getElementById('edit-mode-cards')?.classList.add('show');
+    AppState.ui.viewMode = false;
+    AppState.ui.editMode = true;
+}
+
+export function cancelEditMode() {
+    document.getElementById('edit-mode-cards')?.classList.remove('show');
+    document.getElementById('view-mode-cards')?.classList.add('show');
+    AppState.ui.editMode = false;
+    AppState.ui.viewMode = true;
+}
+
+function _splitPortRange(ports) {
+    const str = String(ports ?? '').trim();
+    if (!str) return { from: '', to: '' };
+    const [from, to] = str.split('-');
+    return { from: from ?? '', to: (to ?? from) ?? '' };
+}
+
+function _renderEditRuleTable(rules) {
+    const list = document.getElementById('edit-sg-rule-list');
+    list.innerHTML = '';
+    for (const r of rules) {
+        const direction = (r.Direction || r.direction || 'inbound').toLowerCase();
+        const protocol  = (r.Protocol || r.ipProtocol || r.IPProtocol || 'tcp').toLowerCase();
+        const { from, to } = _splitPortRange(r.Ports ?? r.Port ?? '');
+        const cidr = r.CIDR || r.cidr || '';
+        _appendRuleRow('edit-sg-rule-list', { direction, protocol, from, to, cidr });
+    }
+}
+
+export function addEditRuleRow() {
+    _appendRuleRow('edit-sg-rule-list');
+}
+
+function _appendRuleRow(listId, values = {}) {
+    const list = document.getElementById(listId);
+    const row = document.createElement('div');
+    row.className = 'row g-2 mb-2 align-items-center sg-rule-row';
+    row.innerHTML = `
+        <div class="col-md-2">
+          <select class="form-select form-select-sm rule-direction">
+            <option value="inbound">inbound</option>
+            <option value="outbound">outbound</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <select class="form-select form-select-sm rule-protocol">
+            <option value="tcp">TCP</option>
+            <option value="udp">UDP</option>
+            <option value="icmp">ICMP</option>
+            <option value="all">ALL</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <input type="text" class="form-control form-control-sm rule-from-port"
+            placeholder="e.g. 0" value="${values.from ?? ''}">
+        </div>
+        <div class="col-md-2">
+          <input type="text" class="form-control form-control-sm rule-to-port"
+            placeholder="e.g. 65535" value="${values.to ?? ''}">
+        </div>
+        <div class="col-md-3">
+          <input type="text" class="form-control form-control-sm rule-cidr"
+            placeholder="CIDR (e.g. 0.0.0.0/0)" value="${values.cidr ?? ''}">
+        </div>
+        <div class="col-md-1">
+          <button type="button" class="btn btn-sm btn-outline-danger w-100"
+            onclick="this.closest('.sg-rule-row').remove()">✕</button>
+        </div>`;
+    if (values.direction) row.querySelector('.rule-direction').value = values.direction;
+    if (values.protocol) row.querySelector('.rule-protocol').value = values.protocol;
+    list.appendChild(row);
+}
+
+function _collectRuleRows(listId) {
+    const rules = [];
+    let ruleError = false;
+    document.querySelectorAll(`#${listId} .sg-rule-row`).forEach(row => {
+        const direction  = row.querySelector('.rule-direction')?.value;
+        const protocol   = row.querySelector('.rule-protocol')?.value.toUpperCase();
+        const fromPort   = row.querySelector('.rule-from-port')?.value.trim();
+        const toPort     = row.querySelector('.rule-to-port')?.value.trim();
+        const cidr       = row.querySelector('.rule-cidr')?.value.trim();
+        if (!protocol && !cidr) return;
+        const needsPort = protocol !== 'ICMP' && protocol !== 'ALL';
+        if (needsPort && (!fromPort || !toPort)) { ruleError = true; return; }
+        if (!cidr) { ruleError = true; return; }
+        const ports = needsPort
+            ? (fromPort === toPort ? fromPort : `${fromPort}-${toPort}`)
+            : '';
+        rules.push({ Direction: direction, Protocol: protocol, Ports: ports, CIDR: cidr });
+    });
+    return { rules, ruleError };
+}
+
+export async function saveSG() {
+    const selected = AppState.resources.selected;
+    if (!selected) return;
+
+    const { rules: firewallRules, ruleError } = _collectRuleRows('edit-sg-rule-list');
+
+    if (_hasUnsupportedAllRule(firewallRules)) {
+        webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+            'Not Supported',
+            'This SecurityGroup contains an ALL protocol rule. Saving is currently blocked because the backend rejects ALL protocol rules on update (known limitation).'
+        );
+        return;
+    }
+    if (ruleError) {
+        showToast(TOAST_TYPES.WARNING, 'TCP/UDP rules require From Port, To Port, and CIDR.');
+        return;
+    }
+
+    const spinner = document.getElementById('edit-save-spinner');
+    const btn = document.querySelector('#edit-mode-cards .btn-primary');
+    spinner?.classList.remove('d-none');
+    if (btn) btn.disabled = true;
+
     try {
-        await sgApi().del(AppState.ns, selected.name);
-        showToast(TOAST_TYPES.SUCCESS, `SecurityGroup "${selected.name}" deleted.`);
-        hideDetail();
+        await sgApi().update(AppState.ns, selected.name, { firewallRules });
+        showToast(TOAST_TYPES.SUCCESS, `SecurityGroup "${selected.name}" updated successfully`);
+        const detail = await sgApi().get(AppState.ns, selected.name);
+        if (detail) {
+            AppState.resources.selected = detail;
+            renderDetail(detail);
+        }
+        cancelEditMode();
         await loadSGList();
     } catch (err) {
-        console.error('Delete SG failed:', err);
-        showToast(TOAST_TYPES.ERROR, 'Failed to delete SecurityGroup: ' + (err.message || ''));
+        console.error('SG Update 실패:', err);
+        showToast(TOAST_TYPES.ERROR, 'Failed to update SecurityGroup: ' + (err.message || ''));
+    } finally {
+        spinner?.classList.add('d-none');
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -546,10 +723,13 @@ if (typeof webconsolejs === 'undefined') { window.webconsolejs = {}; }
 webconsolejs['pages/settings/environment/cloudresources/securitygroups'] = {
     loadSGList,
     hideDetail,
-    confirmDeleteSG,
-    executeDeleteSG,
     confirmBulkDelete,
     executeBulkDelete,
+    triggerEditSelected,
+    showEditMode,
+    cancelEditMode,
+    addEditRuleRow,
+    saveSG,
     addFirewallRuleRow,
     executeCreateSG,
     openImportSGModal,

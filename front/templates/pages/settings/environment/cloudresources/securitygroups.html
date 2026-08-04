@@ -17,6 +17,17 @@
                   <path d="M12 4l0 12"/>
                 </svg>
               </a>
+              <!-- Edit selected -->
+              <a class="btn-action" type="button" title="Edit selected"
+                onclick="webconsolejs['pages/settings/environment/cloudresources/securitygroups'].triggerEditSelected()">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                  stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/>
+                  <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/>
+                  <path d="M16 5l3 3"/>
+                </svg>
+              </a>
               <!-- Delete selected -->
               <a class="btn-action" type="button" title="Delete selected"
                 onclick="webconsolejs['pages/settings/environment/cloudresources/securitygroups'].confirmBulkDelete()">
@@ -101,8 +112,6 @@
             <div class="card-header">
               <h3 class="card-title">SecurityGroup Detail — <span id="detail-name" class="text-primary"></span></h3>
               <div class="card-options">
-                <button class="btn btn-sm btn-outline-danger me-1"
-                  onclick="webconsolejs['pages/settings/environment/cloudresources/securitygroups'].confirmDeleteSG()">Delete</button>
                 <a href="#" class="card-options-remove"
                   onclick="webconsolejs['pages/settings/environment/cloudresources/securitygroups'].hideDetail()">
                   <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
@@ -185,6 +194,65 @@
                     </table>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Mode Panel -->
+    <div id="edit-mode-cards" class="collapse">
+      <div class="row row-cards mt-2">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Edit SecurityGroup — <span id="edit-name" class="text-primary"></span></h3>
+              <div class="card-options">
+                <button class="btn btn-sm btn-secondary me-1" onclick="webconsolejs['pages/settings/environment/cloudresources/securitygroups'].cancelEditMode()">Cancel</button>
+                <button id="edit-save-btn" class="btn btn-sm btn-primary" onclick="webconsolejs['pages/settings/environment/cloudresources/securitygroups'].saveSG()">
+                  <span id="edit-save-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>
+                  Save
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- ALL 프로토콜 규칙 경고 (백엔드 UpdateFirewallRules가 ALL 프로토콜을 지원하지 않아 저장 시 500 발생) -->
+              <div id="edit-sg-all-warning" class="alert alert-warning d-none mb-3">
+                이 SecurityGroup에는 <code>ALL</code> 프로토콜 규칙이 있어 현재 저장(Save)이 불가능합니다.
+                (백엔드가 Update 시 <code>ALL</code> 프로토콜의 포트 검증을 지원하지 않는 알려진 문제)
+              </div>
+              <!-- Read-only 정보 -->
+              <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                  <label class="form-label text-muted">Name <span class="badge bg-secondary-lt ms-1">read-only</span></label>
+                  <input type="text" class="form-control form-control-sm bg-light" id="edit-sg-name" readonly>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label text-muted">VPC <span class="badge bg-secondary-lt ms-1">read-only</span></label>
+                  <input type="text" class="form-control form-control-sm bg-light" id="edit-sg-vnet" readonly>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label text-muted">Provider <span class="badge bg-secondary-lt ms-1">read-only</span></label>
+                  <input type="text" class="form-control form-control-sm bg-light" id="edit-sg-provider" readonly>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label text-muted">Region <span class="badge bg-secondary-lt ms-1">read-only</span></label>
+                  <input type="text" class="form-control form-control-sm bg-light" id="edit-sg-region" readonly>
+                </div>
+              </div>
+
+              <!-- Firewall Rules 편집 -->
+              <div class="mt-2">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <h4 class="mb-0">Firewall Rules</h4>
+                  <button type="button" class="btn btn-sm btn-outline-primary"
+                    onclick="webconsolejs['pages/settings/environment/cloudresources/securitygroups'].addEditRuleRow()">
+                    + Add Rule
+                  </button>
+                </div>
+                <div class="form-text text-muted mb-2">Save 시 아래 목록이 이 SecurityGroup의 전체 규칙으로 그대로 교체됩니다 (행 삭제 = 규칙 삭제).</div>
+                <div id="edit-sg-rule-list"></div>
               </div>
             </div>
           </div>
