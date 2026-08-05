@@ -6,6 +6,7 @@ var imageSelectionCallback;// 이미지 선택 시 호출될 콜백 함수
 
 var recommendImageListObj = new Object();
 var selectedSpecInfo = null; // 선택된 spec 정보
+var imageSource = 'public'; // 조회 소스: 'public'(SearchImage, ns=system) | 'myimage'(GetAllCustomImage, 선택 ns)
 
 export function initImageRecommendation(callbackfunction) {
 	initRecommendImageTable();
@@ -27,6 +28,97 @@ export function initImageModal() {
 	
 	// 초기 테이블 초기화만 수행 (필드 설정은 Apply 시점에 미리 완료됨)
 	initRecommendImageTable();
+
+	// 조회 소스를 Public으로 리셋 + 모달이 열릴 때마다 리셋 (항상 기본 소스로 시작)
+	resetImageSource();
+	if (!imageModal.dataset.sourceResetBound) {
+		imageModal.addEventListener('show.bs.modal', function () {
+			resetImageSource();
+			recommendImageListObj = [];
+			safeSetTableData([]);
+		});
+		imageModal.dataset.sourceResetBound = "true";
+	}
+}
+
+// 조회 소스 리셋 (Public 기본)
+function resetImageSource() {
+	imageSource = 'public';
+	var publicRadio = document.getElementById('image-source-public');
+	if (publicRadio) {
+		publicRadio.checked = true;
+	}
+	togglePublicFilterRow(true);
+}
+
+// Public 전용 필터 행(OS Type/GPU/Search) 표시 토글
+function togglePublicFilterRow(visible) {
+	var filterRow = document.getElementById('image-public-filter-row');
+	if (filterRow) {
+		filterRow.style.display = visible ? '' : 'none';
+	}
+}
+
+// 조회 소스 라디오 변경 핸들러
+export async function onImageSourceChange(source) {
+	imageSource = source;
+	togglePublicFilterRow(source === 'public');
+	safeSetTableData([]);
+	recommendImageListObj = [];
+	if (source === 'myimage') {
+		await loadMyImageList();
+	}
+	// public: 기존 Search 버튼 흐름 유지 (사용자가 조건 입력 후 검색)
+}
+
+// 워크스페이스 ns의 MyImage(customImage) 목록 로딩
+async function loadMyImageList() {
+	try {
+		var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
+		var nsId = selectedWorkspaceProject.nsId;
+
+		var response = await webconsolejs["common/api/services/mci_api"].getCustomImageList(nsId);
+
+		if (!(response.status && response.status.code === 200)) {
+			console.error("MyImage list API call failed:", response);
+			webconsolejs["common/util"].showToast("Failed to load MyImage list. Switching back to Public Image.", 'warning', 5000);
+			fallbackToPublicSource();
+			return;
+		}
+
+		var imageList = (response.responseData && response.responseData.customImage) || [];
+
+		// spec 매칭 정합: 선택 spec의 connectionName 기준 클라이언트 필터
+		var connectionName = window.selectedSpecInfo && window.selectedSpecInfo.connectionName;
+		if (connectionName) {
+			imageList = imageList.filter(function (image) {
+				return image.connectionName === connectionName;
+			});
+		}
+
+		if (imageList.length === 0) {
+			webconsolejs["common/util"].showToast("No MyImage found for the selected connection. Create one from a node first.", 'warning', 5000);
+			safeSetTableData([]);
+			return;
+		}
+
+		var processedImageList = imageList.map(function (image) {
+			return mapImageInfoToRow(image);
+		});
+		recommendImageListObj = processedImageList;
+		safeSetTableData(processedImageList);
+	} catch (error) {
+		console.error("Error in loadMyImageList:", error);
+		webconsolejs["common/util"].showToast("Error loading MyImage list. Switching back to Public Image.", 'warning', 5000);
+		fallbackToPublicSource();
+	}
+}
+
+// 조회 실패 시 Public 소스로 폴백
+function fallbackToPublicSource() {
+	resetImageSource();
+	safeSetTableData([]);
+	recommendImageListObj = [];
 }
 
 // 이 함수는 더 이상 사용하지 않음 (PMK와 동일한 방식으로 단순화)
@@ -170,6 +262,33 @@ export function setImageSelectionCallback(callback) {
 	imageSelectionCallback = callback;
 }
 
+// tumblebug ImageInfo → 테이블 행 매핑 (Public/MyImage 공용 — 동일 통합 모델)
+function mapImageInfoToRow(image, fallback) {
+	fallback = fallback || {};
+	return {
+		namespace: image.namespace || fallback.namespace || "system",
+		providerName: image.providerName || fallback.provider || "",
+		cspImageName: image.cspImageName || image.name || "",
+		regionList: image.regionList || (fallback.region ? [fallback.region] : []),
+		id: image.id || image.name || "",
+		name: image.name || "",
+		connectionName: image.connectionName || fallback.connectionName || "",
+		fetchedTime: image.fetchedTime || new Date().toLocaleString(),
+		creationDate: image.creationDate || new Date().toISOString(),
+		osType: image.osType || fallback.osType || "",
+		osArchitecture: image.osArchitecture,
+		osPlatform: image.osPlatform || "Linux/UNIX",
+		osDistribution: image.osDistribution || "",
+		osDiskType: image.osDiskType || "ebs",
+		osDiskSizeGB: image.osDiskSizeGB || -1,
+		imageStatus: image.imageStatus || "Available",
+		description: image.description || image.name,
+		isBasicImage: image.isBasicImage || false,
+		isGPUImage: image.isGPUImage || false,
+		resourceType: image.resourceType || "" // "customImage"면 MyImage — root disk 안내에 사용
+	};
+}
+
 // recommened Image 조회
 export async function getRecommendImageInfo() {
 
@@ -254,27 +373,12 @@ export async function getRecommendImageInfo() {
 			
 			// API 응답을 테이블 형식에 맞게 변환
 			var processedImageList = imageList.map(function(image) {
-				return {
-					namespace: image.namespace || "system",
-					providerName: image.providerName || provider,
-					cspImageName: image.cspImageName || image.name || "",
-					regionList: image.regionList || [region],
-					id: image.id || image.name || "",
-					name: image.name || "",
-					connectionName: image.connectionName || connectionName,
-					fetchedTime: image.fetchedTime || new Date().toLocaleString(),
-					creationDate: image.creationDate || new Date().toISOString(),
-					osType: image.osType || osType,
-					osArchitecture: image.osArchitecture,
-					osPlatform: image.osPlatform || "Linux/UNIX",
-					osDistribution: image.osDistribution || "",
-				osDiskType: image.osDiskType || "ebs",
-				osDiskSizeGB: image.osDiskSizeGB || -1,
-				imageStatus: image.imageStatus || "Available",
-				description: image.description || image.name,
-				isBasicImage: image.isBasicImage || false,
-				isGPUImage: image.isGPUImage || false
-			};
+				return mapImageInfoToRow(image, {
+					provider: provider,
+					region: region,
+					osType: osType,
+					connectionName: connectionName
+				});
 			});
 
 			recommendImageListObj = processedImageList;

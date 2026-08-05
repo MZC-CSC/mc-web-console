@@ -76,7 +76,6 @@ function commonConfirmOpen(targetAction, caller) {
     //  [ id , 문구]
     let confirmModalTextMap = new Map(
         [
-            ["CreateSnapshot", "Would you like to Create Snapshot?"],
             ["DeleteDataDisk", "Would you like to Delete Disk?"],
             ["DeleteMyImage", "Would you like to Delete MyImage?"],
             ["Logout", "Would you like to logout?"],
@@ -395,10 +394,6 @@ function commonConfirmOk() {
     } else if (targetAction == "DeleteMyImage") {
         deleteMyImageDisk();
 
-    } else if (targetAction == "CreateSnapshot") {
-        commonPromptOk
-        createSnapshot();
-
     } else if (targetAction == "DeleteNlb") {
         deleteNlb();
     } else if (targetAction == "AddNewPmk") {
@@ -576,8 +571,6 @@ function commonPromptOk() {
     } else if (targetAction == 'AddNewMciDynamic') {
         $("#mci_name").val(targetValue)
         dynamicMci()
-    } else if (targetAction == 'CreateSnapshot') {
-        createSnapshot(targetValue);
     }
 
 

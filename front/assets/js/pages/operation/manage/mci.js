@@ -667,6 +667,42 @@ export function changeVmLifeCycle(type) {
   }
 }
 
+// 노드 스냅샷 → MyImage 생성 모달 오픈
+export function openCreateNodeMyImageModal() {
+  if (currentVmId == undefined || currentVmId == "") {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select a Node')
+    return;
+  }
+  $("#node-myimage-name").val("");
+  $("#node-myimage-desc").val("");
+  const modal = new bootstrap.Modal(document.getElementById("node-myimage-modal"));
+  modal.show();
+}
+
+// Create MyImage 모달 Create 버튼 콜백
+export function createNodeMyImage() {
+  const imageName = ($("#node-myimage-name").val() || "").trim();
+  if (!imageName) {
+    webconsolejs["common/utils/toast"].showToast(
+      webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR,
+      "Please enter a MyImage name"
+    );
+    return;
+  }
+  if (!selectedVmId) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select a Node')
+    return;
+  }
+  const description = ($("#node-myimage-desc").val() || "").trim();
+  bootstrap.Modal.getInstance(document.getElementById("node-myimage-modal"))?.hide();
+  // 산출물은 customImage — 노드 목록 갱신 불필요, 완료/실패는 알림센터로 통지
+  executeTrackedRequest(
+    () => webconsolejs["common/api/services/mci_api"].createNodeSnapshot(
+      window.currentNsId, window.currentMciId, selectedVmId, imageName, description),
+    `Create MyImage failed`
+  );
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('checkScalePolicy');
   if (!btn) return;

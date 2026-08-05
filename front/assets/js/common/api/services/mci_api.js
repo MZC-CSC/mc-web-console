@@ -242,6 +242,48 @@ export function vmLifeCycle(type, mciId, nsId, vmid) {
   return response;
 }
 
+// 노드 스냅샷 → MyImage(customImage) 생성
+export function createNodeSnapshot(nsId, infraId, nodeId, name, description) {
+  const data = {
+    pathParams: {
+      nsId: nsId,
+      infraId: infraId,
+      nodeId: nodeId
+    },
+    request: {
+      name: name,
+      ...(description ? { description: description } : {})
+    }
+  };
+  const controller = "/api/" + "mc-infra-manager/" + "PostInfraNodeSnapshot";
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostInfraNodeSnapshot',
+    'Create MyImage: ' + name + ' (from ' + nodeId + ')'
+  );
+  const response = webconsolejs["common/api/http"].commonAPIPost(
+    controller,
+    data,
+    false,
+    tracked.httpOptions
+  );
+  return response;
+}
+
+// 워크스페이스 ns의 MyImage(customImage) 목록 조회
+export async function getCustomImageList(nsId) {
+  const data = {
+    pathParams: {
+      nsId: nsId
+    }
+  };
+  const controller = "/api/" + "mc-infra-manager/" + "GetAllCustomImage";
+  const response = await webconsolejs["common/api/http"].commonAPIPost(
+    controller,
+    data
+  );
+  return response.data;
+}
+
 export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_Arr, nsId) {
 
   // 새로운 인터페이스에 맞게 데이터 변환 (mciDynamic과 동일)
