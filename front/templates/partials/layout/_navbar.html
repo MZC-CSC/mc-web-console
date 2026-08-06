@@ -38,11 +38,18 @@
                                 </div>
                             </div>
 
-                            <div class="list-group list-group-flush list-group-hoverable" id="async-request-notif-list"></div>
+                            <div class="card-body border-bottom py-2">
+                                <input type="text" class="form-control form-control-sm" id="async-request-notif-search" placeholder="Search notifications" autocomplete="off">
+                            </div>
+
+                            <div class="list-group list-group-flush list-group-hoverable" id="async-request-notif-list" style="max-height: 24rem; overflow-y: auto;"></div>
                             <div class="card-body text-secondary text-center d-none" id="async-request-notif-empty">
                                 No request history
                             </div>
-                            
+                            <div class="card-footer p-0 d-none" id="async-request-notif-more-wrap">
+                                <button type="button" class="btn btn-link w-100" id="async-request-notif-more">Load more</button>
+                            </div>
+
                         </div>
                         
                     </div>

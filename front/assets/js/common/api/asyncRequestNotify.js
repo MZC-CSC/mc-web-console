@@ -1,6 +1,15 @@
 /**
  * Navbar notification dropdown bound to asyncRequestTracker jobs.
+ *
+ * Two view modes share the same list element:
+ * - live view: tracker subscription (first page) + older history appended
+ *   via "Load more" (fetchJobsPage — never touches the live cache/timers)
+ * - search view: server-side keyword search owns the list; the subscription
+ *   only refreshes the badge so results are not overwritten mid-typing
  */
+
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 300;
 
 function tracker() {
   return webconsolejs && webconsolejs['common/api/asyncRequestTracker'];
@@ -84,6 +93,14 @@ function buildSubtitleLines(job) {
 }
 
 let lastRenderKey = '';
+let liveJobs = [];
+let extraJobs = [];
+let extraHasMore = null; // null = unknown until the first Load more round-trip
+let viewQuery = '';
+let searchJobs = [];
+let searchHasMore = false;
+let searchSeq = 0;
+let searchDebounce = null;
 
 function jobsRenderKey(jobs) {
   return JSON.stringify(
@@ -98,14 +115,11 @@ function jobsRenderKey(jobs) {
   );
 }
 
-function renderJobs(jobs) {
-  const listEl = document.getElementById('async-request-notif-list');
+function updateBadge(jobs) {
   const badgeEl = document.getElementById('async-request-notif-badge');
-  const emptyEl = document.getElementById('async-request-notif-empty');
-  if (!listEl || !badgeEl) {
+  if (!badgeEl) {
     return;
   }
-
   const handling = (jobs || []).filter((j) => j.status === 'Handling').length;
   if (handling > 0) {
     badgeEl.textContent = String(handling);
@@ -114,9 +128,32 @@ function renderJobs(jobs) {
     badgeEl.textContent = '';
     badgeEl.classList.add('d-none');
   }
+}
+
+function setMoreVisible(visible) {
+  const moreWrap = document.getElementById('async-request-notif-more-wrap');
+  if (!moreWrap) {
+    return;
+  }
+  moreWrap.classList.toggle('d-none', !visible);
+}
+
+function mergeLiveAndExtra() {
+  const seen = new Set((liveJobs || []).map((j) => j.requestId));
+  return (liveJobs || []).concat(
+    (extraJobs || []).filter((j) => !seen.has(j.requestId))
+  );
+}
+
+function renderList(jobs, emptyText) {
+  const listEl = document.getElementById('async-request-notif-list');
+  const emptyEl = document.getElementById('async-request-notif-empty');
+  if (!listEl) {
+    return;
+  }
 
   // Skip DOM rewrite when content unchanged — preserves text selection / drag-copy
-  const key = jobsRenderKey(jobs);
+  const key = viewQuery + '|' + jobsRenderKey(jobs);
   if (key === lastRenderKey) {
     return;
   }
@@ -141,6 +178,7 @@ function renderJobs(jobs) {
   if (!jobs || jobs.length === 0) {
     listEl.innerHTML = '';
     if (emptyEl) {
+      emptyEl.textContent = emptyText;
       emptyEl.classList.remove('d-none');
     }
     return;
@@ -199,6 +237,112 @@ function renderJobs(jobs) {
     .join('');
 }
 
+function renderLiveView() {
+  const merged = mergeLiveAndExtra();
+  renderList(merged, 'No request history');
+  // Unknown until fetched: a full page on screen suggests older history
+  const maybeMore = extraHasMore === null && merged.length >= PAGE_SIZE;
+  setMoreVisible(extraHasMore === true || maybeMore);
+}
+
+function renderSearchView() {
+  renderList(searchJobs, 'No matching notifications');
+  setMoreVisible(searchHasMore);
+}
+
+function onJobsUpdate(jobs) {
+  liveJobs = jobs || [];
+  updateBadge(liveJobs);
+  if (viewQuery) {
+    // search view owns the list — badge only
+    return;
+  }
+  renderLiveView();
+}
+
+function runSearch(query) {
+  const t = tracker();
+  if (!t || !t.fetchJobsPage) {
+    return;
+  }
+  searchSeq += 1;
+  const seq = searchSeq;
+  t.fetchJobsPage({ q: query, offset: 0, limit: PAGE_SIZE }).then((page) => {
+    if (seq !== searchSeq || viewQuery !== query || !page) {
+      return;
+    }
+    searchJobs = page.jobs || [];
+    searchHasMore = !!page.hasMore;
+    renderSearchView();
+  });
+}
+
+function loadMore() {
+  const t = tracker();
+  if (!t || !t.fetchJobsPage) {
+    return;
+  }
+  if (viewQuery) {
+    const query = viewQuery;
+    t.fetchJobsPage({
+      q: query,
+      offset: searchJobs.length,
+      limit: PAGE_SIZE,
+    }).then((page) => {
+      if (viewQuery !== query || !page) {
+        return;
+      }
+      const seen = new Set(searchJobs.map((j) => j.requestId));
+      searchJobs = searchJobs.concat(
+        (page.jobs || []).filter((j) => !seen.has(j.requestId))
+      );
+      searchHasMore = !!page.hasMore;
+      renderSearchView();
+    });
+    return;
+  }
+  const merged = mergeLiveAndExtra();
+  t.fetchJobsPage({ offset: merged.length, limit: PAGE_SIZE }).then((page) => {
+    if (viewQuery || !page) {
+      return;
+    }
+    const seen = new Set(merged.map((j) => j.requestId));
+    extraJobs = extraJobs.concat(
+      (page.jobs || []).filter((j) => !seen.has(j.requestId))
+    );
+    extraHasMore = !!page.hasMore;
+    renderLiveView();
+  });
+}
+
+function onSearchInput(value) {
+  if (searchDebounce) {
+    clearTimeout(searchDebounce);
+  }
+  searchDebounce = setTimeout(() => {
+    const query = String(value || '').trim();
+    if (query === viewQuery) {
+      return;
+    }
+    viewQuery = query;
+    if (!query) {
+      searchJobs = [];
+      searchHasMore = false;
+      renderLiveView();
+      return;
+    }
+    runSearch(query);
+  }, SEARCH_DEBOUNCE_MS);
+}
+
+function refreshCurrentView() {
+  if (viewQuery) {
+    runSearch(viewQuery);
+    return;
+  }
+  renderLiveView();
+}
+
 function bindActions() {
   const clearBtn = document.getElementById('async-request-notif-clear');
   if (clearBtn && !clearBtn.dataset.bound) {
@@ -208,7 +352,11 @@ function bindActions() {
       e.stopPropagation();
       const t = tracker();
       if (t && t.clearFinished) {
-        t.clearFinished();
+        Promise.resolve(t.clearFinished()).then(() => {
+          extraJobs = [];
+          extraHasMore = null;
+          refreshCurrentView();
+        });
       }
     });
   }
@@ -223,6 +371,9 @@ function bindActions() {
       if (t && t.refreshNow) {
         t.refreshNow();
       }
+      if (viewQuery) {
+        runSearch(viewQuery);
+      }
     });
   }
 
@@ -232,6 +383,24 @@ function bindActions() {
     // Keep dropdown open while selecting text (mouseup may land outside)
     menuEl.addEventListener('mousedown', (e) => {
       e.stopPropagation();
+    });
+  }
+
+  const searchEl = document.getElementById('async-request-notif-search');
+  if (searchEl && !searchEl.dataset.bound) {
+    searchEl.dataset.bound = '1';
+    searchEl.addEventListener('input', (e) => {
+      onSearchInput(e.target.value);
+    });
+  }
+
+  const moreBtn = document.getElementById('async-request-notif-more');
+  if (moreBtn && !moreBtn.dataset.bound) {
+    moreBtn.dataset.bound = '1';
+    moreBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      loadMore();
     });
   }
 
@@ -248,7 +417,10 @@ function bindActions() {
       const id = dismiss.getAttribute('data-request-id');
       const t = tracker();
       if (t && t.dismiss && id) {
-        t.dismiss(id);
+        Promise.resolve(t.dismiss(id)).then(() => {
+          extraJobs = extraJobs.filter((j) => j.requestId !== id);
+          refreshCurrentView();
+        });
       }
     });
   }
@@ -258,7 +430,7 @@ export function initAsyncRequestNotify() {
   bindActions();
   const t = tracker();
   if (t && t.subscribe) {
-    t.subscribe(renderJobs);
+    t.subscribe(onJobsUpdate);
   }
 }
 

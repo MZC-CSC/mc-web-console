@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"mc_web_console_api/internal/model"
@@ -93,18 +94,42 @@ func (r *AsyncRequestRepository) UpdateStatus(
 	return r.db.Model(&existing).Updates(updates).Error
 }
 
-// ListByUser returns recent jobs for a user (Handling first).
-func (r *AsyncRequestRepository) ListByUser(userID string, limit int) ([]model.AsyncRequest, error) {
+// ListByUser returns a page of jobs for a user (Handling first), optionally
+// filtered by a case-insensitive keyword over the fields the dropdown shows,
+// plus the total count matching the same filter.
+func (r *AsyncRequestRepository) ListByUser(
+	userID, q string, offset, limit int,
+) ([]model.AsyncRequest, int64, error) {
 	if limit <= 0 {
-		limit = 50
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	filtered := func() *gorm.DB {
+		tx := r.db.Model(&model.AsyncRequest{}).Where("user_id = ?", userID)
+		if q != "" {
+			like := "%" + strings.ToLower(q) + "%"
+			tx = tx.Where(
+				"LOWER(label) LIKE ? OR LOWER(operation_id) LIKE ? OR LOWER(request_id) LIKE ?"+
+					" OR LOWER(status) LIKE ? OR LOWER(message) LIKE ?",
+				like, like, like, like, like,
+			)
+		}
+		return tx
+	}
+	var total int64
+	if err := filtered().Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 	var rows []model.AsyncRequest
-	err := r.db.Where("user_id = ?", userID).
+	err := filtered().
 		Order("CASE WHEN status = 'Handling' THEN 0 ELSE 1 END ASC").
 		Order("started_at DESC").
+		Offset(offset).
 		Limit(limit).
 		Find(&rows).Error
-	return rows, err
+	return rows, total, err
 }
 
 // ListHandling returns Handling rows newer than since for the poller.
