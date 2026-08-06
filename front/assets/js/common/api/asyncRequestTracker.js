@@ -225,12 +225,40 @@ function maybeToastTransition(prevJobs, nextJobs) {
   });
 }
 
-async function fetchServerJobs() {
+function parseJobsPayload(data) {
+  // New shape: { items, total, hasMore }. Legacy shape: bare array.
+  if (Array.isArray(data)) {
+    const jobs = data.map(normalizeJob).filter(Boolean);
+    return { jobs, total: jobs.length, hasMore: false };
+  }
+  if (data && Array.isArray(data.items)) {
+    const jobs = data.items.map(normalizeJob).filter(Boolean);
+    return {
+      jobs,
+      total: typeof data.total === 'number' ? data.total : jobs.length,
+      hasMore: !!data.hasMore,
+    };
+  }
+  return null;
+}
+
+async function requestJobsPage(params) {
   const http = webconsolejs && webconsolejs['common/api/http'];
   if (!http || !http.commonAPIGet) {
     return null;
   }
-  const response = await http.commonAPIGet(LIST_URL);
+  const qs = [];
+  if (params && params.q) {
+    qs.push('q=' + encodeURIComponent(params.q));
+  }
+  if (params && params.offset) {
+    qs.push('offset=' + encodeURIComponent(params.offset));
+  }
+  if (params && params.limit) {
+    qs.push('limit=' + encodeURIComponent(params.limit));
+  }
+  const url = LIST_URL + (qs.length ? '?' + qs.join('&') : '');
+  const response = await http.commonAPIGet(url);
   if (!response || response.status !== 200) {
     return null;
   }
@@ -238,10 +266,12 @@ async function fetchServerJobs() {
     (response.data && response.data.responseData) ||
     (response.data && response.data.data) ||
     response.data;
-  if (!Array.isArray(data)) {
-    return null;
-  }
-  return data.map(normalizeJob).filter(Boolean);
+  return parseJobsPayload(data);
+}
+
+async function fetchServerJobs() {
+  const page = await requestJobsPage(null);
+  return page ? page.jobs : null;
 }
 
 async function refreshFromServer() {
@@ -415,6 +445,43 @@ export function track(opts) {
  */
 export function refreshNow() {
   return refreshFromServer();
+}
+
+/**
+ * History/search page fetch for the dropdown ({q, offset, limit} →
+ * {jobs, total, hasMore}). Never touches the live cache, toasts, or polling
+ * timers. Falls back to filtering/slicing the sessionStorage jobs when the
+ * server list is unavailable.
+ */
+export async function fetchJobsPage(opts) {
+  const params = opts || {};
+  if (useServer !== false) {
+    const page = await requestJobsPage(params);
+    if (page) {
+      return page;
+    }
+    if (useServer === true) {
+      // transient server failure — empty page, caller keeps current view
+      return { jobs: [], total: 0, hasMore: false };
+    }
+  }
+  const q = String(params.q || '').toLowerCase();
+  const all = loadJobsLocal().filter((j) => {
+    if (!q) {
+      return true;
+    }
+    return [j.label, j.operationId, j.requestId, j.status, j.message].some(
+      (v) => String(v || '').toLowerCase().indexOf(q) !== -1
+    );
+  });
+  const offset = params.offset > 0 ? params.offset : 0;
+  const limit = params.limit > 0 ? params.limit : 20;
+  const jobs = all.slice(offset, offset + limit);
+  return {
+    jobs,
+    total: all.length,
+    hasMore: offset + jobs.length < all.length,
+  };
 }
 
 export function resume() {

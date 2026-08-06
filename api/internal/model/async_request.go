@@ -45,6 +45,13 @@ func (a *AsyncRequest) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+// AsyncRequestListDTO is the paged list envelope for the Front dropdown.
+type AsyncRequestListDTO struct {
+	Items   []AsyncRequestDTO `json:"items"`
+	Total   int64             `json:"total"`
+	HasMore bool              `json:"hasMore"`
+}
+
 // AsyncRequestDTO is the Front/API list item shape.
 type AsyncRequestDTO struct {
 	RequestID   string  `json:"requestId"`
