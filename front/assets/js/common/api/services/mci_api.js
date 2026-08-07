@@ -395,6 +395,40 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
   window.location = "/webconsole/operations/manage/workloads/mciworkloads"
 }
 
+// Add NodeGroup(Extend VM) Done 시점 단건 사전 검증.
+// 핸들러가 infra 존재를 선검증하므로 기존 infra에만 사용 가능 — 신규 Create 플로우는 mciDynamicReview(단건 배열) 사용.
+// 응답 responseData는 review 단건 객체(infra 래퍼 없음).
+export async function vmDynamicReview(mciId, nsId, config) {
+  const data = {
+    pathParams: {
+      nsId: nsId,
+      infraId: mciId,
+    },
+    request: {
+      "imageId": config.commonImage,
+      "specId": config.commonSpec,
+      "connectionName": config.connectionName,
+      "description": config.description,
+      "name": config.name,
+      "nodeGroupSize": parseInt(config.subGroupSize) || 1,
+      "rootDiskSize": (config.rootDiskSize !== "" && config.rootDiskSize !== undefined) ? parseInt(config.rootDiskSize) : 0,
+      "rootDiskType": config.rootDiskType,
+      ...(config.zone ? { zone: config.zone } : {}),
+      ...(config.nodeUserPassword ? { nodeUserPassword: config.nodeUserPassword } : {}),
+      ...(config.label && Object.keys(config.label).length > 0 ? { label: config.label } : {}),
+      ...(config.vNetTemplateId ? { vNetTemplateId: config.vNetTemplateId } : {}),
+      ...(config.sgTemplateId ? { sgTemplateId: config.sgTemplateId } : {})
+    }
+  }
+
+  var controller = "/api/" + "mc-infra-manager/" + "PostInfraDynamicNodeGroupNodeReview";
+  const response = await webconsolejs["common/api/http"].commonAPIPost(
+    controller,
+    data
+  );
+  return response;
+}
+
 export async function vmDynamic(mciId, nsId, Express_Server_Config_Arr) {
 
   // 서버 body가 단일 CreateNodeGroupDynamicReq이므로 nodeGroup별로 순차 호출

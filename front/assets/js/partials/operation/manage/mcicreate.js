@@ -407,7 +407,7 @@ export async function displayNewServerForm() {
 
 // express모드 -> Done버튼 클릭 시
 
-export function expressDone_btn() {
+export async function expressDone_btn() {
   // 1. 필수 필드 검증
   var requiredFields = [
     { id: '#ep_name', message: 'NodeGroup name is required' },
@@ -469,6 +469,12 @@ export function expressDone_btn() {
   express_form["specId"] = $("#p_specId").val(); // specId 추가
   express_form["command"] = $("#p_command").val();
 
+  // 3. Done 시점 NodeGroup 단건 사전 검증 — Error면 목록에 담지 않고 폼 유지 (spec/image 재선택 유도)
+  var precheckAllowed = await precheckNodeGroup(express_form);
+  if (!precheckAllowed) {
+    return;
+  }
+
   addServerConfigToList(express_form);
 
   // 서버 입력 폼 숨기기
@@ -500,6 +506,136 @@ export function expressDone_btn() {
   
   // 모달들 초기화
   resetModals();
+}
+
+var isDonePrecheckRunning = false;
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// review 사유 목록을 modal용 텍스트로 변환 (white-space: pre-line로 줄바꿈 표시)
+function reviewReasonLines(msgs) {
+  return (msgs || []).filter(Boolean).map(function (m) { return "- " + m; }).join("\n");
+}
+
+// 검증 결과 표시 — workspace 선택 확인(checkWorkspaceSelection)과 동일한
+// 공용 모달(partials/layout/_modal.html) 스타일 재사용.
+// confirm형(#commonDefaultModal, Cancel/Confirm): resolve(true=Confirm, false=Cancel/닫힘)
+function showPrecheckConfirmModal(title, content) {
+  return new Promise(function (resolve) {
+    var modalEl = document.getElementById("commonDefaultModal");
+    if (!modalEl) {
+      resolve(confirm(title + "\n\n" + content));
+      return;
+    }
+    document.getElementById("commonDefaultModal-title").innerText = title;
+    var contentEl = document.getElementById("commonDefaultModal-content");
+    contentEl.style.whiteSpace = "pre-line";
+    contentEl.innerText = content;
+    var confirmed = false;
+    document.getElementById("commonDefaultModal-confirm-btn").onclick = function () { confirmed = true; };
+    modalEl.addEventListener("hidden.bs.modal", function () { resolve(confirmed); }, { once: true });
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  });
+}
+
+// alert형(#commonAlertModal, Close만): 닫힘 시 resolve
+function showPrecheckAlertModal(title, content) {
+  return new Promise(function (resolve) {
+    var modalEl = document.getElementById("commonAlertModal");
+    if (!modalEl) {
+      alert(title + "\n\n" + content);
+      resolve();
+      return;
+    }
+    document.getElementById("commonAlertModal-title").innerText = title;
+    var contentEl = document.getElementById("commonAlertModal-content");
+    contentEl.style.whiteSpace = "pre-line";
+    contentEl.innerText = content;
+    modalEl.addEventListener("hidden.bs.modal", function () { resolve(); }, { once: true });
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  });
+}
+
+// Done 시점 NodeGroup 단건 사전 검증. 결과는 공용 모달로 표시.
+// Error → alert형 모달 후 차단 / Warning·검증 불능 → confirm형 모달로 추가 여부 사용자 선택.
+// Deploy 시점 전체 review는 현행 유지되므로 최종 안전망은 유지된다.
+// 반환: true = 목록 추가 진행, false = 차단(폼 유지)
+async function precheckNodeGroup(express_form) {
+  if (isDonePrecheckRunning) {
+    return false;
+  }
+  isDonePrecheckRunning = true;
+
+  var btn = document.getElementById("express_done_btn");
+  var btnOrigHtml;
+  if (btn) {
+    btnOrigHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Validating...';
+  }
+
+  try {
+    var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
+    var nsId = selectedWorkspaceProject.nsId;
+
+    var review = null;
+    if (isVm) {
+      // Extend VM(Add NodeGroup): infra 존재를 전제로 하는 단건 review API 사용
+      var vmResp = await webconsolejs["common/api/services/mci_api"].vmDynamicReview(window.currentMciId, nsId, express_form);
+      var vmData = vmResp && vmResp.status === 200 ? vmResp.data.responseData : null;
+      // 응답은 review 단건 객체 — 방어적으로 infra 래퍼(nodeReviews[])도 허용
+      review = vmData && vmData.nodeReviews ? (vmData.nodeReviews[0] || null) : vmData;
+    } else {
+      // Create Infra: 전체 review API를 단건 배열로 호출 (Deploy 시점 review와 계약 동일)
+      var mciName = $("#mci_name").val();
+      if (!mciName || !mciName.trim()) {
+        // 빈 name은 HTTP 400 — 검증용 더미 고유명 사용, name 중복 최종 검사는 Deploy review가 수행
+        mciName = "precheck-" + Math.random().toString(36).slice(2, 8);
+      }
+      var mciDesc = $("#mci_desc").val() || "precheck";
+      var mciResp = await webconsolejs["common/api/services/mci_api"].mciDynamicReview(mciName, mciDesc, [express_form], nsId);
+      var mciData = mciResp && mciResp.status === 200 ? mciResp.data.responseData : null;
+      review = mciData && mciData.nodeReviews && mciData.nodeReviews.length > 0 ? mciData.nodeReviews[0] : null;
+    }
+
+    if (!review) {
+      return await showPrecheckConfirmModal("NodeGroup Validation",
+        "NodeGroup validation could not be performed.\nIt will be validated again at Deploy.\n\nAdd to the list anyway?");
+    }
+
+    var errors = review.errors || [];
+    var warnings = review.warnings || [];
+
+    if (review.status === "Error" || review.canCreate === false) {
+      await showPrecheckAlertModal("NodeGroup Validation Failed",
+        "Not added to the list. Please reselect spec/image.\n\n"
+        + reviewReasonLines(errors.length ? errors : [review.message]));
+      return false;
+    }
+
+    if (review.status === "Warning" || warnings.length > 0) {
+      return await showPrecheckConfirmModal("NodeGroup Validation Warning",
+        reviewReasonLines(warnings.length ? warnings : [review.message])
+        + "\n\nAdd to the list anyway?");
+    }
+    return true;
+  } catch (e) {
+    console.error("NodeGroup precheck failed:", e);
+    return await showPrecheckConfirmModal("NodeGroup Validation",
+      "NodeGroup validation could not be performed.\nIt will be validated again at Deploy.\n\nAdd to the list anyway?");
+  } finally {
+    isDonePrecheckRunning = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = btnOrigHtml;
+    }
+  }
 }
 
 // express_form을 Express_Server_Config_Arr에 반영(신규 push 또는 수정 모드 갱신) + <li> 렌더
@@ -851,31 +987,30 @@ export async function createMciDynamic() {
 			
 			// overallStatus 우선 체크 - Error 상태 처리
 			if (reviewData.overallStatus === "Error" || !reviewData.creationViable) {
-				// 오류 정보 수집
-				let errorMessage = `Infra 생성 오류\n\n${reviewData.overallMessage}\n\n`;
-				
-				if (reviewData.vmReviews && reviewData.vmReviews.length > 0) {
-					reviewData.vmReviews.forEach(vm => {
-						if (vm.status === "Error" && vm.errors) {
-							errorMessage += `Node: ${vm.vmName} (NodeGroup Size: ${vm.subGroupSize})\n`;
-							errorMessage += `Provider: ${vm.providerName}\n`;
-							errorMessage += `Region: ${vm.regionName}\n`;
-							
-							if (vm.imageValidation && vm.imageValidation.resourceId) {
-								errorMessage += `Image: ${vm.imageValidation.resourceId}\n`;
+				// 노드별 오류 상세 수집 — 배포 백엔드 계약은 nodeReviews[]/nodeName/nodeGroupSize
+				var errorLines = ["Infra creation blocked: " + (reviewData.overallMessage || "review failed")];
+
+				if (reviewData.nodeReviews && reviewData.nodeReviews.length > 0) {
+					reviewData.nodeReviews.forEach(node => {
+						if (node.status === "Error" && node.errors) {
+							var head = "Node: " + node.nodeName + " (NodeGroup Size: " + node.nodeGroupSize + ")";
+							if (node.providerName) head += " / Provider: " + node.providerName;
+							if (node.regionName) head += " / Region: " + node.regionName;
+							if (node.imageValidation && node.imageValidation.resourceId) {
+								head += " / Image: " + node.imageValidation.resourceId;
 							}
-							
-							errorMessage += `\n오류:\n`;
-							vm.errors.forEach(err => {
-								errorMessage += `- ${err}\n`;
+							errorLines.push(head);
+							node.errors.forEach(err => {
+								errorLines.push("- " + err);
 							});
-							errorMessage += `\n`;
 						}
 					});
 				}
-				
-				// Toast로 표시
-				webconsolejs["common/util"].showToast(errorMessage, 'error', 8000);
+
+				webconsolejs["common/utils/toast"].showToast(
+					webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR,
+					errorLines.map(escapeHtml).join("<br>"),
+					{ delay: 10000, closeButton: true });
 				return;
 			}
 			
@@ -886,7 +1021,7 @@ export async function createMciDynamic() {
 					webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure);
 				} else if (reviewData.overallStatus === "Warning") {
 					// 경고가 있지만 생성 가능 - 사용자 확인 후 진행
-					const confirmMessage = `경고가 있습니다:\n${reviewData.overallMessage}\n\n예상 비용: ${reviewData.estimatedCost}\n\n계속 진행하시겠습니까?`;
+					const confirmMessage = `Warnings found:\n${reviewData.overallMessage}\n\nEstimated cost: ${reviewData.estimatedCost}\n\nContinue anyway?`;
 					if (confirm(confirmMessage)) {
 						webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure);
 					}
@@ -894,12 +1029,12 @@ export async function createMciDynamic() {
 			}
 		} else {
 			// API 호출 실패
-			console.error("검증 API 호출 실패:", validationResult);
-			alert("Infra 생성 검증 중 오류가 발생했습니다.");
+			console.error("Infra review API call failed:", validationResult);
+			alert("An error occurred while validating the Infra creation request.");
 		}
 	} catch (error) {
-		console.error("MCI 검증 중 오류:", error);
-		alert("Infra 검증 중 오류가 발생했습니다: " + error.message);
+		console.error("Infra review error:", error);
+		alert("An error occurred while validating the Infra: " + error.message);
 	}
 }
 
