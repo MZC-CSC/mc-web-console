@@ -220,6 +220,14 @@ function initRecommendImageTable() {
 			headerSort: true,
 		},
 		{
+			title: "STATUS",
+			field: "imageStatus",
+			vertAlign: "middle",
+			hozAlign: "center",
+			maxWidth: 110,
+			headerSort: true,
+		},
+		{
 			title: "GPU",
 			field: "isGPUImage",
 			vertAlign: "middle",
@@ -443,6 +451,17 @@ export async function applyImageInfo() {
 	}
 
 	var selectedImage = recommendImages[0]; // 첫 번째 선택된 이미지 사용
+
+	// 준비되지 않은 MyImage(Creating 등)로 배포 시 실패 가능(커버리지 실증: Tencent/NHN) — 안내 후 진행/취소 선택
+	if (selectedImage.resourceType === "customImage" &&
+		selectedImage.imageStatus && selectedImage.imageStatus !== "Available") {
+		var proceed = confirm(
+			"This MyImage is not ready yet (status: " + selectedImage.imageStatus + ").\n" +
+			"Deploying with an unprepared image may fail.\n" +
+			"Continue anyway?"
+		);
+		if (!proceed) return;
+	}
 
 	// 콜백 함수가 설정되어 있으면 먼저 호출
 	if (imageSelectionCallback) {

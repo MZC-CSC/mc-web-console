@@ -673,6 +673,25 @@ export function openCreateNodeMyImageModal() {
     webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select a Node')
     return;
   }
+
+  // 일부 CSP는 Running 노드에서만 스냅샷 가능(커버리지 실증: IBM) — 안내 후 진행/취소 선택
+  const SNAPSHOT_REQUIRES_RUNNING = ["ibm"];
+  const infra = (window.totalMciListObj || []).find(m => m.id === window.currentMciId);
+  const node = ((infra && infra.node) || []).find(n => n.id === selectedVmId);
+  if (node) {
+    const provider = (node.connectionConfig && node.connectionConfig.providerName) ||
+      String(node.connectionName || "").split("-")[0];
+    if (SNAPSHOT_REQUIRES_RUNNING.includes(String(provider).toLowerCase()) &&
+        !String(node.status || "").includes("Running")) {
+      const proceed = confirm(
+        provider.toUpperCase() + " requires the node to be running to create a MyImage.\n" +
+        "The current node is not running, so the request may fail.\n" +
+        "Continue anyway?"
+      );
+      if (!proceed) return;
+    }
+  }
+
   $("#node-myimage-name").val("");
   $("#node-myimage-desc").val("");
   const modal = new bootstrap.Modal(document.getElementById("node-myimage-modal"));
