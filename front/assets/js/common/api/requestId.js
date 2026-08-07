@@ -20,6 +20,7 @@ export const ASYNC_TRACK_OPERATION_IDS = Object.freeze([
   // Phase 2 — control
   'GetControlInfra',
   'GetControlInfraNode',
+  'PostInfraNodeSnapshot',
   // Phase 2 — delete
   'DelInfra',
   'DelInfraNode',

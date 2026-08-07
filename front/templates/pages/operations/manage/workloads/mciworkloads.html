@@ -1379,8 +1379,7 @@
 
 <!-- add server : spec-search -->
 {{ partial("partials/operation/manage/serverrecommendation.html") | raw }}
-<!-- add server : image-search -->
-{{ partial("partials/operation/manage/imagerecommendation.html") | raw }}
+<!-- image-search 모달은 mcicreate.html partial이 이미 포함 — 직접 include 시 #image-search 중복 렌더링됨 -->
 <!-- add server : cspimagelist -->
 {{ partial("partials/operation/manage/cspimagelist.html") | raw }}
 <!-- add server : cspspeclist -->

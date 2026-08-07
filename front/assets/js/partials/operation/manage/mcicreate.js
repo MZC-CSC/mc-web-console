@@ -72,17 +72,21 @@ export async function callbackServerRecommendation(vmSpec) {
 // 이미지 선택 콜백 함수
 export function callbackImageRecommendation(selectedImage) {
 	// MCI 이미지 선택 콜백 함수
-	
+
 	// 부모 폼의 input 필드에 이미지 정보 설정
 	$("#ep_imageId_input").val(selectedImage.name || selectedImage.cspImageName || "");
 	$("#ep_imageId").val(selectedImage.id || selectedImage.name || "");
 	$("#ep_commonImageId").val(selectedImage.id || selectedImage.name || "");
-	
+
 	// policy_ep_* 필드들도 함께 설정 (mciworkloads.html용)
 	$("#policy_ep_imageId_input").val(selectedImage.name || selectedImage.cspImageName || "");
 	$("#policy_ep_commonImageId").val(selectedImage.id || selectedImage.name || "");
-	
 
+	// MyImage(customImage) 선택 시 root disk 입력이 서버에서 무시됨을 안내 (입력은 활성 유지)
+	var notice = document.getElementById("ep_root_disk_myimage_notice");
+	if (notice) {
+		notice.style.display = (selectedImage.resourceType === "customImage") ? "" : "none";
+	}
 }
 
 var DISK_SIZE = [];
@@ -908,9 +912,6 @@ export async function createVmDynamic() {
 
     alert("Node creation request completed")
     window.location = `/webconsole/operations/manage/workloads/mciworkloads`;
-
-    await webconsolejs["pages/operation/manage/mci"].refreshRowData(mciId, checked_array);
-
 }
 
 export function addNewMci() {
