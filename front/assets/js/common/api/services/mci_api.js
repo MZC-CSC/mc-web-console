@@ -284,7 +284,7 @@ export async function getCustomImageList(nsId) {
   return response.data;
 }
 
-export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_Arr, nsId) {
+export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_Arr, nsId, labels) {
 
   // 새로운 인터페이스에 맞게 데이터 변환 (mciDynamic과 동일)
   const nodeGroups = Express_Server_Config_Arr.map(config => ({
@@ -316,7 +316,7 @@ export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_A
       "name": mciName,
       "description": mciDesc,
       "installMonAgent": "no",
-      "label": {},
+      "label": labels || {},
       "policyOnPartialFailure": "continue",
       "postCommand": {
         "command": command,
@@ -336,7 +336,7 @@ export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_A
   return response;
 }
 
-export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, nsId, policyOnPartialFailure) {
+export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, nsId, policyOnPartialFailure, labels) {
 
   // 새로운 인터페이스에 맞게 데이터 변환
   const nodeGroups = Express_Server_Config_Arr.map(config => ({
@@ -367,6 +367,7 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
     Request: {
       "name": mciName,
       "description": mciDesc,
+      "label": labels || {},
       "nodeGroups": nodeGroups,
       "policyOnPartialFailure": policyOnPartialFailure,
       "postCommand": {
