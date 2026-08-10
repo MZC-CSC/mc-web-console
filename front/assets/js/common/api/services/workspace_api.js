@@ -99,13 +99,22 @@ export async function getProjectListByWorkspaceId(workspaceId) {
     }
   }
   let projectList = [];
-  const response = await webconsolejs["common/api/http"].commonAPIPost('/api/mc-iam-manager/listUserProjectsByWorkspace', requestObject)
-  let data = response.data.responseData.projects
-  console.debug("GetWPmappingListByWorkspaceId data :", data)
-  data.forEach(item => {
-    console.debug(item)
-    projectList.push(item);
-  });
+  try {
+    const response = await webconsolejs["common/api/http"].commonAPIPost('/api/mc-iam-manager/listUserProjectsByWorkspace', requestObject)
+    let data = response.data.responseData.projects
+    console.debug("GetWPmappingListByWorkspaceId data :", data)
+    data.forEach(item => {
+      console.debug(item)
+      projectList.push(item);
+    });
+  } catch (error) {
+    // commonAPIPost는 403(권한 부족) 등 에러 응답을 throw로 전파한다.
+    // 여기서 잡지 않으면 project select box 갱신 로직 전체가 중단되어
+    // "원인 불명의 빈 project 셀렉터"로 보이므로, 빈 목록으로 조용히 복구한다.
+    // (403은 commonAPIPost가 이미 토스트로 안내하므로 중복 알림하지 않는다.)
+    console.warn("Failed to fetch project list for workspace:", workspaceId, error);
+    return [];
+  }
 
   return projectList;
 }
