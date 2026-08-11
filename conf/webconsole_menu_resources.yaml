@@ -351,6 +351,9 @@ menus:
     isaction: true
     priority: 2
     menunumber: 1998
+    viewtype: iframe
+    frameworkservice: mc-workflow-manager-fe
+    path: /web/workflow/list
 
   - id: swcatalogs
     parentid: manage
@@ -359,6 +362,9 @@ menus:
     isaction: true
     priority: 2
     menunumber: 1998
+    viewtype: iframe
+    frameworkservice: mc-application-manager-fe
+    path: /web/softwareCatalog
 
   - id: datamigrations
     parentid: manage
@@ -367,6 +373,9 @@ menus:
     isaction: true
     priority: 2
     menunumber: 1998
+    viewtype: iframe
+    frameworkservice: mc-data-manager-fe
+    path: /
 
   - id: analytics
     parentid: operations
@@ -463,6 +472,9 @@ menus:
     isaction: true
     priority: 2
     menunumber: 1998
+    viewtype: iframe
+    frameworkservice: mc-cost-optimizer-fe
+    path: /
 
   - id: observability
     parentid: analytics
@@ -471,3 +483,6 @@ menus:
     isaction: true
     priority: 3
     menunumber: 1999
+    viewtype: iframe
+    frameworkservice: mc-observability-fe
+    path: /
