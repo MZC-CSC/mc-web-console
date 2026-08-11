@@ -189,7 +189,17 @@
                     </div>
                   </div>
                 </div>
-              </div>              
+              </div>
+              <div class="form-group mb-2">
+                <label class="form-label">Node User Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="ep_node_user_password"
+                  autocomplete="new-password"
+                  placeholder="optional"
+                />
+              </div>
             </div>
             <div class="col-md-6">
               <div class="form-group mb-2">
@@ -211,6 +221,32 @@
                   rows="3"
                   placeholder="client_ip=$(echo $SSH_CLIENT | awk '{print $1}'); echo SSH client IP is: $client_ip"
                 ></textarea>
+              </div>
+              <div class="form-group mb-2">
+                <label class="form-label">Node Labels</label>
+                <div class="input-group mb-2">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="ep_label_key"
+                    placeholder="key"
+                  />
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="ep_label_value"
+                    placeholder="value"
+                  />
+                  <button
+                    type="button"
+                    class="btn"
+                    id="ep_label_add_btn"
+                    onclick="webconsolejs['partials/operation/manage/mcicreate'].addNodeLabel()"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div id="ep_label_list"></div>
               </div>
             </div>
           </div>

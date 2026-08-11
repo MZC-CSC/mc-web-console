@@ -337,6 +337,8 @@ export async function displayNewServerForm() {
 
     // 신규 모드 — 직전 편집(template li)의 carry-through 값 잔상 제거 (빈 필드로 초기화)
     renderCarryThroughSection(null);
+    setNodeLabels(null);
+    $("#ep_node_user_password").val("");
 
     var div = document.getElementById("server_configuration");
     webconsolejs["partials/layout/navigatePages"].toggleSubElement(div)
@@ -468,6 +470,10 @@ export async function expressDone_btn() {
   express_form["imageId"] = $("#p_imageId").val(); // imageId 추가
   express_form["specId"] = $("#p_specId").val(); // specId 추가
   express_form["command"] = $("#p_command").val();
+  // Node Labels 편집기 상태 반영 — 빈 객체면 수정 모드 merge에서 기존 label 제거(사용자가 비운 것) 의도 유지
+  express_form["label"] = { ...nodeCustomLabels };
+  // Node User Password — 빈 값이면 payload에서 omit, 수정 모드에서 비우면 제거 (trim하지 않음)
+  express_form["nodeUserPassword"] = $("#ep_node_user_password").val() || "";
 
   // 3. Done 시점 NodeGroup 단건 사전 검증 — Error면 목록에 담지 않고 폼 유지 (spec/image 재선택 유도)
   var precheckAllowed = await precheckNodeGroup(express_form);
@@ -503,7 +509,9 @@ export async function expressDone_btn() {
   $("#ep_vm_add_cnt").val("1"); // 기본값 1로 설정
   $("#ep_data_disk").val("");
   $("#ep_command").val("");
-  
+  setNodeLabels(null);
+  $("#ep_node_user_password").val("");
+
   // 모달들 초기화
   resetModals();
 }
@@ -562,6 +570,125 @@ function showPrecheckAlertModal(title, content) {
   });
 }
 
+// ─── Infra 배포 Labels ───
+// 기본 label 2종은 배포 시 코드에서 자동 주입 — UI에는 read-only 뱃지로만 표시 (수정·삭제 불가)
+var DEFAULT_INFRA_LABELS = { "project": "mcmp", "framework": "mc-web-console" };
+var infraCustomLabels = {};
+
+// labelSelector 파싱 예약 문자(, = !)·공백을 배제한 안전 문자셋
+var LABEL_TOKEN_RE = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
+
+// label 입력 공통 검증 — 통과 시 null, 실패 시 사유(영문) 반환
+function validateLabelInput(key, value, existing, reservedKeys) {
+  if (!key || !value) {
+    return "Label key and value are required";
+  }
+  if (!LABEL_TOKEN_RE.test(key) || !LABEL_TOKEN_RE.test(value)) {
+    return "Only letters, digits, '-', '_', '.', '/' are allowed (must start with a letter or digit)";
+  }
+  if (key.indexOf("sys.") === 0) {
+    return "'sys.' prefix is reserved for system labels";
+  }
+  if (reservedKeys && Object.prototype.hasOwnProperty.call(reservedKeys, key)) {
+    return "'" + key + "' is a default label and cannot be overridden";
+  }
+  if (Object.prototype.hasOwnProperty.call(existing, key)) {
+    return "Label key '" + key + "' already exists";
+  }
+  return null;
+}
+
+// label 목록 렌더 — textContent 할당(HTML 해석 방지)
+function renderLabelList(containerId, labelsObj, removeFn) {
+  var list = document.getElementById(containerId);
+  if (!list) return;
+  list.innerHTML = "";
+  Object.keys(labelsObj).forEach(function (key) {
+    var row = document.createElement("div");
+    row.className = "d-flex align-items-center mb-1";
+    var badge = document.createElement("span");
+    badge.className = "badge badge-outline text-blue fw-normal me-2";
+    badge.textContent = key + "=" + labelsObj[key];
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-sm btn-ghost-danger";
+    btn.textContent = "Remove";
+    btn.onclick = function () { removeFn(key); };
+    row.appendChild(badge);
+    row.appendChild(btn);
+    list.appendChild(row);
+  });
+}
+
+export function addInfraLabel() {
+  var toast = webconsolejs["common/utils/toast"];
+  var key = ($("#mci_label_key").val() || "").trim();
+  var value = ($("#mci_label_value").val() || "").trim();
+
+  var err = validateLabelInput(key, value, infraCustomLabels, DEFAULT_INFRA_LABELS);
+  if (err) {
+    toast.showToast(toast.TOAST_TYPES.ERROR, err);
+    return;
+  }
+
+  infraCustomLabels[key] = value;
+  $("#mci_label_key").val("");
+  $("#mci_label_value").val("");
+  renderInfraLabelList();
+}
+
+export function removeInfraLabel(key) {
+  delete infraCustomLabels[key];
+  renderInfraLabelList();
+}
+
+function renderInfraLabelList() {
+  renderLabelList("mci_label_list", infraCustomLabels, removeInfraLabel);
+}
+
+// ─── Node(NodeGroup) Labels — express 폼 단위 (Create/Extend 공유) ───
+// CreateNodeGroupDynamicReq.label로 전송 — 기본 label 자동 주입은 Infra top-level 전용(여긴 없음)
+var nodeCustomLabels = {};
+
+export function addNodeLabel() {
+  var toast = webconsolejs["common/utils/toast"];
+  var key = ($("#ep_label_key").val() || "").trim();
+  var value = ($("#ep_label_value").val() || "").trim();
+
+  var err = validateLabelInput(key, value, nodeCustomLabels, null);
+  if (err) {
+    toast.showToast(toast.TOAST_TYPES.ERROR, err);
+    return;
+  }
+
+  nodeCustomLabels[key] = value;
+  $("#ep_label_key").val("");
+  $("#ep_label_value").val("");
+  renderNodeLabelList();
+}
+
+export function removeNodeLabel(key) {
+  delete nodeCustomLabels[key];
+  renderNodeLabelList();
+}
+
+function renderNodeLabelList() {
+  renderLabelList("ep_label_list", nodeCustomLabels, removeNodeLabel);
+}
+
+// 수정 모드 진입 시 기존 label 로드 / 신규·초기화 시 빈 상태
+function setNodeLabels(labels) {
+  nodeCustomLabels = { ...(labels || {}) };
+  renderNodeLabelList();
+  $("#ep_label_key").val("");
+  $("#ep_label_value").val("");
+}
+
+// 배포 페이로드용 label — 사용자 label 위에 기본 label을 마지막으로 merge (기본 키 보존 이중 방어)
+function getInfraDeployLabels() {
+  return { ...infraCustomLabels, ...DEFAULT_INFRA_LABELS };
+}
+
 // Done 시점 NodeGroup 단건 사전 검증. 결과는 공용 모달로 표시.
 // Error → alert형 모달 후 차단 / Warning·검증 불능 → confirm형 모달로 추가 여부 사용자 선택.
 // Deploy 시점 전체 review는 현행 유지되므로 최종 안전망은 유지된다.
@@ -599,7 +726,8 @@ async function precheckNodeGroup(express_form) {
         mciName = "precheck-" + Math.random().toString(36).slice(2, 8);
       }
       var mciDesc = $("#mci_desc").val() || "precheck";
-      var mciResp = await webconsolejs["common/api/services/mci_api"].mciDynamicReview(mciName, mciDesc, [express_form], nsId);
+      // labels도 Deploy review와 동일하게 전달 (계약 대칭 — review는 label을 검증하지 않음)
+      var mciResp = await webconsolejs["common/api/services/mci_api"].mciDynamicReview(mciName, mciDesc, [express_form], nsId, getInfraDeployLabels());
       var mciData = mciResp && mciResp.status === 200 ? mciResp.data.responseData : null;
       review = mciData && mciData.nodeReviews && mciData.nodeReviews.length > 0 ? mciData.nodeReviews[0] : null;
     }
@@ -758,7 +886,12 @@ export function view_express(cnt) {
   $("#p_subGroupSize").val(select_form_data.subGroupSize || "1");
   $("#p_vm_cnt").val(select_form_data.subGroupSize || "1");
   
-  // template carry-through 필드 read-only 표시 (5필드 항상, 값 없으면 빈 칸)
+  // 기존 label을 Node Labels 편집기로 로드 (template carry-through label 포함 — 편집 가능)
+  setNodeLabels(select_form_data.label);
+  // Node User Password 로드 — password 타입 입력으로 마스킹 표시
+  $("#ep_node_user_password").val(select_form_data.nodeUserPassword || "");
+
+  // template carry-through 필드 read-only 표시 (값 없으면 빈 칸 — label은 편집기로 이동)
   renderCarryThroughSection(select_form_data);
 
   // 서버 입력 폼 표시
@@ -768,9 +901,9 @@ export function view_express(cnt) {
   }
 }
 
-// template Add NodeGroup carry-through 필드(zone/nodeUserPassword/label/vNetTemplateId/sgTemplateId)를
-// 편집 폼에 read-only로 표시 — 5필드 모두 항상 렌더, 값이 없으면 빈 입력으로 표시.
-// nodeUserPassword는 값이 있을 때만 마스킹 표시하고 평문을 노출하지 않는다.
+// template Add NodeGroup carry-through 필드(zone/vNetTemplateId/sgTemplateId)를
+// 편집 폼에 read-only로 표시 — template 유래 값이 하나라도 있을 때만 섹션 표시.
+// nodeUserPassword·label은 일반 입력(모든 모드)으로 전환되어 여기서 제외.
 function renderCarryThroughSection(data) {
   var section = document.getElementById("carry_through_section");
   var fields = document.getElementById("carry_through_fields");
@@ -778,14 +911,17 @@ function renderCarryThroughSection(data) {
 
   var items = [
     ["zone", "Zone", (data && data.zone) || ""],
-    ["nodeUserPassword", "Node User Password", data && data.nodeUserPassword ? "••••••" : ""],
-    ["label", "Label",
-      data && data.label && Object.keys(data.label).length > 0
-        ? Object.keys(data.label).map(function (k) { return k + "=" + data.label[k]; }).join(", ")
-        : ""],
     ["vNetTemplateId", "vNet Template ID", (data && data.vNetTemplateId) || ""],
     ["sgTemplateId", "SG Template ID", (data && data.sgTemplateId) || ""],
   ];
+
+  // template 유래 값이 없으면(express 직접 생성 등) 섹션 숨김
+  var hasValue = items.some(function (item) { return item[2] !== ""; });
+  if (!hasValue) {
+    fields.innerHTML = "";
+    section.classList.add("d-none");
+    return;
+  }
 
   fields.innerHTML = "";
   items.forEach(function (item) {
@@ -975,10 +1111,13 @@ export async function createMciDynamic() {
 		mciDesc = "Made in CB-TB"
 	}
 
+	// 기본 label 자동 주입 + 사용자 label merge — review/deploy 동일 객체 전송
+	const deployLabels = getInfraDeployLabels();
+
 	// MCI 생성 전 검증 API 호출
 	try {
 		const validationResult = await webconsolejs["common/api/services/mci_api"].mciDynamicReview(
-			mciName, mciDesc, Express_Server_Config_Arr, selectedNsId
+			mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, deployLabels
 		);
 		
 		
@@ -1018,12 +1157,12 @@ export async function createMciDynamic() {
 			if (reviewData.creationViable) {
 				if (reviewData.overallStatus === "Ready") {
 					// 검증 성공 - 실제 MCI 생성 진행
-					webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure);
+					webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure, deployLabels);
 				} else if (reviewData.overallStatus === "Warning") {
 					// 경고가 있지만 생성 가능 - 사용자 확인 후 진행
 					const confirmMessage = `Warnings found:\n${reviewData.overallMessage}\n\nEstimated cost: ${reviewData.estimatedCost}\n\nContinue anyway?`;
 					if (confirm(confirmMessage)) {
-						webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure);
+						webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure, deployLabels);
 					}
 				}
 			}
@@ -1052,6 +1191,11 @@ export async function createVmDynamic() {
 export function addNewMci() {
 	isVm = false
 	Express_Server_Config_Arr = new Array();
+	// Labels 입력 상태 초기화 (기본 label은 상수 — UI 뱃지 고정)
+	infraCustomLabels = {};
+	renderInfraLabelList();
+	$("#mci_label_key").val("");
+	$("#mci_label_value").val("");
 }
 
 // ////////////// VM Handling ///////////
@@ -1294,7 +1438,9 @@ export function clearExpressForm() {
 	$("#ep_vm_add_cnt").val("1"); // 기본값 1로 설정
 	$("#ep_data_disk").val("");
 	$("#ep_command").val("");
-	
+	setNodeLabels(null);
+	$("#ep_node_user_password").val("");
+
 	// 4. 수정 모드 플래그 초기화
 	window.currentEditIndex = undefined;
 	

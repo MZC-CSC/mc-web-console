@@ -679,6 +679,33 @@
                 </div>
               </div>
 
+              <div class="mb-3">
+                <label class="form-label">Infra Labels</label>
+                <div class="input-group mb-2">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="mci_label_key"
+                    placeholder="key"
+                  />
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="mci_label_value"
+                    placeholder="value"
+                  />
+                  <button
+                    type="button"
+                    class="btn"
+                    id="mci_label_add_btn"
+                    onclick="webconsolejs['partials/operation/manage/mcicreate'].addInfraLabel()"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div id="mci_label_list"></div>
+              </div>
+
               <div class="card">
                 <div class="card-body">
                   <div class="row row-cards">
