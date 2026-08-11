@@ -729,6 +729,10 @@ serviceActions:
       method: delete
       resourcePath: /api/roles/csp/id/{roleId}
       description: "CSP Role 삭제"
+    UpdateCspRole:
+      method: put
+      resourcePath: /api/roles/csp/id/{roleId}
+      description: "CSP Role 수정"
     listCspPolicies:
       method: post
       resourcePath: /api/csp-policies/list

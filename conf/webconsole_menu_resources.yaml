@@ -132,7 +132,7 @@ menus:
     parentid: cloudresources
     displayname: Specs
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1410
 
@@ -140,7 +140,7 @@ menus:
     parentid: cloudresources
     displayname: Images
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1420
 
@@ -156,7 +156,7 @@ menus:
     parentid: cloudresources
     displayname: Security Groups
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1520
 
@@ -164,7 +164,7 @@ menus:
     parentid: cloudresources
     displayname: MyImages
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1530
 
@@ -172,7 +172,7 @@ menus:
     parentid: cloudresources
     displayname: Disks
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1540
 
@@ -180,9 +180,17 @@ menus:
     parentid: cloudresources
     displayname: SSH Keys
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1550
+
+  - id: nlbs
+    parentid: cloudresources
+    displayname: NLB
+    restype: menu
+    isaction: true
+    priority: 2
+    menunumber: 1555
 
   - id: csp
     parentid: cloudresources
@@ -322,7 +330,7 @@ menus:
 
   - id: mciworkloads
     parentid: workloads
-    displayname: MCI Workloads
+    displayname: Infra Workloads
     restype: menu
     isaction: true
     priority: 2
@@ -330,7 +338,7 @@ menus:
 
   - id: pmkworkloads
     parentid: workloads
-    displayname: PMK Workloads
+    displayname: K8s Workloads
     restype: menu
     isaction: true
     priority: 2
@@ -343,6 +351,9 @@ menus:
     isaction: true
     priority: 2
     menunumber: 1998
+    viewtype: iframe
+    frameworkservice: mc-workflow-manager-fe
+    path: /web/workflow/list
 
   - id: swcatalogs
     parentid: manage
@@ -351,6 +362,9 @@ menus:
     isaction: true
     priority: 2
     menunumber: 1998
+    viewtype: iframe
+    frameworkservice: mc-application-manager-fe
+    path: /web/softwareCatalog
 
   - id: datamigrations
     parentid: manage
@@ -359,6 +373,9 @@ menus:
     isaction: true
     priority: 2
     menunumber: 1998
+    viewtype: iframe
+    frameworkservice: mc-data-manager-fe
+    path: /
 
   - id: analytics
     parentid: operations
@@ -455,6 +472,9 @@ menus:
     isaction: true
     priority: 2
     menunumber: 1998
+    viewtype: iframe
+    frameworkservice: mc-cost-optimizer-fe
+    path: /
 
   - id: observability
     parentid: analytics
@@ -463,3 +483,6 @@ menus:
     isaction: true
     priority: 3
     menunumber: 1999
+    viewtype: iframe
+    frameworkservice: mc-observability-fe
+    path: /

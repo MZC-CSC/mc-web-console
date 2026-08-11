@@ -154,7 +154,7 @@ export function mciLifeCycle(type, currentMciId, nsId) {
   let controller = "/api/" + "mc-infra-manager/" + "GetControlInfra";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'GetControlInfra',
-    'MCI ' + type + ': ' + currentMciId
+    'Infra ' + type + ': ' + currentMciId
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -179,7 +179,7 @@ export function mciDelete(currentMciId, nsId) {
   let controller = "/api/" + "mc-infra-manager/" + "DelInfra";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'DelInfra',
-    'MCI delete: ' + currentMciId
+    'Infra delete: ' + currentMciId
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -204,7 +204,7 @@ export function vmDelete(mciId, nsId, vmId) {
   let controller = "/api/" + "mc-infra-manager/" + "DelInfraNode";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'DelInfraNode',
-    'VM delete: ' + vmId
+    'Node delete: ' + vmId
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -231,7 +231,7 @@ export function vmLifeCycle(type, mciId, nsId, vmid) {
   let controller = "/api/" + "mc-infra-manager/" + "GetControlInfraNode";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'GetControlInfraNode',
-    'VM ' + type + ': ' + vmid
+    'Node ' + type + ': ' + vmid
   );
   let response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -242,10 +242,52 @@ export function vmLifeCycle(type, mciId, nsId, vmid) {
   return response;
 }
 
+// 노드 스냅샷 → MyImage(customImage) 생성
+export function createNodeSnapshot(nsId, infraId, nodeId, name, description) {
+  const data = {
+    pathParams: {
+      nsId: nsId,
+      infraId: infraId,
+      nodeId: nodeId
+    },
+    request: {
+      name: name,
+      ...(description ? { description: description } : {})
+    }
+  };
+  const controller = "/api/" + "mc-infra-manager/" + "PostInfraNodeSnapshot";
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostInfraNodeSnapshot',
+    'Create MyImage: ' + name + ' (from ' + nodeId + ')'
+  );
+  const response = webconsolejs["common/api/http"].commonAPIPost(
+    controller,
+    data,
+    false,
+    tracked.httpOptions
+  );
+  return response;
+}
+
+// 워크스페이스 ns의 MyImage(customImage) 목록 조회
+export async function getCustomImageList(nsId) {
+  const data = {
+    pathParams: {
+      nsId: nsId
+    }
+  };
+  const controller = "/api/" + "mc-infra-manager/" + "GetAllCustomImage";
+  const response = await webconsolejs["common/api/http"].commonAPIPost(
+    controller,
+    data
+  );
+  return response.data;
+}
+
 export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_Arr, nsId) {
 
   // 새로운 인터페이스에 맞게 데이터 변환 (mciDynamic과 동일)
-  const subGroups = Express_Server_Config_Arr.map(config => ({
+  const nodeGroups = Express_Server_Config_Arr.map(config => ({
     specId: config.commonSpec,
     imageId: config.commonImage,
     name: config.name,
@@ -280,7 +322,7 @@ export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_A
         "command": command,
         "userName": "cb-user"
       },
-      "nodeGroups": subGroups,
+      "nodeGroups": nodeGroups,
       "systemLabel": ""
     }
   }
@@ -297,7 +339,7 @@ export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_A
 export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, nsId, policyOnPartialFailure) {
 
   // 새로운 인터페이스에 맞게 데이터 변환
-  const subGroups = Express_Server_Config_Arr.map(config => ({
+  const nodeGroups = Express_Server_Config_Arr.map(config => ({
     specId: config.commonSpec,
     imageId: config.commonImage,
     name: config.name,
@@ -325,7 +367,7 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
     Request: {
       "name": mciName,
       "description": mciDesc,
-      "nodeGroups": subGroups,
+      "nodeGroups": nodeGroups,
       "policyOnPartialFailure": policyOnPartialFailure,
       "postCommand": {
         "command": command,
@@ -337,7 +379,7 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
   var controller = "/api/" + "mc-infra-manager/" + "PostInfraDynamic";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'PostInfraDynamic',
-    'MCI create: ' + mciName
+    'Infra create: ' + mciName
   );
   webconsolejs["common/api/http"].commonAPIPost(
     controller,
@@ -351,6 +393,40 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
   // 생성요청했으므로 결과를 기다리지 않고 mciList로 보냄 (상태는 tracker toast로 표시)
   // webconsolejs["common/util"].changePage("MciMng", urlParamMap)
   window.location = "/webconsole/operations/manage/workloads/mciworkloads"
+}
+
+// Add NodeGroup(Extend VM) Done 시점 단건 사전 검증.
+// 핸들러가 infra 존재를 선검증하므로 기존 infra에만 사용 가능 — 신규 Create 플로우는 mciDynamicReview(단건 배열) 사용.
+// 응답 responseData는 review 단건 객체(infra 래퍼 없음).
+export async function vmDynamicReview(mciId, nsId, config) {
+  const data = {
+    pathParams: {
+      nsId: nsId,
+      infraId: mciId,
+    },
+    request: {
+      "imageId": config.commonImage,
+      "specId": config.commonSpec,
+      "connectionName": config.connectionName,
+      "description": config.description,
+      "name": config.name,
+      "nodeGroupSize": parseInt(config.subGroupSize) || 1,
+      "rootDiskSize": (config.rootDiskSize !== "" && config.rootDiskSize !== undefined) ? parseInt(config.rootDiskSize) : 0,
+      "rootDiskType": config.rootDiskType,
+      ...(config.zone ? { zone: config.zone } : {}),
+      ...(config.nodeUserPassword ? { nodeUserPassword: config.nodeUserPassword } : {}),
+      ...(config.label && Object.keys(config.label).length > 0 ? { label: config.label } : {}),
+      ...(config.vNetTemplateId ? { vNetTemplateId: config.vNetTemplateId } : {}),
+      ...(config.sgTemplateId ? { sgTemplateId: config.sgTemplateId } : {})
+    }
+  }
+
+  var controller = "/api/" + "mc-infra-manager/" + "PostInfraDynamicNodeGroupNodeReview";
+  const response = await webconsolejs["common/api/http"].commonAPIPost(
+    controller,
+    data
+  );
+  return response;
 }
 
 export async function vmDynamic(mciId, nsId, Express_Server_Config_Arr) {
@@ -766,7 +842,7 @@ export function calculateVmStatusCount(aMci) {
 }
 
 // ScaleOut API 관련
-export async function postScaleOutSubGroup(nsId, mciId, subgroupId, numVMsToAdd) {
+export async function postScaleOutNodeGroup(nsId, mciId, nodegroupId, numVMsToAdd) {
   if (nsId == "") {
     alert("Project has not set")
     return;
@@ -776,20 +852,20 @@ export async function postScaleOutSubGroup(nsId, mciId, subgroupId, numVMsToAdd)
     pathParams: {
       nsId: nsId,
       infraId: mciId,
-      nodegroupId: subgroupId
+      nodegroupId: nodegroupId
     },
     queryParams: {
       async: "true"
     },
     Request: {
-      "numVMsToAdd": numVMsToAdd,
+      "numNodesToAdd": numVMsToAdd,
     }
   };
 
   var controller = "/api/" + "mc-infra-manager/" + "PostInfraNodeGroupScaleOut";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'PostInfraNodeGroupScaleOut',
-    'ScaleOut: ' + subgroupId + ' +' + numVMsToAdd
+    'ScaleOut: ' + nodegroupId + ' +' + numVMsToAdd
   );
   webconsolejs["common/api/http"].commonAPIPost(controller, data, false, tracked.httpOptions)
     .catch(err => console.error("ScaleOut background error:", err));

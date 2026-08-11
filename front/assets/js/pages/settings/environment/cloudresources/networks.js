@@ -3,6 +3,7 @@
 
 import { TabulatorFull as Tabulator } from "tabulator-tables";
 import { showToast, TOAST_TYPES } from "../../../../common/utils/toast.js";
+import { getProvider, getRegion, populateProviderFilterOptions, populateRegionFilterOptions } from "../../../../common/utils/cspResource.js";
 
 const vpcApi    = () => webconsolejs["common/api/services/vpc_api"];
 const importApi = () => webconsolejs["common/api/services/import_api"];
@@ -11,7 +12,7 @@ const importApi = () => webconsolejs["common/api/services/import_api"];
 const AppState = {
     ns: '',
     tables: { vnetTable: null },
-    resources: { selected: null },
+    resources: { selected: null, all: [] },
     ui: { viewMode: false },
 };
 
@@ -61,7 +62,11 @@ export async function loadVNetList() {
     if (!AppState.ns) return;
     try {
         const data = await vpcApi().getAllVNet(AppState.ns);
-        const vNets = data?.vNet || (Array.isArray(data) ? data : []);
+        const rawVNets = data?.vNet || (Array.isArray(data) ? data : []);
+        const vNets = rawVNets.map((v) => ({ ...v, _provider: getProvider(v), _region: getRegion(v) }));
+        AppState.resources.all = vNets;
+        populateProviderFilterOptions(vNets, 'filter-provider');
+        populateRegionFilterOptions(vNets, 'filter-provider', 'filter-region');
         if (AppState.tables.vnetTable) {
             AppState.tables.vnetTable.replaceData(vNets);
         } else {
@@ -85,10 +90,13 @@ function initTable(vNets) {
         paginationSizeSelector: [10, 20, 50],
         paginationCounter: 'rows',
         movableColumns: true,
+        selectableRows: true, // false로 두면 Tabulator 내부 cap-check 버그(isNaN(false)===false)로 다중선택 자체가 깨진다
         initialSort: [{ column: 'name', dir: 'asc' }],
         columns: [
+            { formatter: 'rowSelection', titleFormatter: 'rowSelection', headerSort: false, hozAlign: 'center', width: 40 },
             { title: 'Name',           field: 'name',           widthGrow: 2, sorter: 'string' },
-            { title: 'Connection',     field: 'connectionName', widthGrow: 1, sorter: 'string' },
+            { title: 'Provider',       field: '_provider',      widthGrow: 1, sorter: 'string' },
+            { title: 'Region',         field: '_region',        widthGrow: 1, sorter: 'string' },
             { title: 'CIDR',           field: 'cidrBlock',      widthGrow: 1 },
             { title: 'Subnet Count',      field: 'subnetInfoList',
               formatter: (cell) => `${(cell.getValue() || []).length}`,
@@ -98,6 +106,14 @@ function initTable(vNets) {
     });
 
     AppState.tables.vnetTable.on('rowClick', async function (e, row) {
+        // selectableRows:true는 row 아무데나 클릭해도 체크박스를 토글하는 내장 동작이 있다.
+        // 체크박스 자체를 클릭한 게 아니면 그 토글을 즉시 되돌려, row 클릭은 Detail Panel 오픈 전용으로 만든다.
+        const clickedCell = row.getCells().find(c => c.getElement().contains(e.target));
+        const isCheckboxCol = clickedCell?.getColumn()?.getDefinition()?.formatter === 'rowSelection';
+        if (!isCheckboxCol) {
+            row.toggleSelect();
+        }
+
         const data = row.getData();
         AppState.resources.selected = data;
         renderDetail(data);
@@ -120,7 +136,8 @@ function initTable(vNets) {
 function renderDetail(data) {
     document.getElementById('detail-name').textContent      = data.name || '-';
     document.getElementById('detail-vnet-name').textContent = data.name || '-';
-    document.getElementById('detail-vnet-connection').textContent = data.connectionName || '-';
+    document.getElementById('detail-vnet-provider').textContent = getProvider(data);
+    document.getElementById('detail-vnet-region').textContent = getRegion(data);
     document.getElementById('detail-vnet-cidr').textContent = data.cidrBlock || '-';
     document.getElementById('detail-vnet-csp-id').textContent = data.cspResourceId || '-';
 
@@ -149,6 +166,8 @@ function renderDetail(data) {
 }
 
 function showDetail() {
+    document.getElementById('edit-mode-cards')?.classList.remove('show');
+    AppState.ui.editMode = false;
     const el = document.getElementById('view-mode-cards');
     if (el) el.classList.add('show');
     AppState.ui.viewMode = true;
@@ -171,7 +190,8 @@ export function showEditMode() {
     // read-only 필드 채우기
     document.getElementById('edit-name').textContent       = selected.name || '';
     document.getElementById('edit-vnet-name').value        = selected.name || '';
-    document.getElementById('edit-vnet-connection').value  = selected.connectionName || '';
+    document.getElementById('edit-vnet-provider').value  = getProvider(selected);
+    document.getElementById('edit-vnet-region').value    = getRegion(selected);
     document.getElementById('edit-vnet-cidr').value        = selected.cidrBlock || '';
 
     // 기존 Subnet 행 렌더링
@@ -205,7 +225,7 @@ function _renderEditSubnetTable(subnets) {
             <td><code>${s.cspResourceId || '-'}</code></td>
             <td>
               <button type="button" class="btn btn-sm btn-outline-danger"
-                onclick="webconsolejs['pages/settings/environment/cloudresources/networks'].deleteSubnet('${s.name}')">
+                onclick="webconsolejs['pages/settings/environment/cloudresources/networks'].confirmDeleteSubnet('${s.name}')">
                 Delete
               </button>
             </td>`;
@@ -238,10 +258,21 @@ export function addEditSubnetRow() {
     list.appendChild(row);
 }
 
-export async function deleteSubnet(subnetId) {
+export function confirmDeleteSubnet(subnetId) {
     const vnetName = AppState.resources.selected?.name;
     if (!vnetName || !subnetId) return;
-    if (!confirm(`Delete Subnet "${subnetId}"?`)) return;
+    webconsolejs['partials/layout/modal'].commonConfirmModal(
+        'commonDefaultModal',
+        'Delete Subnet',
+        `Delete Subnet "${subnetId}"?`,
+        'pages/settings/environment/cloudresources/networks.executeDeleteSubnet',
+        subnetId
+    );
+}
+
+export async function executeDeleteSubnet(subnetId) {
+    const vnetName = AppState.resources.selected?.name;
+    if (!vnetName || !subnetId) return;
     try {
         await vpcApi().delSubnet(AppState.ns, vnetName, subnetId);
         showToast(TOAST_TYPES.SUCCESS, `Subnet "${subnetId}" deleted successfully`);
@@ -310,42 +341,106 @@ export async function saveVNet() {
     await loadVNetList();
 }
 
-export async function confirmDeleteVNet() {
-    const selected = AppState.resources.selected;
-    if (!selected) return;
-    if (!confirm(`Delete VPC "${selected.name}"?`)) return;
-    try {
-        await vpcApi().del(AppState.ns, selected.name);
-        showToast(TOAST_TYPES.SUCCESS, `VPC "${selected.name}" deleted successfully`);
-        hideDetail();
-        await loadVNetList();
-    } catch (err) {
-        console.error('VPC Delete 실패:', err);
-        showToast(TOAST_TYPES.ERROR, 'Failed to delete VPC: ' + (err.message || ''));
+// ─── Table 선택 기반 Edit ─────────────────────────────────────────────────
+
+export async function triggerEditSelected() {
+    const table = AppState.tables.vnetTable;
+    const selected = table ? table.getSelectedData() : [];
+    if (selected.length !== 1) {
+        webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+            'Validation',
+            selected.length === 0
+                ? 'Please select a VPC to edit.'
+                : 'Please select only one VPC to edit.'
+        );
+        return;
     }
+
+    const data = selected[0];
+    AppState.resources.selected = data;
+    // GetVNet으로 최신 subnet 정보까지 로드 후 Edit 모드 진입 (rowClick 핸들러와 동일 패턴)
+    try {
+        const detail = await vpcApi().get(AppState.ns, data.name);
+        if (detail) AppState.resources.selected = detail;
+    } catch (err) {
+        console.error('VNet 상세 조회 실패:', err);
+    }
+    showEditMode();
+    table.deselectRow();
+}
+
+// ─── 다중선택 삭제 ───────────────────────────────────────────────────────
+
+export function confirmBulkDelete() {
+    const table = AppState.tables.vnetTable;
+    const selected = table ? table.getSelectedData() : [];
+    if (selected.length === 0) {
+        webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+            'Nothing Selected',
+            'Please select at least one item to delete.'
+        );
+        return;
+    }
+    AppState.resources.bulkSelected = selected;
+    webconsolejs['partials/layout/modal'].commonConfirmModal(
+        'commonDefaultModal',
+        'Delete Selected',
+        `Delete ${selected.length} selected VPC(s)?`,
+        'pages/settings/environment/cloudresources/networks.executeBulkDelete'
+    );
+}
+
+export async function executeBulkDelete() {
+    const items = AppState.resources.bulkSelected || [];
+    if (items.length === 0) return;
+    const results = await Promise.allSettled(items.map((item) => vpcApi().del(AppState.ns, item.name)));
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    const succeeded = results.length - failed;
+    showToast(
+        failed > 0 ? TOAST_TYPES.WARNING : TOAST_TYPES.SUCCESS,
+        `${succeeded} VPC(s) deleted${failed > 0 ? `, ${failed} failed` : ''}`
+    );
+    AppState.resources.bulkSelected = [];
+    AppState.tables.vnetTable?.deselectRow();
+    hideDetail();
+    await loadVNetList();
 }
 
 // ─── Filter (Tabulator 내장 setFilter) ───────────────────────────────────
 
 function initFilter() {
+    const providerEl = document.getElementById('filter-provider');
+    const regionEl   = document.getElementById('filter-region');
     const fieldEl = document.getElementById('filter-field');
     const typeEl  = document.getElementById('filter-type');
     const valueEl = document.getElementById('filter-value');
     if (!fieldEl || !typeEl || !valueEl) return;
 
     function updateFilter() {
-        const field = fieldEl.value;
-        const type  = typeEl.value;
-        if (field && AppState.tables.vnetTable) {
-            AppState.tables.vnetTable.setFilter(field, type, valueEl.value);
+        if (!AppState.tables.vnetTable) return;
+        const filters = [];
+        if (providerEl?.value) filters.push({ field: '_provider', type: '=', value: providerEl.value });
+        if (regionEl?.value) filters.push({ field: '_region', type: '=', value: regionEl.value });
+        if (fieldEl.value) filters.push({ field: fieldEl.value, type: typeEl.value, value: valueEl.value });
+        if (filters.length > 0) {
+            AppState.tables.vnetTable.setFilter(filters);
+        } else {
+            AppState.tables.vnetTable.clearFilter();
         }
     }
 
+    providerEl?.addEventListener('change', function () {
+        populateRegionFilterOptions(AppState.resources.all, 'filter-provider', 'filter-region');
+        updateFilter();
+    });
+    regionEl?.addEventListener('change', updateFilter);
     fieldEl.addEventListener('change', updateFilter);
     typeEl.addEventListener('change', updateFilter);
     valueEl.addEventListener('keyup', updateFilter);
 
     document.getElementById('filter-clear').addEventListener('click', function () {
+        if (providerEl) providerEl.value = '';
+        if (regionEl) regionEl.value = '';
         fieldEl.value = '';
         typeEl.value  = 'like';
         valueEl.value = '';
@@ -575,10 +670,13 @@ webconsolejs['pages/settings/environment/cloudresources/networks'] = {
     addSubnetRow,
     executeCreateVNet,
     hideDetail,
-    confirmDeleteVNet,
+    confirmBulkDelete,
+    executeBulkDelete,
+    triggerEditSelected,
     showEditMode,
     cancelEditMode,
     addEditSubnetRow,
-    deleteSubnet,
+    confirmDeleteSubnet,
+    executeDeleteSubnet,
     saveVNet,
 };

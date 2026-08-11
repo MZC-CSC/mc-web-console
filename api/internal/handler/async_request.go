@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -82,7 +83,7 @@ func requireAsyncRepo() (*repository.AsyncRequestRepository, error) {
 	return repository.NewAsyncRequestRepository(db), nil
 }
 
-// ListAsyncRequests GET /api/async-requests
+// ListAsyncRequests GET /api/async-requests?q=&offset=&limit=
 func ListAsyncRequests(c echo.Context) error {
 	userID := ResolveUserIDFromRequest(c)
 	if userID == "" {
@@ -92,7 +93,19 @@ func ListAsyncRequests(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	rows, err := repo.ListByUser(userID, 50)
+	q := strings.TrimSpace(c.QueryParam("q"))
+	offset, _ := strconv.Atoi(c.QueryParam("offset"))
+	if offset < 0 {
+		offset = 0
+	}
+	limit, _ := strconv.Atoi(c.QueryParam("limit"))
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	rows, total, err := repo.ListByUser(userID, q, offset, limit)
 	if err != nil {
 		return errors.NewInternalServerError("Failed to list async requests", err)
 	}
@@ -100,7 +113,12 @@ func ListAsyncRequests(c echo.Context) error {
 	for i := range rows {
 		dtos = append(dtos, rows[i].ToDTO())
 	}
-	resp := model.CommonResponseStatusOK(dtos)
+	payload := model.AsyncRequestListDTO{
+		Items:   dtos,
+		Total:   total,
+		HasMore: int64(offset+len(dtos)) < total,
+	}
+	resp := model.CommonResponseStatusOK(payload)
 	return c.JSON(resp.Status.Code, resp)
 }
 

@@ -400,6 +400,13 @@ menus:
     parentId: cloudresources
     priority: 6
     resType: menu
+  - displayName: NLB
+    id: nlbs
+    isAction: true
+    menuNumber: 1555
+    parentId: cloudresources
+    priority: 7
+    resType: menu
   - displayName: VPC Template
     id: networktemplates
     isAction: true

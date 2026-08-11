@@ -369,12 +369,28 @@ export async function displayNewNodeForm() {
 	var selectedNsId = selectedWorkspaceProject.nsId;
 	
 	// Get selected cluster's provider information for SSH Key filtering
+	// selectedPmkObj는 체크박스 선택(rowSelectionChanged) 시에만 갱신되어 비어있을 수 있으므로,
+	// 행 클릭마다 항상 갱신되는 currentProvider를 우선 사용한다
 	var selectedCluster = webconsolejs["pages/operation/manage/pmk"].selectedPmkObj;
-	var clusterProvider = null;
+	var clusterProvider = webconsolejs["pages/operation/manage/pmk"].currentProvider || null;
+	var clusterConnection = null;
 	if (selectedCluster && selectedCluster.length > 0) {
-		clusterProvider = selectedCluster[0].provider; // e.g., "aws", "azure", "gcp"
+		clusterProvider = clusterProvider || selectedCluster[0].provider; // e.g., "aws", "azure", "gcp"
+		clusterConnection = selectedCluster[0].connectionName;
 	}
-	
+
+	// Root Disk Type 옵션을 provider/connection 기준으로 동적 조회 (이미 알려진 값 사용)
+	// ssh key 조회보다 먼저 실행해, 이후 블록의 예외와 무관하게 항상 호출되도록 한다
+	if (clusterProvider) {
+		try {
+			const diskResp = await webconsolejs["common/api/services/disk_api"]
+				.getCommonLookupDiskInfo(clusterProvider, clusterConnection);
+			applyNodeRootDiskTypeOptions(clusterProvider, diskResp);
+		} catch (error) {
+			console.error("Failed to look up disk types:", error);
+		}
+	}
+
 	// getSSHKEY with provider filter
 	var sshKeyList = await webconsolejs["common/api/services/pmk_api"].getSshKey(selectedNsId, clusterProvider);
 	var mysshKeyList = sshKeyList.data.responseData.sshKey;
@@ -576,7 +592,9 @@ export async function addNewNodeGroup() {
 
 	var cluster_name = selectedCluster[0].name;
 	var cluster_desc = selectedCluster[0].description;
-	var cluster_provider = selectedCluster[0].provider;
+	// selectedPmkObj는 체크박스 선택 시에만 갱신되어 값이 비어있을 수 있으므로,
+	// 행 클릭마다 항상 갱신되는 currentProvider를 우선 사용한다
+	var cluster_provider = webconsolejs["pages/operation/manage/pmk"].currentProvider || selectedCluster[0].provider;
 	var cluster_connection = selectedCluster[0].connectionName;
 	var cluster_vpc = selectedCluster[0].vpc;
 	var cluster_subnet = selectedCluster[0].subnet;
@@ -585,6 +603,17 @@ export async function addNewNodeGroup() {
 
 	// Extract region from connectionName
 	var cluster_region = extractRegionFromConnection(cluster_connection, cluster_provider);
+
+	// Root Disk Type 옵션을 provider/connection 기준으로 동적 조회 (이후 DOM 조작 코드의 예외와 무관하게 먼저 실행)
+	if (cluster_provider) {
+		try {
+			const diskResp = await webconsolejs["common/api/services/disk_api"]
+				.getCommonLookupDiskInfo(cluster_provider, cluster_connection);
+			applyNodeRootDiskTypeOptions(cluster_provider, diskResp);
+		} catch (error) {
+			console.error("Failed to look up disk types:", error);
+		}
+	}
 
 	// Set basic cluster information
 	$("#node_cluster_name").val(cluster_name);
@@ -637,6 +666,23 @@ export async function addNewNodeGroup() {
 	window.location.hash = "#addnode";
 
 	isNodeGroup = true;
+}
+
+// provider에 맞는 Root Disk Type 옵션으로 #node_rootdisk 드롭다운을 채운다
+function applyNodeRootDiskTypeOptions(provider, diskInfoList) {
+	const providerId = (provider || "").toUpperCase();
+	const matched = Array.isArray(diskInfoList)
+		? diskInfoList.find(item => item.providerId === providerId)
+		: null;
+
+	let html = '<option value="">Select Root Disk Type</option><option value="default">default</option>';
+	if (matched && Array.isArray(matched.rootdisktype)) {
+		matched.rootdisktype.forEach(type => {
+			html += '<option value="' + type + '">' + type + '</option>';
+		});
+	}
+
+	$("#node_rootdisk").empty().append(html);
 }
 
 export async function addNewPmk() {
@@ -1155,7 +1201,7 @@ export function validateAndOpenImageModal(event) {
 	
 	if (!specValue || specValue.trim() === "") {
 		console.warn("No PMK spec selected - validation failed");
-		alert("Please select a server specification first before opening the image recommendation modal.");
+		alert("Please select a node specification first before opening the image recommendation modal.");
 		if (event) {
 			event.preventDefault();
 			event.stopPropagation();
@@ -1166,7 +1212,7 @@ export function validateAndOpenImageModal(event) {
 	// 전역 변수에서 spec 정보 확인
 	if (!window.selectedPmkSpecInfo) {
 		console.warn("No PMK spec info in global variable - validation failed");
-		alert("Please select a server specification first before opening the image recommendation modal.");
+		alert("Please select a node specification first before opening the image recommendation modal.");
 		if (event) {
 			event.preventDefault();
 			event.stopPropagation();
@@ -1210,7 +1256,7 @@ export function validateAndOpenImageModal(event) {
 				}
 			} catch (error) {
 				console.error("failed to open PMK image modal:", error);
-				alert("Error opening PMK image recommendation modal. Please try again.");
+				alert("Error opening K8s image recommendation modal. Please try again.");
 			}
 		}, 100); // 100ms 지연으로 이벤트 처리 완료 후 모달 열기
 		

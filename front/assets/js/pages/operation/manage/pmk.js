@@ -118,7 +118,7 @@ var pmkListTable;// div로 선언한 pmk table
 var checked_array = [];
 var currentPmkId = "";
 var currentNodeGroupName = ""
-var currentProvider = ""
+export var currentProvider = ""
 
 initPmkTable(); // init tabulator
 
@@ -260,7 +260,7 @@ export async function refreshPmkList() {
       },
 
       // 에러 메시지 / Error message
-      errorMessage: 'Failed to refresh PMK list. Please try again.'
+      errorMessage: 'Failed to refresh K8s list. Please try again.'
     };
 
     // Pattern 실행 / Execute pattern
@@ -394,8 +394,8 @@ export async function deletePmk() {
   // Validation 1: PMK가 선택되었는지 확인
   if (!currentPmkId || currentPmkId === '') {
     webconsolejs['partials/layout/modal'].commonShowDefaultModal(
-      'PMK Selection Check',
-      'Please select a PMK to delete.'
+      'K8s Selection Check',
+      'Please select a K8s to delete.'
     );
     return;
   }
@@ -487,8 +487,8 @@ export async function deleteNodeGroup() {
   // Validation 2: PMK가 선택되었는지 확인
   if (!currentPmkId || currentPmkId === '') {
     webconsolejs['partials/layout/modal'].commonShowDefaultModal(
-      'PMK Selection Check',
-      'Please select a PMK first.'
+      'K8s Selection Check',
+      'Please select a K8s first.'
     );
     return;
   }
@@ -1546,8 +1546,48 @@ export async function changeCloudConnectionDynamic(connectionName) {
     // 동적 생성에서는 VPC, Subnet, Security Group 선택이 필요 없음
     // Cloud Connection만 설정하고 추가 API 호출 없이 처리
     if (!connectionName) {
+        resetNodeGroupRootDiskTypeDynamic();
         return;
     }
+
+    const provider = $("#cluster_provider_dynamic").val();
+    if (!provider) {
+        resetNodeGroupRootDiskTypeDynamic();
+        return;
+    }
+
+    try {
+        const diskResp = await webconsolejs["common/api/services/disk_api"]
+            .getCommonLookupDiskInfo(provider, connectionName);
+        applyNodeGroupRootDiskTypeDynamic(provider, diskResp);
+    } catch (error) {
+        console.error("Failed to look up disk types:", error);
+        resetNodeGroupRootDiskTypeDynamic();
+    }
+}
+
+// provider/connectionName에 맞는 Root Disk Type 옵션으로 드롭다운을 채운다
+function applyNodeGroupRootDiskTypeDynamic(provider, diskInfoList) {
+    const providerId = provider.toUpperCase();
+    const matched = Array.isArray(diskInfoList)
+        ? diskInfoList.find(item => item.providerId === providerId)
+        : null;
+
+    let html = '<option value="">Select Root Disk Type</option><option value="default">default</option>';
+    if (matched && Array.isArray(matched.rootdisktype)) {
+        matched.rootdisktype.forEach(type => {
+            html += `<option value="${type}">${type}</option>`;
+        });
+    }
+
+    $("#nodegroup_rootdisk_dynamic").empty().append(html);
+}
+
+// Root Disk Type 드롭다운을 기본 상태로 되돌린다
+function resetNodeGroupRootDiskTypeDynamic() {
+    $("#nodegroup_rootdisk_dynamic").empty().append(
+        '<option value="">Select Root Disk Type</option><option value="default">default</option>'
+    );
 }
 
 // Dynamic 폼용 Provider 변경 이벤트
@@ -1769,11 +1809,11 @@ export async function getRecommendVmInfoPmk() {
             await webconsolejs["partials/operation/manage/pmk_serverrecommendation"].getRecommendVmInfoPmk();
         } else {
             console.error("PMK Server recommendation module not found");
-            alert("PMK Server recommendation module not found");
+            alert("K8s Node recommendation module not found");
         }
     } catch (error) {
         console.error("failed to recommend PMK spec:", error);
-        alert("failed to recommend PMK spec");
+        alert("failed to recommend K8s spec");
     }
 }
 
@@ -1833,7 +1873,7 @@ export function validateAndOpenImageModalPmk(event) {
 
     if (!specValue || specValue.trim() === "") {
         console.warn("No PMK spec selected - validation failed");
-        alert("Please select a server specification first before opening the image recommendation modal.");
+        alert("Please select a node specification first before opening the image recommendation modal.");
         // 이벤트 전파 중단 및 기본 동작 방지
         if (event) {
             event.preventDefault();
@@ -1845,7 +1885,7 @@ export function validateAndOpenImageModalPmk(event) {
     // 전역 변수에서 spec 정보 확인 (MCI와 동일한 검증 로직)
     if (!window.selectedPmkSpecInfo) {
         console.warn("No PMK spec info in global variable - validation failed");
-        alert("Please select a server specification first before opening the image recommendation modal.");
+        alert("Please select a node specification first before opening the image recommendation modal.");
         // 이벤트 전파 중단 및 기본 동작 방지
         if (event) {
             event.preventDefault();
@@ -1896,13 +1936,13 @@ export function validateAndOpenImageModalPmk(event) {
             }
         } catch (error) {
             console.error("failed to open PMK image modal:", error);
-            alert("Error opening PMK image recommendation modal. Please try again.");
+            alert("Error opening K8s image recommendation modal. Please try again.");
         }
     }, 100); // 100ms 지연으로 이벤트 처리 완료 후 모달 열기
 
     } catch (error) {
         console.error("failed to open PMK image modal:", error);
-        alert("failed to open PMK image modal");
+        alert("failed to open K8s image modal");
     }
 
 

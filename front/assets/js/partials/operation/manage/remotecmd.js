@@ -78,10 +78,10 @@ export async function initTerminal(id, nsId, mciId, targetId, targetType) {
         dropzoneId = '#mci-dropzone-custom';
         buttonId = 'mci-show-content-btn';
         pathInputId = 'mci-file-path-input';
-    } else if (targetType === 'subgroup') {
-        dropzoneId = '#subgroup-dropzone-custom';
-        buttonId = 'subgroup-show-content-btn';
-        pathInputId = 'subgroup-file-path-input';
+    } else if (targetType === 'nodegroup') {
+        dropzoneId = '#nodegroup-dropzone-custom';
+        buttonId = 'nodegroup-show-content-btn';
+        pathInputId = 'nodegroup-file-path-input';
     } else {
         // vm 타입
         dropzoneId = '#dropzone-custom';
@@ -334,7 +334,7 @@ export async function initClusterTerminal(id, nsId, clusterId, namespace, podNam
     });
 }
 
-// MCI/SubGroup용 단발성 명령어 실행 초기화 함수
+// MCI/NodeGroup용 단발성 명령어 실행 초기화 함수
 export async function initBatchCommandTerminal(id, nsId, mciId, targetId, targetType) {
     // 기존 터미널 인스턴스 정리
     if (terminalInstance) {
@@ -356,12 +356,12 @@ export async function initBatchCommandTerminal(id, nsId, mciId, targetId, target
         executeAgainButtonId = 'mci-execute-again-btn';
         inputSectionId = 'mci-command-input-section';
         resultsSectionId = 'mci-command-results-section';
-    } else if (targetType === 'subgroup') {
-        commandInputId = 'subgroup-command-input';
-        executeButtonId = 'subgroup-execute-command-btn';
-        executeAgainButtonId = 'subgroup-execute-again-btn';
-        inputSectionId = 'subgroup-command-input-section';
-        resultsSectionId = 'subgroup-command-results-section';
+    } else if (targetType === 'nodegroup') {
+        commandInputId = 'nodegroup-command-input';
+        executeButtonId = 'nodegroup-execute-command-btn';
+        executeAgainButtonId = 'nodegroup-execute-again-btn';
+        inputSectionId = 'nodegroup-command-input-section';
+        resultsSectionId = 'nodegroup-command-results-section';
     } else {
         console.error('initBatchCommandTerminal: Invalid targetType:', targetType);
         return;
@@ -540,7 +540,7 @@ export async function transferFilesToMci(files, targetPath, nsId, mciId, targetT
         return;
     }
 
-    // SubGroup이나 MCI 타입인 경우 새로운 방식 사용
+    // NodeGroup이나 MCI 타입인 경우 새로운 방식 사용
     const results = [];
 
     for (const file of files) {
@@ -650,7 +650,7 @@ export function buildCommandData(nsid, resourceId, targetId, cmdarr, targetType)
                 userName: "cb-user"
             }
         };
-    } else if (targetType === 'subgroup') {
+    } else if (targetType === 'nodegroup') {
         data = {
             pathParams: {
                 nsId: nsid,
@@ -728,7 +728,7 @@ export function buildFileTransferData(nsId, mciId, file, targetPath, targetType,
     };
 
     // targetType에 따른 query parameter 추가
-    if (targetType === 'subgroup' && targetId) {
+    if (targetType === 'nodegroup' && targetId) {
         data.queryParams = { subGroupId: targetId };
     } else if (targetType === 'vm' && targetId) {
         data.queryParams = { vmId: targetId };
@@ -776,7 +776,7 @@ export function showTransferResultModal(fileName, result, successCount, totalCou
                                         <h4 class="${successCount === totalCount ? 'text-success' : 'text-warning'}">
                                             ${successCount}/${totalCount}
                                         </h4>
-                                        <small class="text-muted">VM Transfer Complete</small>
+                                        <small class="text-muted">Node Transfer Complete</small>
                                     </div>
                                 </div>
                             </div>
@@ -791,13 +791,13 @@ export function showTransferResultModal(fileName, result, successCount, totalCou
                             </div>
                         </div>
                         
-                        <h6>VM Transfer Details:</h6>
+                        <h6>Node Transfer Details:</h6>
                         <div class="table-responsive">
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
-                                        <th>VM ID</th>
-                                        <th>VM IP</th>
+                                        <th>Node ID</th>
+                                        <th>Node IP</th>
                                         <th>Status</th>
                                         <th>Result</th>
                                     </tr>
@@ -862,7 +862,7 @@ export function showCommandResultsInModal(command, result, successCount, totalCo
     // 컨텍스트 정보 저장 (retry용)
     window.currentCommand = command;
     window.currentNsId = webconsolejs["common/api/services/workspace_api"].getCurrentProject().NsId;
-    window.currentMciId = window.currentMciId || window.currentSubGroupId; // MCI ID 저장
+    window.currentMciId = window.currentMciId || window.currentNodeGroupId; // MCI ID 저장
 
     // 모달 HTML 생성
     const modalHtml = `
@@ -903,8 +903,8 @@ export function showCommandResultsInModal(command, result, successCount, totalCo
                             <table class="table table-sm">
                                 <thead class="table-light sticky-top">
                                     <tr>
-                                        <th>VM ID</th>
-                                        <th>VM IP</th>
+                                        <th>Node ID</th>
+                                        <th>Node IP</th>
                                         <th>Status</th>
                                         <th>Result</th>
                                     </tr>
@@ -1145,7 +1145,7 @@ function showTransferResultsModal(results, successFiles, totalFiles) {
                                     <tr>
                                         <th>File Name</th>
                                         <th>Status</th>
-                                        <th>VM Count</th>
+                                        <th>Node Count</th>
                                         <th>Success/Total</th>
                                     </tr>
                                 </thead>
@@ -1289,7 +1289,7 @@ function showCommandResultPage(page) {
                 ${isSuccess ?
                 `<small class="text-muted">${r.stdout?.['0'] || 'Command executed successfully'}</small>` :
                 `<div class="d-flex align-items-center justify-content-start">
-                        <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); retryVMCommand('${r.vmId}', ${globalIndex})" title="Retry command for this VM">
+                        <button class="btn btn-outline-primary btn-sm" onclick="event.stopPropagation(); retryVMCommand('${r.vmId}', ${globalIndex})" title="Retry command for this Node">
                             <i class="ti ti-refresh"></i> Retry
                         </button>
                     </div>`
@@ -1345,10 +1345,10 @@ function initFileTransfer(targetType, nsId, mciId, targetId) {
         dropzoneId = '#mci-dropzone-custom';
         buttonId = 'mci-show-content-btn';
         pathInputId = 'mci-file-path-input';
-    } else if (targetType === 'subgroup') {
-        dropzoneId = '#subgroup-dropzone-custom';
-        buttonId = 'subgroup-show-content-btn';
-        pathInputId = 'subgroup-file-path-input';
+    } else if (targetType === 'nodegroup') {
+        dropzoneId = '#nodegroup-dropzone-custom';
+        buttonId = 'nodegroup-show-content-btn';
+        pathInputId = 'nodegroup-file-path-input';
     } else {
         // vm 타입
         dropzoneId = '#dropzone-custom';
@@ -1500,10 +1500,10 @@ window.executeCommandAgain = function () {
         commandInputId = 'mci-command-input';
         inputSectionId = 'mci-command-input-section';
         resultsSectionId = 'mci-command-results-section';
-    } else if (targetType === 'subgroup') {
-        commandInputId = 'subgroup-command-input';
-        inputSectionId = 'subgroup-command-input-section';
-        resultsSectionId = 'subgroup-command-results-section';
+    } else if (targetType === 'nodegroup') {
+        commandInputId = 'nodegroup-command-input';
+        inputSectionId = 'nodegroup-command-input-section';
+        resultsSectionId = 'nodegroup-command-results-section';
     } else {
         console.error('executeCommandAgain: Invalid targetType:', targetType);
         return;

@@ -32,7 +32,7 @@
                   <label class="form-check"><input class="form-check-input filter-type-cb" type="checkbox" value="vNet" checked onchange="cspApplyFilter()"><span class="form-check-label">vNet</span></label>
                   <label class="form-check"><input class="form-check-input filter-type-cb" type="checkbox" value="securityGroup" checked onchange="cspApplyFilter()"><span class="form-check-label">Security Group</span></label>
                   <label class="form-check"><input class="form-check-input filter-type-cb" type="checkbox" value="sshKey" checked onchange="cspApplyFilter()"><span class="form-check-label">SSH Key</span></label>
-                  <label class="form-check"><input class="form-check-input filter-type-cb" type="checkbox" value="vm" checked onchange="cspApplyFilter()"><span class="form-check-label">VM</span></label>
+                  <label class="form-check"><input class="form-check-input filter-type-cb" type="checkbox" value="vm" checked onchange="cspApplyFilter()"><span class="form-check-label">Node</span></label>
                 </div>
               </div>
             </div>
@@ -88,7 +88,7 @@
                   <label class="form-check"><input class="form-check-input target-type-cb" type="checkbox" value="vNet"><span class="form-check-label">vNet</span></label>
                   <label class="form-check"><input class="form-check-input target-type-cb" type="checkbox" value="securityGroup"><span class="form-check-label">Security Group</span></label>
                   <label class="form-check"><input class="form-check-input target-type-cb" type="checkbox" value="sshKey"><span class="form-check-label">SSH Key</span></label>
-                  <label class="form-check"><input class="form-check-input target-type-cb" type="checkbox" value="vm" onchange="cspToggleMciName()"><span class="form-check-label">VM</span></label>
+                  <label class="form-check"><input class="form-check-input target-type-cb" type="checkbox" value="vm" onchange="cspToggleMciName()"><span class="form-check-label">Node</span></label>
                 </div>
               </div>
               <div class="col-md-4">
@@ -98,7 +98,7 @@
                 </select>
               </div>
               <div class="col-md-4" id="mci-name-group" style="display:none">
-                <label class="form-label required">MCI Name (for VM)</label>
+                <label class="form-label required">Infra Name (for Node)</label>
                 <input type="text" id="target-mci-name" class="form-control" placeholder="imported-mci">
               </div>
               <div class="col-md-4">

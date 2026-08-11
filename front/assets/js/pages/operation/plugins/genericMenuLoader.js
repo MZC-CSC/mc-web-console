@@ -84,9 +84,10 @@ export async function loadByMenuId(menuId, targetDivId, opts = {}) {
 
   const tree = webconsolejs['common/storage/localstorage'].getMenuLocalStorage() || [];
   const menu = findMenuInTree(tree, menuId) || {};
+  // opts는 페이지가 전달하는 known-good 메타(WEB-BUG-037) — 메뉴 시드 DB 기본값보다 우선한다.
   const frameworkService =
-    menu.frameworkService || opts.frameworkService || '';
-  const path = menu.path != null && menu.path !== '' ? menu.path : (opts.path ?? '/');
+    opts.frameworkService || menu.frameworkService || '';
+  const path = opts.path ?? (menu.path != null && menu.path !== '' ? menu.path : '/');
 
   if (!frameworkService) {
     targetDiv.innerHTML =

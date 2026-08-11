@@ -13,6 +13,7 @@ var AsyncTrackOperationIDs = map[string]struct{}{
 	"Postk8snodegroup":             {},
 	"GetControlInfra":              {},
 	"GetControlInfraNode":          {},
+	"PostInfraNodeSnapshot":        {},
 	"DelInfra":                     {},
 	"DelInfraNode":                 {},
 	"Deletek8scluster":             {},

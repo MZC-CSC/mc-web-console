@@ -2,10 +2,10 @@
 window.openMciLabelEditor = function() {
   // 현재 선택된 MCI 정보 가져오기
   const mciId = window.currentMciId;
-  const mciName = document.getElementById('mci_info_name')?.textContent || 'Unknown MCI';
-  
+  const mciName = document.getElementById('mci_info_name')?.textContent || 'Unknown Infra';
+
   if (!mciId || mciId === "" || mciId === "undefined") {
-    alert('Please select an MCI first.');
+    alert('Please select an Infra first.');
     return;
   }
   
@@ -20,7 +20,7 @@ window.displayMciLabels = function(labels) {
   if (!labels || Object.keys(labels).length === 0) {
     container.innerHTML = `
       <div class="text-center text-muted">
-        <p>No labels found. Click "Edit Labels" to add labels to this MCI.</p>
+        <p>No labels found. Click "Edit Labels" to add labels to this Infra.</p>
       </div>
     `;
     return;
@@ -40,7 +40,7 @@ window.displayMciLabels = function(labels) {
   if (labelsToShow.length === 0) {
     container.innerHTML = `
       <div class="text-center text-muted">
-        <p>No ${showSystemLabels ? '' : 'user '}labels found. Click "Edit Labels" to add labels to this MCI.</p>
+        <p>No ${showSystemLabels ? '' : 'user '}labels found. Click "Edit Labels" to add labels to this Infra.</p>
       </div>
     `;
     return;
