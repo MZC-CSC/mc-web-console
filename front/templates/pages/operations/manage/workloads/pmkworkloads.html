@@ -1086,8 +1086,7 @@
 
 <!-- add server : spec-search -->
 {{ partial("partials/operation/manage/clusterrecommendation.html") | raw }}
-<!-- add server : image-search -->
-{{ partial("partials/operation/manage/imagerecommendation.html") | raw }}
+<!-- MCI용 image-search 모달은 PMK에서 사용하지 않음 — PMK는 #image-search-pmk 사용 (중복 로드·불필요 초기화 제거) -->
 <!-- add server : cspimagelist -->
 {{ partial("partials/operation/manage/cspimagelist.html") | raw }}
 <!-- add server : cspspeclist -->
@@ -1283,4 +1282,4 @@
 
 {{ javascriptTag("common/utils/listRefreshPattern.js") | raw }}
 {{ javascriptTag("pages/operation/manage/pmk.js") | raw }}
-{{ javascriptTag("common/api/services/pmk_api.js") | raw }} {{ javascriptTag("common/api/services/mci_api.js") | raw }} {{ javascriptTag("common/api/services/vmimage_api.js") | raw }} {{ javascriptTag("partials/operation/manage/serverrecommendation.js") | raw }} {{ javascriptTag("partials/operation/manage/imagerecommendation.js") | raw }} {{ javascriptTag("partials/operation/manage/pmk_serverrecommendation.js") | raw }} {{ javascriptTag("partials/operation/manage/pmk_imagerecommendation.js") | raw }}
+{{ javascriptTag("common/api/services/pmk_api.js") | raw }} {{ javascriptTag("common/api/services/mci_api.js") | raw }} {{ javascriptTag("common/api/services/vmimage_api.js") | raw }} {{ javascriptTag("partials/operation/manage/serverrecommendation.js") | raw }} {{ javascriptTag("partials/operation/manage/pmk_serverrecommendation.js") | raw }} {{ javascriptTag("partials/operation/manage/pmk_imagerecommendation.js") | raw }}
