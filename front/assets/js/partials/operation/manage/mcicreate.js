@@ -518,13 +518,6 @@ export async function expressDone_btn() {
 
 var isDonePrecheckRunning = false;
 
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 // review 사유 목록을 modal용 텍스트로 변환 (white-space: pre-line로 줄바꿈 표시)
 function reviewReasonLines(msgs) {
@@ -552,23 +545,6 @@ function showPrecheckConfirmModal(title, content) {
   });
 }
 
-// alert형(#commonAlertModal, Close만): 닫힘 시 resolve
-function showPrecheckAlertModal(title, content) {
-  return new Promise(function (resolve) {
-    var modalEl = document.getElementById("commonAlertModal");
-    if (!modalEl) {
-      alert(title + "\n\n" + content);
-      resolve();
-      return;
-    }
-    document.getElementById("commonAlertModal-title").innerText = title;
-    var contentEl = document.getElementById("commonAlertModal-content");
-    contentEl.style.whiteSpace = "pre-line";
-    contentEl.innerText = content;
-    modalEl.addEventListener("hidden.bs.modal", function () { resolve(); }, { once: true });
-    bootstrap.Modal.getOrCreateInstance(modalEl).show();
-  });
-}
 
 // ─── Infra 배포 Labels ───
 // 기본 label 2종은 배포 시 코드에서 자동 주입 — UI에는 read-only 뱃지로만 표시 (수정·삭제 불가)
@@ -740,11 +716,12 @@ async function precheckNodeGroup(express_form) {
     var errors = review.errors || [];
     var warnings = review.warnings || [];
 
+    // Review는 배포를 막는 차단 장치가 아니라 사전 권고 — 사유를 안내하고 진행 여부는 사용자가 선택
     if (review.status === "Error" || review.canCreate === false) {
-      await showPrecheckAlertModal("NodeGroup Validation Failed",
-        "Not added to the list. Please reselect spec/image.\n\n"
-        + reviewReasonLines(errors.length ? errors : [review.message]));
-      return false;
+      return await showPrecheckConfirmModal("NodeGroup Validation Failed",
+        reviewReasonLines(errors.length ? errors : [review.message])
+        + "\n\nThis check is advisory. Deployment may still succeed if the configuration is correct."
+        + "\n\nAdd to the list anyway?");
     }
 
     if (review.status === "Warning" || warnings.length > 0) {
@@ -1124,10 +1101,11 @@ export async function createMciDynamic() {
 		if (validationResult && validationResult.status === 200) {
 			const reviewData = validationResult.data.responseData;
 			
-			// overallStatus 우선 체크 - Error 상태 처리
+			// Review는 배포를 막는 차단 장치가 아니라 사전 권고(배포 API는 review를 호출하지 않음) —
+			// Error/Warning 모두 사유를 안내하고 진행 여부는 사용자가 선택한다.
 			if (reviewData.overallStatus === "Error" || !reviewData.creationViable) {
 				// 노드별 오류 상세 수집 — 배포 백엔드 계약은 nodeReviews[]/nodeName/nodeGroupSize
-				var errorLines = ["Infra creation blocked: " + (reviewData.overallMessage || "review failed")];
+				var errorLines = [reviewData.overallMessage || "Infra review reported errors"];
 
 				if (reviewData.nodeReviews && reviewData.nodeReviews.length > 0) {
 					reviewData.nodeReviews.forEach(node => {
@@ -1146,26 +1124,26 @@ export async function createMciDynamic() {
 					});
 				}
 
-				webconsolejs["common/utils/toast"].showToast(
-					webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR,
-					errorLines.map(escapeHtml).join("<br>"),
-					{ delay: 10000, closeButton: true });
-				return;
-			}
-			
-			// 검증 결과에 따른 처리
-			if (reviewData.creationViable) {
-				if (reviewData.overallStatus === "Ready") {
-					// 검증 성공 - 실제 MCI 생성 진행
-					webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure, deployLabels);
-				} else if (reviewData.overallStatus === "Warning") {
-					// 경고가 있지만 생성 가능 - 사용자 확인 후 진행
-					const confirmMessage = `Warnings found:\n${reviewData.overallMessage}\n\nEstimated cost: ${reviewData.estimatedCost}\n\nContinue anyway?`;
-					if (confirm(confirmMessage)) {
-						webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure, deployLabels);
-					}
+				const proceedOnError = await showPrecheckConfirmModal("Infra Deployment Warning",
+					errorLines.join("\n")
+					+ "\n\nThis check is advisory. Deployment may still succeed if the configuration is correct."
+					+ "\n\nDeploy anyway?");
+				if (!proceedOnError) {
+					return;
+				}
+			} else if (reviewData.overallStatus === "Warning") {
+				// 경고가 있지만 생성 가능 - 사용자 확인 후 진행
+				const proceedOnWarning = await showPrecheckConfirmModal("Infra Deployment Warning",
+					(reviewData.overallMessage || "Infra review reported warnings")
+					+ (reviewData.estimatedCost ? "\n\nEstimated cost: " + reviewData.estimatedCost : "")
+					+ "\n\nDeploy anyway?");
+				if (!proceedOnWarning) {
+					return;
 				}
 			}
+
+			// Ready / 사용자가 확인한 Error·Warning → 배포 진행
+			webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure, deployLabels);
 		} else {
 			// API 호출 실패
 			console.error("Infra review API call failed:", validationResult);
