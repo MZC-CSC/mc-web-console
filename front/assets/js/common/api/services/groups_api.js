@@ -125,3 +125,24 @@ export async function listUsers() {
     const response = await webconsolejs["common/api/http"].commonAPIPost(controller);
     return response.data.responseData || [];
 }
+
+// 그룹에 할당된 Platform Role 목록
+export async function getGroupPlatformRoles(groupId) {
+    const controller = "/api/mc-iam-manager/getGroupPlatformRoles";
+    const data = {
+        pathParams: { groupId: groupId.toString() }
+    };
+    const response = await webconsolejs["common/api/http"].commonAPIPost(controller, data);
+    return unwrapResponse(response) || [];
+}
+
+// 그룹에 Platform Role 할당 — 그룹 소속 사용자 전원이 상속받음
+export async function assignGroupPlatformRole(groupId, roleId) {
+    const controller = "/api/mc-iam-manager/assignGroupPlatformRole";
+    const data = {
+        pathParams: { groupId: groupId.toString() },
+        request: { role_id: parseInt(roleId, 10) }
+    };
+    const response = await webconsolejs["common/api/http"].commonAPIPost(controller, data);
+    return unwrapResponse(response);
+}
