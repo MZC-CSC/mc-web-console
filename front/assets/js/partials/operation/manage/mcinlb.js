@@ -60,7 +60,7 @@ function initTable(items) {
   AppState.tables.nlbTable = new Tabulator('#mcinlb-list-table', {
     data: items,
     layout: 'fitColumns',
-    placeholder: 'No NLBs. Create one to get started.',
+    placeholder: 'No NLBs. Create one in Cloud Resources > NLBs.',
     pagination: 'local',
     paginationSize: 10,
     paginationSizeSelector: [10, 20, 50],
@@ -88,7 +88,17 @@ function initTable(items) {
         title: 'Target NodeGroup',
         field: 'targetGroup',
         widthGrow: 1,
-        formatter: (cell) => cell.getValue()?.subGroupId || '-',
+        formatter: (cell) => {
+          const tg = cell.getValue();
+          return tg?.nodeGroupId || tg?.subGroupId || '-';
+        },
+      },
+      {
+        title: 'Assigned Nodes',
+        field: 'targetGroup',
+        width: 130,
+        hozAlign: 'center',
+        formatter: (cell) => String(_assignedNodes({ targetGroup: cell.getValue() }).length),
       },
       {
         title: 'DNS Name',
@@ -134,7 +144,8 @@ function renderDetail(data) {
   document.getElementById('mcinlb-detail-nlb-listener').textContent =
     listener.protocol || listener.port ? `${listener.protocol || ''}:${listener.port || ''}` : '-';
   document.getElementById('mcinlb-detail-nlb-endpoint').textContent = listener.dnsName || listener.ip || '-';
-  document.getElementById('mcinlb-detail-nlb-nodegroup').textContent = target.subGroupId || '-';
+  document.getElementById('mcinlb-detail-nlb-nodegroup').textContent = target.nodeGroupId || target.subGroupId || '-';
+  document.getElementById('mcinlb-detail-nlb-nodes').textContent = _assignedNodes(data).join(', ') || '-';
   document.getElementById('mcinlb-detail-nlb-target-port').textContent = target.port || '-';
   document.getElementById('mcinlb-detail-nlb-healthchecker').textContent =
     hc.protocol || hc.port ? `${hc.protocol || ''}:${hc.port || ''} (interval ${hc.interval || '-'}, threshold ${hc.threshold || '-'})` : '-';
@@ -285,27 +296,20 @@ document.getElementById('mcinlb-filter-clear')?.addEventListener('click', functi
   if (AppState.tables.nlbTable) AppState.tables.nlbTable.clearFilter();
 });
 
-// ─── Create NLB 모달 (Infra는 이 탭의 window.currentMciId로 고정) ────────────
+// ─── Assign / UnAssign (기존 NLB에 노드 추가·해제 — 생성은 Cloud Resources > NLBs) ───
 
 // nodeGroupId -> [{ id, status }] — nlbs.js와 동일한 Running 상태 체크 캐시.
 let _nodeStatusByGroup = {};
 
-export async function openCreateMciNlbModal() {
-  const ns = window.currentNsId;
-  const infraId = window.currentMciId;
-  if (!ns || !infraId) {
-    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an MCI first.');
-    return;
-  }
-  document.getElementById('mcinlb-create-nlb-listener-port').value = '80';
-  document.getElementById('mcinlb-create-nlb-target-port').value = '80';
-  document.getElementById('mcinlb-create-nlb-protocol').value = 'TCP';
-  document.getElementById('mcinlb-create-nlb-description').value = '';
-  await _loadNodeGroupOptions(infraId);
-  new bootstrap.Modal(document.getElementById('mcinlb-create-nlb-modal')).show();
+// 배포 백엔드 버전에 따라 targetGroup 노드 목록 필드가 nodes/vms로 다를 수 있어 폴백으로 읽는다.
+function _assignedNodes(item) {
+  const tg = item?.targetGroup || {};
+  return tg.nodes || tg.vms || [];
 }
 
-document.getElementById('mcinlb-create-nlb-nodegroup')?.addEventListener('change', _updateNodeGroupStatus);
+function _findNlbById(id) {
+  return AppState.resources.all.find((item) => nlbId(item) === id);
+}
 
 async function getNodeStatusesByGroup(ns, infraId) {
   try {
@@ -326,104 +330,197 @@ async function getNodeStatusesByGroup(ns, infraId) {
   }
 }
 
-function _updateNodeGroupStatus() {
-  const nodeGroupId = document.getElementById('mcinlb-create-nlb-nodegroup').value;
-  const statusEl = document.getElementById('mcinlb-create-nlb-nodegroup-status');
-  const btn = document.getElementById('mcinlb-create-nlb-execute-btn');
-  const nodes = nodeGroupId ? _nodeStatusByGroup[nodeGroupId] || [] : [];
+// ─── Assign 모달 ─────────────────────────────────────────────────────────
 
-  if (nodes.length === 0) {
-    statusEl.textContent = '';
-    statusEl.className = 'form-text';
-    if (btn) btn.disabled = false;
-    return;
-  }
-
-  const notRunning = nodes.filter((n) => n.status !== 'Running');
-  if (notRunning.length === 0) {
-    statusEl.textContent = `Node status: Running (${nodes.length}/${nodes.length})`;
-    statusEl.className = 'form-text text-success';
-    if (btn) btn.disabled = false;
-  } else {
-    statusEl.textContent =
-      `Node status: ${notRunning.map((n) => `${n.id}=${n.status}`).join(', ')} — ` +
-      'all nodes must be Running to create an NLB.';
-    statusEl.className = 'form-text text-danger';
-    if (btn) btn.disabled = true;
-  }
-}
-
-async function _loadNodeGroupOptions(infraId) {
-  const select = document.getElementById('mcinlb-create-nlb-nodegroup');
-  select.innerHTML = '<option value="">Select</option>';
-  _nodeStatusByGroup = {};
-  _updateNodeGroupStatus();
-  if (!infraId) return;
-  try {
-    const data = await nlbApi().getInfraNodeGroupIds(window.currentNsId, infraId);
-    const ids = data?.output || data?.subGroup || (Array.isArray(data) ? data : []);
-    for (const id of ids) {
-      const opt = document.createElement('option');
-      opt.value = typeof id === 'string' ? id : id?.id;
-      opt.textContent = opt.value;
-      select.appendChild(opt);
-    }
-  } catch (err) {
-    console.error('NodeGroup 목록 조회 실패:', err);
-  }
-  _nodeStatusByGroup = await getNodeStatusesByGroup(window.currentNsId, infraId);
-  _updateNodeGroupStatus();
-}
-
-export async function executeCreateMciNlb() {
+export async function openAssignNlbModal() {
   const ns = window.currentNsId;
   const infraId = window.currentMciId;
-  const subGroupId = document.getElementById('mcinlb-create-nlb-nodegroup').value;
-  const listenerPort = document.getElementById('mcinlb-create-nlb-listener-port').value.trim();
-  const targetPort = document.getElementById('mcinlb-create-nlb-target-port').value.trim();
-  const protocol = document.getElementById('mcinlb-create-nlb-protocol').value;
-  const description = document.getElementById('mcinlb-create-nlb-description').value.trim();
-
-  if (!infraId || !subGroupId || !listenerPort || !targetPort) {
-    showToast(TOAST_TYPES.WARNING, 'Target NodeGroup, listener port, and target port are required.');
+  if (!ns || !infraId) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an Infra first.');
     return;
   }
-
-  const notRunning = (_nodeStatusByGroup[subGroupId] || []).filter((n) => n.status !== 'Running');
-  if (notRunning.length > 0) {
-    showToast(
-      TOAST_TYPES.WARNING,
-      `Target NodeGroup has node(s) not in Running state (${notRunning.map((n) => `${n.id}=${n.status}`).join(', ')}). Start them before creating an NLB.`
+  if (AppState.resources.all.length === 0) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'No NLB',
+      'No NLB exists in this Infra. Create one in Cloud Resources > NLBs first.'
     );
     return;
   }
 
-  const spinner = document.getElementById('mcinlb-create-nlb-spinner');
-  const btn = document.getElementById('mcinlb-create-nlb-execute-btn');
+  const select = document.getElementById('mcinlb-assign-nlb-select');
+  select.innerHTML = '';
+  for (const item of AppState.resources.all) {
+    const opt = document.createElement('option');
+    opt.value = nlbId(item);
+    opt.textContent = nlbId(item);
+    select.appendChild(opt);
+  }
+  const selected = AppState.tables.nlbTable ? AppState.tables.nlbTable.getSelectedData() : [];
+  if (selected.length === 1) select.value = nlbId(selected[0]);
+
+  const listEl = document.getElementById('mcinlb-assign-node-list');
+  listEl.innerHTML = '<div class="text-secondary">Loading nodes...</div>';
+  new bootstrap.Modal(document.getElementById('mcinlb-assign-modal')).show();
+
+  _nodeStatusByGroup = await getNodeStatusesByGroup(ns, infraId);
+  _renderAssignNodeCandidates();
+}
+
+document.getElementById('mcinlb-assign-nlb-select')?.addEventListener('change', _renderAssignNodeCandidates);
+
+// Infra 전체 노드 중 선택된 NLB에 아직 할당되지 않은 노드만 후보로 렌더링.
+// 백엔드 Add는 중복 검증 없이 append하므로 기할당 노드 제외는 프론트가 책임진다.
+function _renderAssignNodeCandidates() {
+  const listEl = document.getElementById('mcinlb-assign-node-list');
+  const statusEl = document.getElementById('mcinlb-assign-node-status');
+  if (!listEl) return;
+  const selectedNlb = _findNlbById(document.getElementById('mcinlb-assign-nlb-select').value);
+  const assigned = new Set(_assignedNodes(selectedNlb));
+
+  const rows = [];
+  for (const [groupId, nodes] of Object.entries(_nodeStatusByGroup)) {
+    for (const n of nodes) {
+      if (assigned.has(n.id)) continue;
+      rows.push({ ...n, groupId });
+    }
+  }
+
+  if (rows.length === 0) {
+    listEl.innerHTML = '<div class="text-secondary">No assignable nodes. All nodes of this Infra are already assigned to the selected NLB.</div>';
+    if (statusEl) statusEl.textContent = '';
+    return;
+  }
+
+  listEl.innerHTML = rows
+    .map((n) => {
+      const running = n.status === 'Running';
+      const badge = running ? 'bg-success' : 'bg-warning';
+      return `
+        <label class="form-check mb-1">
+          <input class="form-check-input mcinlb-assign-node-check" type="checkbox" value="${n.id}" ${running ? '' : 'disabled'}>
+          <span class="form-check-label">${n.id} <span class="text-secondary">(${n.groupId})</span>
+            <span class="badge ${badge} ms-1">${n.status || 'Unknown'}</span></span>
+        </label>`;
+    })
+    .join('');
+  const notRunning = rows.filter((n) => n.status !== 'Running').length;
+  if (statusEl) {
+    statusEl.textContent = notRunning > 0 ? `${notRunning} node(s) not in Running state cannot be assigned.` : '';
+  }
+}
+
+export async function executeAssignNlbNodes() {
+  const ns = window.currentNsId;
+  const infraId = window.currentMciId;
+  const targetNlbId = document.getElementById('mcinlb-assign-nlb-select').value;
+  const nodes = Array.from(document.querySelectorAll('.mcinlb-assign-node-check:checked')).map((el) => el.value);
+  if (!targetNlbId || nodes.length === 0) {
+    showToast(TOAST_TYPES.WARNING, 'Select an NLB and at least one node to assign.');
+    return;
+  }
+
+  const spinner = document.getElementById('mcinlb-assign-spinner');
+  const btn = document.getElementById('mcinlb-assign-execute-btn');
   spinner.classList.remove('d-none');
   btn.disabled = true;
-
-  const body = {
-    type: 'PUBLIC',
-    scope: 'REGION',
-    listener: { protocol, port: String(listenerPort) },
-    targetGroup: { protocol, port: String(targetPort), nodeGroupId: subGroupId },
-    healthChecker: { interval: 0, timeout: 0, threshold: 0 },
-  };
-  if (description) body.description = description;
-
   try {
-    await nlbApi().postNLB(ns, infraId, body);
-    showToast(TOAST_TYPES.SUCCESS, `NLB for "${subGroupId}" created successfully`);
-    bootstrap.Modal.getInstance(document.getElementById('mcinlb-create-nlb-modal'))?.hide();
-    await loadMciNlbList(true);
+    await nlbApi().addNLBNodes(ns, infraId, targetNlbId, nodes);
+    showToast(TOAST_TYPES.SUCCESS, `${nodes.length} node(s) assigned to "${targetNlbId}"`);
+    bootstrap.Modal.getInstance(document.getElementById('mcinlb-assign-modal'))?.hide();
+    await _reloadAndRefreshDetail(targetNlbId);
   } catch (err) {
-    console.error('MCI NLB 생성 실패:', err);
+    console.error('NLB 노드 Assign 실패:', err);
     const msg = err?.response?.data?.responseData?.message || err?.message || '';
-    showToast(TOAST_TYPES.ERROR, 'Failed to create NLB: ' + msg);
+    showToast(TOAST_TYPES.ERROR, 'Failed to assign nodes: ' + msg);
   } finally {
     spinner.classList.add('d-none');
     btn.disabled = false;
+  }
+}
+
+// ─── UnAssign 모달 ───────────────────────────────────────────────────────
+
+export async function openUnassignNlbModal() {
+  const table = AppState.tables.nlbTable;
+  const selected = table ? table.getSelectedData() : [];
+  if (selected.length !== 1) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Select One NLB',
+      'Please select exactly one NLB to unassign nodes from.'
+    );
+    return;
+  }
+  const item = selected[0];
+  const id = nlbId(item);
+  document.getElementById('mcinlb-unassign-nlb-name').textContent = id;
+
+  const listEl = document.getElementById('mcinlb-unassign-node-list');
+  listEl.innerHTML = '<div class="text-secondary">Loading assigned nodes...</div>';
+  new bootstrap.Modal(document.getElementById('mcinlb-unassign-modal')).show();
+
+  // 목록 캐시가 오래됐을 수 있어 상세를 새로 조회해 할당 노드를 확정한다.
+  let nodes = _assignedNodes(item);
+  try {
+    const detail = await nlbApi().getNLB(window.currentNsId, window.currentMciId, id);
+    if (detail) nodes = _assignedNodes(detail);
+  } catch (err) {
+    console.error('NLB 상세 조회 실패:', err);
+  }
+
+  if (nodes.length === 0) {
+    listEl.innerHTML = '<div class="text-secondary">No nodes are assigned to this NLB.</div>';
+    return;
+  }
+  listEl.innerHTML = nodes
+    .map(
+      (n) => `
+        <label class="form-check mb-1">
+          <input class="form-check-input mcinlb-unassign-node-check" type="checkbox" value="${n}">
+          <span class="form-check-label">${n}</span>
+        </label>`
+    )
+    .join('');
+}
+
+export async function executeUnassignNlbNodes() {
+  const ns = window.currentNsId;
+  const infraId = window.currentMciId;
+  const targetNlbId = document.getElementById('mcinlb-unassign-nlb-name').textContent;
+  const nodes = Array.from(document.querySelectorAll('.mcinlb-unassign-node-check:checked')).map((el) => el.value);
+  if (!targetNlbId || nodes.length === 0) {
+    showToast(TOAST_TYPES.WARNING, 'Select at least one node to unassign.');
+    return;
+  }
+
+  const spinner = document.getElementById('mcinlb-unassign-spinner');
+  const btn = document.getElementById('mcinlb-unassign-execute-btn');
+  spinner.classList.remove('d-none');
+  btn.disabled = true;
+  try {
+    await nlbApi().removeNLBNodes(ns, infraId, targetNlbId, nodes);
+    showToast(TOAST_TYPES.SUCCESS, `${nodes.length} node(s) unassigned from "${targetNlbId}"`);
+    bootstrap.Modal.getInstance(document.getElementById('mcinlb-unassign-modal'))?.hide();
+    await _reloadAndRefreshDetail(targetNlbId);
+  } catch (err) {
+    console.error('NLB 노드 UnAssign 실패:', err);
+    const msg = err?.response?.data?.responseData?.message || err?.message || '';
+    showToast(TOAST_TYPES.ERROR, 'Failed to unassign nodes: ' + msg);
+  } finally {
+    spinner.classList.add('d-none');
+    btn.disabled = false;
+  }
+}
+
+// Assign/UnAssign 후 목록 재조회 + 열려 있는 Detail이 대상 NLB면 갱신
+async function _reloadAndRefreshDetail(targetNlbId) {
+  await loadMciNlbList(true);
+  const shown = AppState.resources.selected;
+  if (shown && nlbId(shown) === targetNlbId) {
+    const fresh = _findNlbById(targetNlbId);
+    if (fresh) {
+      AppState.resources.selected = fresh;
+      renderDetail(fresh);
+    }
   }
 }
 
@@ -436,6 +533,8 @@ webconsolejs['partials/operation/manage/mcinlb'] = {
   checkSelectedMciNlbHealth,
   confirmMciNlbBulkDelete,
   executeMciNlbBulkDelete,
-  openCreateMciNlbModal,
-  executeCreateMciNlb,
+  openAssignNlbModal,
+  executeAssignNlbNodes,
+  openUnassignNlbModal,
+  executeUnassignNlbNodes,
 };
