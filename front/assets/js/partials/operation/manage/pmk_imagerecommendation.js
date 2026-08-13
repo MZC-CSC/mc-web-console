@@ -206,7 +206,8 @@ export async function getRecommendImageInfoPmk() {
 	var isK8sImage = $("#k8s_image_value-pmk").val()
 
 	// 전역 변수에서 정보 가져오기
-	var specId = window.selectedPmkSpecInfo.id; // spec의 전체 ID (예: "aws+ap-northeast-2+t2.small")
+	// 세터(clustercreate.js/pmk.js)가 담는 키는 commonSpecId — 'id'는 존재하지 않아 matchedSpecId가 누락됐었음
+	var specId = window.selectedPmkSpecInfo.commonSpecId; // spec의 전체 ID (예: "aws+ap-northeast-2+t2.small")
 	var provider = window.selectedPmkSpecInfo.provider;
 	var region = window.selectedPmkSpecInfo.regionName;
 	var connectionName = window.selectedPmkSpecInfo.connectionName;

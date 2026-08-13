@@ -137,12 +137,7 @@ async function initPmk() {
         // 새로운 폼 Dynamic 초기화
         await initFormDynamic();
 
-        // 이미지 추천 모달 초기화
-        if (webconsolejs["partials/operation/manage/imagerecommendation"]) {
-            webconsolejs["partials/operation/manage/imagerecommendation"].initImageModal();
-        } else {
-            console.warn("Image recommendation module not found");
-        }
+        // MCI용 이미지 모달 초기화 제거 — PMK는 initImageModalPmk()만 사용
 
         // PMK Spec 모달 이벤트 리스너 설정
         setupPmkSpecModalEvents();

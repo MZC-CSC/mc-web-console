@@ -534,7 +534,7 @@ export function validateAndOpenImageModal(event) {
 			$("#image-provider").val(window.selectedSpecInfo.provider || "");
 			$("#image-region").val(window.selectedSpecInfo.regionName || "");
 			$("#image-os-architecture").val(window.selectedSpecInfo.osArchitecture || "");
-			$("#matched_spec_id").val(window.selectedSpecInfo.id || "");
+			$("#matched_spec_id").val(window.selectedSpecInfo.commonSpecId || "");
 		}
 			
 			// Bootstrap 5 방식으로 모달 열기
