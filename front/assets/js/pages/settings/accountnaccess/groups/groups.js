@@ -74,7 +74,12 @@ const GroupManager = {
             UIManager.showGroupPlatformRoles([]);
             if (webconsolejs && webconsolejs['common/util'] && webconsolejs['common/util'].showToast) {
                 const d = error.response && error.response.data;
-                const msg = (d && (d.status && d.status.message)) || (d && d.message) || error.message || 'Platform role load failed.';
+                const rd = d && d.responseData;
+                const msg = (rd && (rd.error || rd.message))
+                    || (d && d.message)
+                    || (d && d.status && d.status.message)
+                    || error.message
+                    || 'Platform role load failed.';
                 webconsolejs['common/util'].showToast('Platform role query error: ' + msg, 'error');
             }
         }
@@ -92,7 +97,16 @@ const GroupManager = {
             console.error("Error assigning platform role:", error);
             const status = error.response && error.response.status;
             const d = error.response && error.response.data;
-            const msg = (d && (d.status && d.status.message)) || (d && d.error) || (d && d.message) || error.message || "Unknown error";
+            // BFF(proxy.go)는 status.message에 HTTP 상태문구("Internal Server Error")를 붙이고
+            // 백엔드 원본 에러는 responseData.error에 담는다. 일반 문구가 구체적 원인을
+            // 덮지 않도록 responseData.error를 먼저 본다.
+            const rd = d && d.responseData;
+            const msg = (rd && (rd.error || rd.message))
+                || (d && d.error)
+                || (d && d.message)
+                || (d && d.status && d.status.message)
+                || error.message
+                || "Unknown error";
             if (status === 409) {
                 alert("This role is already assigned to the group.");
             } else if (status === 404) {
