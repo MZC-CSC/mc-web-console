@@ -172,6 +172,48 @@
                   will not be applied.
                 </div>
               </div>
+              <div class="form-group mb-2" id="ep_disk_attach_section">
+                <label class="form-label">Data Disk</label>
+                <select class="form-select" id="ep_disk_attach_mode">
+                  <option value="none" selected>None</option>
+                  <option value="existing">Attach Existing Disk</option>
+                  <option value="new">Create New &amp; Attach</option>
+                </select>
+                <div id="ep_disk_attach_existing" class="mt-2 d-none">
+                  <select class="form-select" id="ep_disk_attach_existing_select">
+                    <option value="">Select</option>
+                  </select>
+                </div>
+                <div id="ep_disk_attach_new" class="mt-2 d-none">
+                  <input
+                    type="text"
+                    class="form-control mb-2"
+                    id="ep_disk_attach_new_name"
+                    placeholder="Disk name"
+                  />
+                  <input
+                    type="number"
+                    class="form-control mb-2"
+                    id="ep_disk_attach_new_size"
+                    min="1"
+                    placeholder="Size (GB)"
+                  />
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="ep_disk_attach_new_type"
+                    placeholder="Disk type (optional)"
+                  />
+                </div>
+                <div
+                  class="text-muted small mt-1 d-none"
+                  id="ep_disk_attach_multinode_notice"
+                >
+                  Data disk attach is only supported when NodeGroup Size is 1.
+                  Use the Node Detail tab to attach disks individually for
+                  multi-node NodeGroups.
+                </div>
+              </div>
               <div class="form-group mb-2">
                 <label class="form-label">NodeGroup Size</label>
                 <div class="row g-2">
