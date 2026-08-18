@@ -13,18 +13,18 @@ export async function registerCspResources(options, connectionName, nsId) {
         queryParams.option = options;
     }
 
-    const body = { nsId };
+    const request = { nsId };
     if (connectionName) {
-        body.connectionName = connectionName;
+        request.connectionName = connectionName;
     }
 
     const data = {
         queryParams,
-        body,
+        request,
     };
 
     const response = await webconsolejs["common/api/http"].commonAPIPost(
-        BASE_INFRA + "RegisterCspResourcesInNs",
+        BASE_INFRA + "RegisterCspNativeResources",
         data
     );
     return response.data.responseData;
@@ -37,11 +37,11 @@ export async function registerCspResources(options, connectionName, nsId) {
 export async function registerCspVNet(nsId, connectionName, cspResourceId, name) {
     const data = {
         pathParams: { nsId },
-        body: { connectionName, cspResourceId, name },
+        request: { connectionName, cspResourceId, name },
     };
 
     const response = await webconsolejs["common/api/http"].commonAPIPost(
-        BASE_INFRA + "RegisterCspVNet",
+        BASE_INFRA + "PostRegisterVNet",
         data
     );
     return response.data.responseData;
@@ -54,11 +54,11 @@ export async function registerCspVNet(nsId, connectionName, cspResourceId, name)
 export async function registerCspSubnet(nsId, vNetId, connectionName, cspResourceId) {
     const data = {
         pathParams: { nsId, vNetId },
-        body: { connectionName, cspResourceId },
+        request: { connectionName, cspResourceId },
     };
 
     const response = await webconsolejs["common/api/http"].commonAPIPost(
-        BASE_INFRA + "RegisterCspSubnet",
+        BASE_INFRA + "PostRegisterSubnet",
         data
     );
     return response.data.responseData;
