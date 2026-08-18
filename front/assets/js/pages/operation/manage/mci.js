@@ -56,6 +56,9 @@ async function initMci() {
     const targetSection = "mcicreate";
     const createBtnName = "Add Infra";
     webconsolejs['partials/layout/navigatePages'].addPageHeaderButton(targetSection, createBtnName);
+
+    // Add Node(Extend VM) 플로우가 남긴 Data Disk attach pending job 재개 (WEB-TECH-014)
+    webconsolejs["partials/operation/manage/mcicreate"].resumePendingDiskAttachJobs();
   } catch (e) {
     console.error(e);
   }

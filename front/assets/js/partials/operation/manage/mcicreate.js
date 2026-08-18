@@ -17,6 +17,228 @@ function transformServerConfigToNodeGroups(serverConfigArr) {
   }));
 }
 
+// ─── Data Disk attach at creation time (Create Infra) ──────────────────────
+// cb-tumblebug의 Dynamic 생성 API(PostInfraDynamic/PostInfraNodeGroupDynamic)에는
+// dataDisk 파라미터가 없어(WEB-TECH-014 ST2 분석) 생성 요청과 attach를 한 번에
+// 보낼 수 없다. 대신 생성 요청 후 노드가 Running이 될 때까지 폴링한 뒤, Node
+// Detail 탭이 쓰는 것과 동일한 disk_api.js 함수로 attach를 별도 호출한다.
+// 1차 범위: NodeGroup Size가 1일 때만 지원(다중 노드는 Node Detail 탭에서 개별 attach).
+
+function _toggleCreateDiskAttachMode() {
+	const mode = $("#ep_disk_attach_mode").val();
+	$("#ep_disk_attach_existing").toggleClass("d-none", mode !== "existing");
+	$("#ep_disk_attach_new").toggleClass("d-none", mode !== "new");
+}
+$(document).on("change", "#ep_disk_attach_mode", _toggleCreateDiskAttachMode);
+
+// spec 선택(connectionName 확정) 시 호출 — 같은 CSP/리전 후보만 노출(Node Detail 탭과 동일 필터)
+async function _populateCreateDiskCandidates(connectionName) {
+	const select = document.getElementById("ep_disk_attach_existing_select");
+	if (!select) return;
+	select.innerHTML = '<option value="">Select</option>';
+	if (!connectionName) return;
+	try {
+		const diskApi = webconsolejs["common/api/services/disk_api"];
+		const resp = await diskApi.getAllDataDisk(window.currentNsId);
+		const disks = resp?.dataDisk || (Array.isArray(resp) ? resp : []);
+		for (const d of disks) {
+			if ((d.associatedObjectList || []).length > 0) continue; // 이미 attach된 디스크 제외
+			if (d?.connectionName !== connectionName) continue; // 동일 connection(=CSP+리전)만
+			const opt = document.createElement("option");
+			opt.value = d.id || d.name;
+			opt.textContent = d.name || d.id;
+			select.appendChild(opt);
+		}
+	} catch (err) {
+		console.error("Data disk 후보 조회 실패:", err);
+	}
+}
+
+// NodeGroup Size가 1이 아니면 Disk 옵션 비활성화(1차 범위 제한)
+function updateDiskAttachAvailability() {
+	const size = parseInt($("#ep_vm_add_cnt").val(), 10) || 1;
+	const section = document.getElementById("ep_disk_attach_section");
+	const modeSelect = document.getElementById("ep_disk_attach_mode");
+	const notice = document.getElementById("ep_disk_attach_multinode_notice");
+	if (!section || !modeSelect || !notice) return;
+	const disabled = size !== 1;
+	modeSelect.disabled = disabled;
+	notice.classList.toggle("d-none", !disabled);
+	if (disabled && modeSelect.value !== "none") {
+		modeSelect.value = "none";
+		_toggleCreateDiskAttachMode();
+	}
+}
+
+// Done 클릭 시 폼에서 diskOption 수집 — express_form에 실려 addServerConfigToList로 전달됨
+function collectDiskOptionFromForm() {
+	const mode = $("#ep_disk_attach_mode").val() || "none";
+	if (mode === "existing") {
+		const dataDiskId = $("#ep_disk_attach_existing_select").val();
+		return dataDiskId ? { mode, dataDiskId } : { mode: "none" };
+	}
+	if (mode === "new") {
+		const name = $("#ep_disk_attach_new_name").val()?.trim();
+		const size = parseInt($("#ep_disk_attach_new_size").val(), 10);
+		const diskType = $("#ep_disk_attach_new_type").val()?.trim();
+		if (!name || !size) return { mode: "none" }; // 미입력 시 attach 생략(필수 검증은 Done 단계에서 별도 처리하지 않음 — 선택 기능)
+		const body = { name, diskSize: size };
+		if (diskType) body.diskType = diskType;
+		return { mode, body };
+	}
+	return { mode: "none" };
+}
+
+function resetDiskAttachSection() {
+	$("#ep_disk_attach_mode").val("none");
+	$("#ep_disk_attach_existing_select").html('<option value="">Select</option>');
+	$("#ep_disk_attach_new_name").val("");
+	$("#ep_disk_attach_new_size").val("");
+	$("#ep_disk_attach_new_type").val("");
+	_toggleCreateDiskAttachMode();
+	updateDiskAttachAvailability();
+}
+
+// 노드가 Running이 될 때까지 폴링. 타임아웃/삭제 시 null 반환.
+async function pollNodeUntilRunning(nsId, infraId, nodeId, { timeoutMs = 15 * 60 * 1000, intervalMs = 5000 } = {}) {
+	const mciApi = webconsolejs["common/api/services/mci_api"];
+	const deadline = Date.now() + timeoutMs;
+	while (Date.now() < deadline) {
+		try {
+			const resp = await mciApi.getMci(nsId, infraId);
+			const node = (resp?.responseData?.node || []).find((n) => n.id === nodeId);
+			if (node && node.status === "Running") return node;
+			if (node && node.status === "Failed") return null;
+		} catch (err) {
+			console.error("노드 상태 폴링 실패:", err);
+		}
+		await new Promise((r) => setTimeout(r, intervalMs));
+	}
+	return null;
+}
+
+// ─── Pending job 영속화 ──────────────────────────────────────────────────
+// Add Node(Extend VM) 플로우는 요청 직후 mciworkloads 목록 페이지로 즉시
+// window.location 이동하므로, 진행 중이던 폴링이 그대로 끊긴다. sessionStorage에
+// pending job을 기록해두고, 이동한 페이지(mci.js)에서 resumePendingDiskAttachJobs()로
+// 이어받는다. Create Infra는 같은 페이지에 머무르므로 즉시 실행 + 완료 시 정리로 충분.
+const PENDING_DISK_ATTACH_KEY = "mcmp_pending_disk_attach_jobs";
+
+function _readPendingDiskAttachJobs() {
+	try {
+		return JSON.parse(sessionStorage.getItem(PENDING_DISK_ATTACH_KEY) || "[]");
+	} catch {
+		return [];
+	}
+}
+
+function _writePendingDiskAttachJobs(jobs) {
+	sessionStorage.setItem(PENDING_DISK_ATTACH_KEY, JSON.stringify(jobs));
+}
+
+function _addPendingDiskAttachJob(job) {
+	const jobs = _readPendingDiskAttachJobs();
+	jobs.push(job);
+	_writePendingDiskAttachJobs(jobs);
+}
+
+function _removePendingDiskAttachJob(nsId, infraId, nodeId) {
+	const jobs = _readPendingDiskAttachJobs().filter(
+		(j) => !(j.nsId === nsId && j.infraId === infraId && j.nodeId === nodeId)
+	);
+	_writePendingDiskAttachJobs(jobs);
+}
+
+// 같은 페이지 로드 내에서 동일 job이 중복 실행되는 것을 막는 인메모리 가드.
+// (페이지 새로고침 자체는 이 Set을 포함해 JS 컨텍스트 전체를 초기화하므로 크로스
+// 리로드 중복은 못 막는다 — 그 경우는 sessionStorage 제거 시점으로 처리한다. 이
+// 가드는 같은 페이지에서 resumePendingDiskAttachJobs()가 중복 호출되는 등의
+// 케이스만 방어한다.)
+const _activeDiskAttachJobKeys = new Set();
+function _diskAttachJobKey(nsId, infraId, nodeId) {
+	return `${nsId}|${infraId}|${nodeId}`;
+}
+
+// 노드 Running 대기 후 attach 실행 — 결과는 토스트로만 통지(알림센터 미연동, ST3 설계 §3.1)
+//
+// sessionStorage 제거는 반드시 attach 완료(성공/실패/타임아웃) 후에만 한다 — 폴링은
+// 최대 15분 걸릴 수 있고 그동안 페이지가 새로고침되면 JS 컨텍스트(및 위 인메모리
+// 가드)가 통째로 사라지므로, resumePendingDiskAttachJobs()가 sessionStorage의
+// job으로 재개하는 것이 유일한 복구 経로다. 시작 시점에 미리 지우면(과거 시도)
+// "새로고침하면 attach가 통째로 유실"되는 훨씬 나쁜 회귀가 생긴다(Playwright로 실측
+// 확인, 0건 발송). 반대로 완료 직후~제거 사이의 극히 좁은 창에서 새로고침이 겹치면
+// 드물게 attach가 한 번 더 시도될 수 있는데, 이미 attach된 디스크라 CSP가 정상적으로
+// 거부(에러 토스트)하는 선에서 끝나는 무해한 경우라 감수한다.
+async function _runDiskAttachJob(job) {
+	const { nsId, infraId, nodeId, diskOption } = job;
+	const key = _diskAttachJobKey(nsId, infraId, nodeId);
+	if (_activeDiskAttachJobKeys.has(key)) return; // 같은 페이지에서 이미 진행 중
+	_activeDiskAttachJobKeys.add(key);
+
+	try {
+		const node = await pollNodeUntilRunning(nsId, infraId, nodeId);
+		if (!node) {
+			webconsolejs["common/utils/toast"].showToast(
+				webconsolejs["common/utils/toast"].TOAST_TYPES.WARNING,
+				`${infraId}/${nodeId}: node did not reach Running in time, disk attach skipped`
+			);
+			return;
+		}
+
+		const diskApi = webconsolejs["common/api/services/disk_api"];
+		try {
+			if (diskOption.mode === "existing") {
+				await diskApi.attachDataDisk(nsId, infraId, nodeId, diskOption.dataDiskId);
+			} else {
+				await diskApi.postVmDataDisk(nsId, infraId, nodeId, diskOption.body);
+			}
+			webconsolejs["common/utils/toast"].showToast(
+				webconsolejs["common/utils/toast"].TOAST_TYPES.SUCCESS,
+				`${infraId}/${nodeId}: disk attach requested`
+			);
+		} catch (err) {
+			console.error("Disk Attach 실패(생성 후 오케스트레이션):", err);
+			const msg = err?.response?.data?.responseData?.message || err?.message || String(err);
+			webconsolejs["common/utils/toast"].showToast(
+				webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR,
+				`${infraId}/${nodeId}: disk attach failed — ${msg}`
+			);
+		}
+	} finally {
+		_activeDiskAttachJobKeys.delete(key);
+		_removePendingDiskAttachJob(nsId, infraId, nodeId);
+	}
+}
+
+// Deploy/Extend 요청 성공 직후 호출 — 인프라(또는 신규 NodeGroup) 생성 자체는 이미
+// 진행 중이므로 여기서는 블로킹 없이 백그라운드로 노드 Running 대기 후 attach한다.
+// 페이지 이동으로 끊길 수 있어 sessionStorage에 먼저 기록한 뒤 실행한다.
+function scheduleDiskAttachAfterDeploy(nsId, infraId, nodeGroupName, diskOption) {
+	if (!diskOption || diskOption.mode === "none") return;
+	const nodeId = `${nodeGroupName}-1`; // 1차 범위: NodeGroup Size 1 고정
+	const job = { nsId, infraId, nodeId, diskOption };
+	_addPendingDiskAttachJob(job);
+	_runDiskAttachJob(job);
+}
+
+// Deploy 성공 후 diskOption이 설정된 NodeGroup 전부에 대해 오케스트레이션 시작(비동기, 블로킹 없음)
+function scheduleDiskAttachForConfigs(nsId, infraId, serverConfigArr) {
+	for (const config of serverConfigArr || []) {
+		if (config.diskOption && config.diskOption.mode !== "none") {
+			scheduleDiskAttachAfterDeploy(nsId, infraId, config.name, config.diskOption);
+		}
+	}
+}
+
+// 페이지 로드 시 이전 페이지(Add Node/Extend VM)에서 남긴 pending job을 이어받아 재개.
+// 이미 완료된 job은 _runDiskAttachJob 종료 시 sessionStorage에서 제거되므로 중복 attach 위험은 낮다.
+export function resumePendingDiskAttachJobs() {
+	const jobs = _readPendingDiskAttachJobs();
+	for (const job of jobs) {
+		_runDiskAttachJob(job);
+	}
+}
+
 // create page 가 load 될 때 실행해야 할 것들 정의
 export function initMciCreate() {
 	// MCI Create 초기화
@@ -65,7 +287,9 @@ export async function callbackServerRecommendation(vmSpec) {
 
 	var diskResp = await webconsolejs["common/api/services/disk_api"].getCommonLookupDiskInfo(vmSpec.provider, vmSpec.connectionName)
 	getCommonLookupDiskInfoSuccess(vmSpec.provider, diskResp)
-	
+
+	// Data Disk attach 후보 목록도 connectionName 확정 시점에 함께 갱신
+	await _populateCreateDiskCandidates(vmSpec.connectionName);
 
 }
 
@@ -474,6 +698,8 @@ export async function expressDone_btn() {
   express_form["label"] = { ...nodeCustomLabels };
   // Node User Password — 빈 값이면 payload에서 omit, 수정 모드에서 비우면 제거 (trim하지 않음)
   express_form["nodeUserPassword"] = $("#ep_node_user_password").val() || "";
+  // Data Disk attach 옵션 — NodeGroup Size 1일 때만 유효(폼에서 이미 disabled 처리됨)
+  express_form["diskOption"] = collectDiskOptionFromForm();
 
   // 3. Done 시점 NodeGroup 단건 사전 검증 — Error면 목록에 담지 않고 폼 유지 (spec/image 재선택 유도)
   var precheckAllowed = await precheckNodeGroup(express_form);
@@ -511,6 +737,7 @@ export async function expressDone_btn() {
   $("#ep_command").val("");
   setNodeLabels(null);
   $("#ep_node_user_password").val("");
+  resetDiskAttachSection();
 
   // 모달들 초기화
   resetModals();
@@ -1144,6 +1371,7 @@ export async function createMciDynamic() {
 
 			// Ready / 사용자가 확인한 Error·Warning → 배포 진행
 			webconsolejs["common/api/services/mci_api"].mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure, deployLabels);
+			scheduleDiskAttachForConfigs(selectedNsId, mciName, Express_Server_Config_Arr);
 		} else {
 			// API 호출 실패
 			console.error("Infra review API call failed:", validationResult);
@@ -1161,6 +1389,10 @@ export async function createVmDynamic() {
     var mciId = window.currentMciId;
 
     await webconsolejs["common/api/services/mci_api"].vmDynamic(mciId, selectedNsId, Express_Server_Config_Arr)
+    // Data Disk attach 오케스트레이션 시작 — window.location 이동으로 끊기지 않도록
+    // sessionStorage에 먼저 기록됨(scheduleDiskAttachAfterDeploy 내부), mciworkloads
+    // 페이지 로드 시 resumePendingDiskAttachJobs()가 이어받는다.
+    scheduleDiskAttachForConfigs(selectedNsId, mciId, Express_Server_Config_Arr);
 
     alert("Node creation request completed")
     window.location = `/webconsole/operations/manage/workloads/mciworkloads`;
@@ -1362,13 +1594,17 @@ function vmCreateCallback(resultVmKey, resultStatus) {
 			e.preventDefault();
 			let val = parseInt(input.value, 10) || minValue;
 			if (val > minValue) input.value = val - 1;
+			updateDiskAttachAvailability();
 		});
 
 		btnInc.addEventListener('click', function (e) {
 			e.preventDefault();
 			let val = parseInt(input.value, 10) || minValue;
 			input.value = val + 1; // maxValue 제한 제거
+			updateDiskAttachAvailability();
 		});
+
+		input.addEventListener('input', updateDiskAttachAvailability);
 	}
 
 	// policy_ep_vm_add_cnt 처리 (mciworkloads.html용)
