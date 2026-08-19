@@ -293,6 +293,10 @@ function renderDetail(data) {
 function renderTruncatableCopyable(targetId, fullText) {
   const target = document.getElementById(targetId);
   if (!target) return;
+  // 이전 렌더의 툴팁 인스턴스가 body에 남지 않도록 정리
+  if (window.bootstrap?.Tooltip) {
+    target.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => bootstrap.Tooltip.getInstance(el)?.dispose());
+  }
   target.innerHTML = '';
 
   if (!fullText || fullText === '-') {
@@ -307,11 +311,19 @@ function renderTruncatableCopyable(targetId, fullText) {
 
   const span = document.createElement('span');
   span.textContent = fullText;
-  span.title = fullText;
   span.style.maxWidth = '240px';
   span.style.overflow = 'hidden';
   span.style.textOverflow = 'ellipsis';
   span.style.whiteSpace = 'nowrap';
+  span.style.cursor = 'default';
+  // 잘린 값은 hover 시 Bootstrap 툴팁으로 전체 텍스트를 즉시 보여준다
+  // (브라우저 기본 title 툴팁은 지연·미표시 환경이 있어 대체). 값이 짧아 안 잘리면 툴팁 불필요.
+  span.setAttribute('data-bs-toggle', 'tooltip');
+  span.setAttribute('data-bs-placement', 'top');
+  span.setAttribute('title', fullText);
+  if (window.bootstrap?.Tooltip) {
+    new bootstrap.Tooltip(span, { container: 'body', trigger: 'hover focus', customClass: 'nlb-full-text-tooltip' });
+  }
 
   const copyBtn = document.createElement('a');
   copyBtn.href = '#';
