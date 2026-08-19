@@ -77,8 +77,11 @@ export async function registerVNet(nsId, connectionName, cspResourceId, name) {
  * @param {string[]} resourceTypes  e.g. ['vNet','securityGroup','sshKey']
  */
 export async function registerCspNativeResources(nsId, filter, resourceTypes) {
+  // option 은 반드시 콤마로 이어붙인 단일 문자열로 보낸다.
+  // cb-tumblebug 핸들러가 c.QueryParam("option") 으로 첫 값만 읽고 ","로 분리하므로,
+  // 배열로 넘겨 option=a&option=b 형태가 되면 첫 자원유형만 처리된다.
   const res = await call('RegisterCspNativeResources', {
-    queryParams: resourceTypes?.length ? { option: resourceTypes } : undefined,
+    queryParams: resourceTypes?.length ? { option: resourceTypes.join(',') } : undefined,
     request: { nsId, ...filter },
   });
   return res?.data?.responseData;

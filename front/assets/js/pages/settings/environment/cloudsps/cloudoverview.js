@@ -790,6 +790,40 @@ const ReadyzManager = {
 
 // ─── CSP Resource Sync (RQ-CLOUD-ADMIN-007) ────────────────────────────
 
+// cb-tumblebug 이 요구하는 자원유형 간 선행 의존성 (validateReqOptions)
+const SYNC_TYPE_DEPS = {
+    dataDisk: ['node'],
+    node: ['securityGroup', 'sshKey'],
+    securityGroup: ['vNet'],
+};
+
+const SYNC_TYPE_LABELS = {
+    vNet: 'VNet (VPC)',
+    securityGroup: 'SecurityGroup',
+    sshKey: 'SSH Key',
+    node: 'Node',
+    dataDisk: 'DataDisk',
+    customImage: 'Custom Image',
+    nlb: 'NLB',
+};
+
+/**
+ * 선택한 자원유형이 요구하는 선행 자원유형 중 미선택된 것을 문장으로 반환
+ */
+function findMissingSyncDependencies(selected) {
+    const messages = [];
+    for (const [type, deps] of Object.entries(SYNC_TYPE_DEPS)) {
+        if (!selected.includes(type)) continue;
+        const lacking = deps.filter(d => !selected.includes(d));
+        if (lacking.length > 0) {
+            messages.push(
+                `- ${SYNC_TYPE_LABELS[type]} also requires ${lacking.map(d => SYNC_TYPE_LABELS[d]).join(' and ')}.`
+            );
+        }
+    }
+    return messages;
+}
+
 /**
  * Sync 팝업 오픈 — 현재 Project nsId 표시 + Connection 목록 로드
  */
@@ -797,14 +831,20 @@ export async function openSyncPopup() {
     const nsId = webconsolejs["common/api/services/workspace_api"].getCurrentProject()?.NsId;
     document.getElementById('sync-target-project').value = nsId || '(No project selected)';
 
-    // Connection 드롭다운 — CSP 계정 목록으로 채우기
+    // Connection 드롭다운 — mc-infra-manager 에 등록된 ConnConfig 로 채운다.
+    // mc-iam-manager 의 CSP 계정(AppState.csp.list)에는 connectionName 이 없어
+    // 계정 이름을 보내면 tumblebug 이 커넥션을 못 찾고 조용히 0건으로 끝난다.
     const select = document.getElementById('sync-connection-select');
-    select.innerHTML = '<option value="">All Accounts</option>';
-    for (const acc of AppState.csp.list) {
-        const opt = document.createElement('option');
-        opt.value = acc.connectionName || acc.name;
-        opt.textContent = acc.name;
-        select.appendChild(opt);
+    select.innerHTML = '<option value="">All Connections</option>';
+    try {
+        const connections = await webconsolejs["common/api/services/cspimport_api"].getConnConfigList();
+        for (const conn of connections) {
+            const name = conn.configName || conn.connectionName || conn.name;
+            if (!name) continue;
+            select.appendChild(new Option(name, name));
+        }
+    } catch (e) {
+        console.error('Failed to load connection list:', e);
     }
 
     // 결과 영역 초기화
@@ -830,6 +870,12 @@ export async function executeSyncCspResources() {
         return;
     }
 
+    const missing = findMissingSyncDependencies(options);
+    if (missing.length > 0) {
+        alert('Some resource types require others to be selected together:\n\n' + missing.join('\n'));
+        return;
+    }
+
     const connectionName = document.getElementById('sync-connection-select').value || null;
 
     const spinner = document.getElementById('sync-execute-spinner');
@@ -838,8 +884,10 @@ export async function executeSyncCspResources() {
     btn.disabled = true;
 
     try {
-        const result = await webconsolejs["common/api/services/import_api"].registerCspResources(options, connectionName, nsId);
-        renderSyncResult(result);
+        const filter = connectionName ? { connectionName } : {};
+        const result = await webconsolejs["common/api/services/cspimport_api"]
+            .registerCspNativeResources(nsId, filter, options);
+        renderSyncResult(result, options);
     } catch (err) {
         console.error('Sync failed:', err);
         document.getElementById('sync-result-body').innerHTML =
@@ -851,12 +899,36 @@ export async function executeSyncCspResources() {
     }
 }
 
-function renderSyncResult(result) {
+/**
+ * tumblebug 이 200 으로 돌려주는 systemMessage(커넥션 미발견 등)를 모아 반환.
+ * 단일 커넥션은 최상위, 다중 커넥션은 registerationResult[] 에 담겨 온다.
+ */
+function collectSyncMessages(result) {
+    const messages = [];
+    if (result?.systemMessage) messages.push(result.systemMessage);
+    for (const r of result?.registerationResult || []) {
+        if (r?.systemMessage) messages.push(`${r.connectionName}: ${r.systemMessage}`);
+    }
+    return messages;
+}
+
+function escapeSyncText(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderSyncResult(result, requestedTypes) {
     const overview = result?.registerationOverview || {};
-    const rows = ['vNet', 'securityGroup', 'sshKey', 'vm', 'dataDisk', 'nlb', 'customImage']
+    const order = ['vNet', 'securityGroup', 'sshKey', 'node', 'dataDisk', 'customImage', 'nlb'];
+    const shown = requestedTypes?.length ? order.filter(k => requestedTypes.includes(k)) : order;
+    const rows = shown
         .filter(k => overview[k] !== undefined)
-        .map(k => `<tr><td>${k}</td><td class="text-end">${overview[k]}</td></tr>`)
+        .map(k => `<tr><td>${SYNC_TYPE_LABELS[k] || k}</td><td class="text-end">${overview[k]}</td></tr>`)
         .join('');
+
+    const messages = collectSyncMessages(result);
+    const messageBlock = messages.length > 0
+        ? `<div class="alert alert-warning small mb-2">${messages.map(m => escapeSyncText(m)).join('<br>')}</div>`
+        : '';
 
     const failed = overview.failed || 0;
     const failBadge = failed > 0
@@ -864,6 +936,7 @@ function renderSyncResult(result) {
         : '';
 
     document.getElementById('sync-result-body').innerHTML = `
+        ${messageBlock}
         <table class="table table-sm">
           <thead><tr><th>Resource Type</th><th class="text-end">Registered</th></tr></thead>
           <tbody>${rows}${failBadge}</tbody>

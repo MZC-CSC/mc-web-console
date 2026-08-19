@@ -360,7 +360,7 @@
         </div>
         <!-- CSP Account 선택 -->
         <div class="mb-3">
-          <label class="form-label">CSP Account</label>
+          <label class="form-label">CSP Connection</label>
           <select class="form-select" id="sync-connection-select">
             <option value="">All Accounts</option>
           </select>
@@ -389,7 +389,7 @@
             </div>
             <div class="col-6">
               <label class="form-check">
-                <input class="form-check-input sync-resource-type" type="checkbox" value="vm" checked>
+                <input class="form-check-input sync-resource-type" type="checkbox" value="node" checked>
                 <span class="form-check-label">Node</span>
               </label>
             </div>
@@ -421,7 +421,7 @@
 </div>
 
 {{ javascriptTag("common/api/services/csp_accounts_api.js") | raw }}
-{{ javascriptTag("common/api/services/import_api.js") | raw }}
+{{ javascriptTag("common/api/services/cspimport_api.js") | raw }}
 {{ javascriptTag("common/api/services/readyz_api.js") | raw }}
 {{ javascriptTag("common/api/services/setup_status_api.js") | raw }}
 {{ javascriptTag("pages/settings/environment/cloudsps/setup_status_section.js") | raw }}
