@@ -2304,6 +2304,10 @@ serviceActions:
       method: get
       resourcePath: /ns/{nsId}/infra/{infraId}/nlb/{nlbId}/healthz
       description: Get NLB Health
+    GetNLBSupport:
+      method: get
+      resourcePath: /nlb/support
+      description: Get per-CSP support for custom NLB health checker fields
     GetNs:
       method: get
       resourcePath: /ns/{nsId}

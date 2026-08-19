@@ -274,6 +274,25 @@
             <input type="text" class="form-control" value="PUBLIC / REGION" readonly>
           </div>
         </div>
+        <!-- Health Checker: 0 = provider default. CSP별 커스텀 미지원 필드는 GetNLBSupport 기준으로 비활성화 -->
+        <div class="mb-3">
+          <label class="form-label">Health Checker <span class="text-secondary">(0 = provider default)</span></label>
+          <div class="row g-2">
+            <div class="col-4">
+              <label class="form-label mb-1 small">Interval (sec)</label>
+              <input type="number" class="form-control" id="create-nlb-hc-interval" min="0" step="1" value="0">
+            </div>
+            <div class="col-4">
+              <label class="form-label mb-1 small">Timeout (sec)</label>
+              <input type="number" class="form-control" id="create-nlb-hc-timeout" min="0" step="1" value="0">
+            </div>
+            <div class="col-4">
+              <label class="form-label mb-1 small">Threshold</label>
+              <input type="number" class="form-control" id="create-nlb-hc-threshold" min="0" step="1" value="0">
+            </div>
+          </div>
+          <div class="form-text text-warning" id="create-nlb-hc-support-note"></div>
+        </div>
         <div class="mb-2">
           <label class="form-label">Description</label>
           <input type="text" class="form-control" id="create-nlb-description" placeholder="optional">

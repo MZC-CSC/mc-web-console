@@ -77,7 +77,12 @@ async function getInfraList() {
     return infras
       .map((infra) => {
         const id = infra.id || infra.name;
-        return id ? { id, label: formatInfraLabel(id, infra) } : null;
+        if (!id) return null;
+        const provider =
+          (infra.cluster || []).flatMap((c) => c.providerNames || [])[0] ||
+          (infra.node || [])[0]?.connectionConfig?.providerName ||
+          '';
+        return { id, label: formatInfraLabel(id, infra), provider: String(provider).toLowerCase() };
       })
       .filter(Boolean);
   } catch (err) {
@@ -649,6 +654,7 @@ export async function openCreateNlbModal() {
   document.getElementById('create-nlb-target-port').value = '80';
   document.getElementById('create-nlb-protocol').value = 'TCP';
   document.getElementById('create-nlb-description').value = '';
+  _resetHealthCheckerInputs();
   await _loadCreateInfraOptions();
   new bootstrap.Modal(document.getElementById('create-nlb-modal')).show();
 }
@@ -663,13 +669,103 @@ async function _loadCreateInfraOptions() {
     opt.textContent = infra.label;
     select.appendChild(opt);
   }
+  _createInfraCache = infras;
   if (infras.length === 1) select.value = infras[0].id;
-  await _loadNodeGroupOptions(select.value);
+  await Promise.all([_loadNodeGroupOptions(select.value), _applyHealthCheckerSupport(select.value)]);
 }
 
 document.getElementById('create-nlb-infra')?.addEventListener('change', function () {
   _loadNodeGroupOptions(this.value);
+  _applyHealthCheckerSupport(this.value);
 });
+
+// ─── Create NLB — HealthChecker 입력 (CSP별 커스텀 지원 여부는 GetNLBSupport로 결정) ──
+// tumblebug NLBHealthCheckerReq는 interval/timeout/threshold(int)만 받고 0이면 백엔드 기본값을 쓴다.
+// CSP에 따라 커스텀 값을 무시/거부하는 필드가 있어(예: AWS TCP NLB는 timeout 커스텀 불가)
+// GetNLBSupport 응답으로 해당 필드를 비활성화한다. 지원 정보 조회 실패는 생성 자체를 막지 않는다.
+
+const HC_FIELDS = [
+  { key: 'Interval', id: 'create-nlb-hc-interval', label: 'Interval' },
+  { key: 'Timeout', id: 'create-nlb-hc-timeout', label: 'Timeout' },
+  { key: 'Threshold', id: 'create-nlb-hc-threshold', label: 'Threshold' },
+];
+
+// Create 모달용 Infra 목록 캐시 [{ id, label, provider }] — provider→GetNLBSupport 매칭에 사용
+let _createInfraCache = [];
+// GetNLBSupport 응답의 supports 맵 캐시 (페이지 수명 동안 1회 조회)
+let _nlbSupportCache = null;
+
+async function _getNlbSupport() {
+  if (_nlbSupportCache) return _nlbSupportCache;
+  try {
+    const data = await nlbApi().getNLBSupport();
+    _nlbSupportCache = data?.supports || {};
+  } catch (err) {
+    console.warn('GetNLBSupport 조회 실패 — health checker 필드 전체 활성 유지:', err);
+    _nlbSupportCache = {};
+  }
+  return _nlbSupportCache;
+}
+
+function _resetHealthCheckerInputs() {
+  for (const f of HC_FIELDS) {
+    const el = document.getElementById(f.id);
+    if (!el) continue;
+    el.value = '0';
+    el.disabled = false;
+    el.title = '';
+  }
+  const note = document.getElementById('create-nlb-hc-support-note');
+  if (note) note.textContent = '';
+}
+
+async function _applyHealthCheckerSupport(infraId) {
+  const note = document.getElementById('create-nlb-hc-support-note');
+  const provider = (_createInfraCache.find((i) => i.id === infraId)?.provider || '').toLowerCase();
+  if (!provider) {
+    _resetHealthCheckerInputs();
+    return;
+  }
+  const supports = await _getNlbSupport();
+  const sup = supports[provider];
+  const unsupported = [];
+  for (const f of HC_FIELDS) {
+    const el = document.getElementById(f.id);
+    if (!el) continue;
+    const ok = sup ? sup[`customHealthChecker${f.key}`] !== false : true;
+    el.disabled = !ok;
+    if (!ok) {
+      el.value = '0';
+      el.title = `${f.label} is not configurable on ${provider.toUpperCase()}`;
+      unsupported.push(f.label);
+    } else {
+      el.title = '';
+    }
+  }
+  if (note) {
+    note.textContent = unsupported.length
+      ? `${unsupported.join(', ')} ${unsupported.length > 1 ? 'are' : 'is'} not configurable on ${provider.toUpperCase()} (provider default is used).`
+      : '';
+  }
+}
+
+// 입력값을 non-negative int로 읽는다. disabled 필드는 항상 0(=default). 잘못된 값이면 null.
+function _readHealthCheckerInputs() {
+  const out = {};
+  for (const f of HC_FIELDS) {
+    const el = document.getElementById(f.id);
+    if (!el || el.disabled) {
+      out[f.key.toLowerCase()] = 0;
+      continue;
+    }
+    const raw = String(el.value ?? '').trim();
+    const n = raw === '' ? 0 : Number(raw);
+    if (!Number.isInteger(n) || n < 0) return null;
+    out[f.key.toLowerCase()] = n;
+  }
+  return out;
+}
+
 document.getElementById('create-nlb-nodegroup')?.addEventListener('change', _updateNodeGroupStatus);
 
 // nodeGroupId -> [{ id, status }] — NLB 생성 전 대상 노드가 실제로 Running인지 확인하기 위한 캐시.
@@ -769,6 +865,12 @@ export async function executeCreateNlb() {
     return;
   }
 
+  const healthChecker = _readHealthCheckerInputs();
+  if (!healthChecker) {
+    showToast(TOAST_TYPES.WARNING, 'Health checker values must be non-negative integers (0 = provider default).');
+    return;
+  }
+
   const spinner = document.getElementById('create-nlb-spinner');
   const btn = document.getElementById('create-nlb-execute-btn');
   spinner.classList.remove('d-none');
@@ -783,11 +885,8 @@ export async function executeCreateNlb() {
     targetGroup: { protocol, port: String(targetPort), nodeGroupId: subGroupId },
     // model.NLBHealthCheckerReq는 interval/timeout/threshold만 받는 int 필드이며,
     // 0을 보내면 tumblebug가 자체 기본값을 적용한다("0 = use default").
-    healthChecker: {
-      interval: 0,
-      timeout: 0,
-      threshold: 0,
-    },
+    // CSP가 커스텀을 지원하지 않는 필드는 GetNLBSupport 기준으로 비활성화돼 0으로 전송된다.
+    healthChecker,
   };
   if (description) body.description = description;
 

@@ -20,6 +20,15 @@ export async function getAllNLBInNs(nsId) {
   return response?.data?.responseData;
 }
 
+/** CSP별 healthChecker 커스텀 필드(interval/timeout/threshold) 지원 여부 — cspType 생략 시 전체 */
+export async function getNLBSupport(cspType) {
+  const controller = '/api/mc-infra-manager/GetNLBSupport';
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
+    queryParams: cspType ? { cspType } : undefined
+  });
+  return response?.data?.responseData;
+}
+
 export async function getNLB(nsId, infraId, nlbId) {
   const controller = '/api/mc-infra-manager/GetNLB';
   const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
