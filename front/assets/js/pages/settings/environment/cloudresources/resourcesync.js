@@ -172,10 +172,8 @@ async function queryAll() {
         connMap[conn] = { connectionName: conn, hasUnsynced: false };
         selectedTypes.forEach(t => { connMap[conn][t] = '-'; });
       }
-      // InspectResourcesOverview uses 'vm'; map to 'node' if user selected 'node'
-      const displayType = item.resourceType === 'vm' && selectedTypes.includes('node')
-        ? 'node'
-        : item.resourceType;
+      // InspectResourcesOverview 는 자원유형을 'node' 로 돌려준다 (model.StrNode)
+      const displayType = item.resourceType;
       if (selectedTypes.includes(displayType)) {
         const onTb   = item.resourceOverview?.onTumblebug ?? 0;
         const onCsp  = item.resourceOverview?.onCspTotal  ?? 0;
@@ -439,8 +437,13 @@ window.syncExecute = async function () {
   if (restypePartial) {
     types = Array.from(document.querySelectorAll('.sync-type-cb:checked')).map(c => c.value);
     if (types.length === 0) { alert('Please select at least one resource type.'); return; }
+    const missing = api().findMissingResourceTypeDeps(types);
+    if (missing.length > 0) {
+      alert('Some resource types require others to be selected together:\n\n' + missing.join('\n'));
+      return;
+    }
   } else {
-    types = ['vNet', 'securityGroup', 'sshKey', 'vm', 'dataDisk', 'customImage'];
+    types = ['vNet', 'securityGroup', 'sshKey', 'node', 'dataDisk', 'customImage'];
   }
 
   // 대상 connection 결정 → provider/region 필터 목록 생성

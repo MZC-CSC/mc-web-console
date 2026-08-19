@@ -55,6 +55,50 @@ export async function getResourcesOverview() {
   return res?.data?.responseData;
 }
 
+// ── Resource type 메타 ────────────────────────────────────────────────────────
+
+/**
+ * cb-tumblebug 이 허용하는 자원유형과 선행 의존성.
+ * src/core/infra/utility.go validateReqOptions() 와 1:1 대응한다.
+ * 'nlb' 는 응답 overview 에는 있으나 요청 option 으로는 지원되지 않는다.
+ */
+export const RESOURCE_TYPE_DEPS = {
+  dataDisk: ['node'],
+  node: ['securityGroup', 'sshKey'],
+  securityGroup: ['vNet'],
+};
+
+export const RESOURCE_TYPE_LABELS = {
+  vNet: 'VNet (VPC)',
+  securityGroup: 'SecurityGroup',
+  sshKey: 'SSH Key',
+  node: 'Node',
+  dataDisk: 'DataDisk',
+  customImage: 'Custom Image',
+  nlb: 'NLB',
+};
+
+/**
+ * 선택한 자원유형이 요구하는 선행 자원유형 중 미선택된 것을 안내 문장으로 반환.
+ * 반환값이 비어 있지 않으면 요청을 보내기 전에 사용자에게 보여준다.
+ * @param {string[]} selected
+ * @returns {string[]}
+ */
+export function findMissingResourceTypeDeps(selected) {
+  const messages = [];
+  for (const [type, deps] of Object.entries(RESOURCE_TYPE_DEPS)) {
+    if (!selected.includes(type)) continue;
+    const lacking = deps.filter(d => !selected.includes(d));
+    if (lacking.length > 0) {
+      messages.push(
+        `- ${RESOURCE_TYPE_LABELS[type]} also requires ` +
+        `${lacking.map(d => RESOURCE_TYPE_LABELS[d]).join(' and ')}.`
+      );
+    }
+  }
+  return messages;
+}
+
 // ── Register ─────────────────────────────────────────────────────────────────
 
 /**

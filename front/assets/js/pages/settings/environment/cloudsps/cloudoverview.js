@@ -790,40 +790,6 @@ const ReadyzManager = {
 
 // ─── CSP Resource Sync (RQ-CLOUD-ADMIN-007) ────────────────────────────
 
-// cb-tumblebug 이 요구하는 자원유형 간 선행 의존성 (validateReqOptions)
-const SYNC_TYPE_DEPS = {
-    dataDisk: ['node'],
-    node: ['securityGroup', 'sshKey'],
-    securityGroup: ['vNet'],
-};
-
-const SYNC_TYPE_LABELS = {
-    vNet: 'VNet (VPC)',
-    securityGroup: 'SecurityGroup',
-    sshKey: 'SSH Key',
-    node: 'Node',
-    dataDisk: 'DataDisk',
-    customImage: 'Custom Image',
-    nlb: 'NLB',
-};
-
-/**
- * 선택한 자원유형이 요구하는 선행 자원유형 중 미선택된 것을 문장으로 반환
- */
-function findMissingSyncDependencies(selected) {
-    const messages = [];
-    for (const [type, deps] of Object.entries(SYNC_TYPE_DEPS)) {
-        if (!selected.includes(type)) continue;
-        const lacking = deps.filter(d => !selected.includes(d));
-        if (lacking.length > 0) {
-            messages.push(
-                `- ${SYNC_TYPE_LABELS[type]} also requires ${lacking.map(d => SYNC_TYPE_LABELS[d]).join(' and ')}.`
-            );
-        }
-    }
-    return messages;
-}
-
 /**
  * Sync 팝업 오픈 — 현재 Project nsId 표시 + Connection 목록 로드
  */
@@ -870,7 +836,7 @@ export async function executeSyncCspResources() {
         return;
     }
 
-    const missing = findMissingSyncDependencies(options);
+    const missing = webconsolejs["common/api/services/cspimport_api"].findMissingResourceTypeDeps(options);
     if (missing.length > 0) {
         alert('Some resource types require others to be selected together:\n\n' + missing.join('\n'));
         return;
@@ -918,11 +884,12 @@ function escapeSyncText(text) {
 
 function renderSyncResult(result, requestedTypes) {
     const overview = result?.registerationOverview || {};
+    const typeLabels = webconsolejs["common/api/services/cspimport_api"].RESOURCE_TYPE_LABELS;
     const order = ['vNet', 'securityGroup', 'sshKey', 'node', 'dataDisk', 'customImage', 'nlb'];
     const shown = requestedTypes?.length ? order.filter(k => requestedTypes.includes(k)) : order;
     const rows = shown
         .filter(k => overview[k] !== undefined)
-        .map(k => `<tr><td>${SYNC_TYPE_LABELS[k] || k}</td><td class="text-end">${overview[k]}</td></tr>`)
+        .map(k => `<tr><td>${typeLabels[k] || k}</td><td class="text-end">${overview[k]}</td></tr>`)
         .join('');
 
     const messages = collectSyncMessages(result);
