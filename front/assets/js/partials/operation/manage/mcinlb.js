@@ -19,18 +19,23 @@ function nlbId(data) {
 
 // ─── NLB 목록 로드 ────────────────────────────────────────────────────────
 
+// force=false는 "탭을 열 때"의 호출이다. 예전엔 같은 Infra면 재조회를 건너뛰었지만, 다른 화면
+// (Cloud Resources > NLBs의 Edit 등)에서 노드 할당이 바뀐 뒤 이 탭이 옛 목록을 계속 보여주는
+// 문제가 있어 탭을 열 때마다 재조회한다. 목록 1회 호출이라 비용은 미미하다.
 export async function loadMciNlbList(force) {
   const infraId = window.currentMciId;
   const ns = window.currentNsId;
   if (!infraId || !ns) return;
-  if (!force && AppState.loadedForMciId === infraId) return; // 이미 이 MCI로 로드됨 — 재조회 skip
 
   try {
     const data = await nlbApi().getAllNLB(ns, infraId);
+    // 배포 백엔드(cb-tumblebug NLBInfo)는 Type/Scope에 json 태그가 없어 대문자 키로 내려온다 — 정규화 필드로 흡수
     const items = (data?.nlb || (Array.isArray(data) ? data : [])).map((v) => ({
       ...v,
       _provider: getProvider(v),
       _region: getRegion(v),
+      _type: v.type ?? v.Type ?? '-',
+      _scope: v.scope ?? v.Scope ?? '-',
     }));
     AppState.resources.all = items;
     AppState.loadedForMciId = infraId;
@@ -73,8 +78,8 @@ function initTable(items) {
       { title: 'Id', field: 'id', widthGrow: 2, sorter: 'string' },
       { title: 'Provider', field: '_provider', widthGrow: 1, sorter: 'string' },
       { title: 'Region', field: '_region', widthGrow: 1, sorter: 'string' },
-      { title: 'Type', field: 'type', width: 100 },
-      { title: 'Scope', field: 'scope', width: 100 },
+      { title: 'Type', field: '_type', width: 100 },
+      { title: 'Scope', field: '_scope', width: 100 },
       {
         title: 'Listener',
         field: 'listener',
@@ -139,8 +144,8 @@ function renderDetail(data) {
   document.getElementById('mcinlb-detail-nlb-id').textContent = nlbId(data) || '-';
   document.getElementById('mcinlb-detail-nlb-provider').textContent = getProvider(data);
   document.getElementById('mcinlb-detail-nlb-region').textContent = getRegion(data);
-  document.getElementById('mcinlb-detail-nlb-type').textContent = data.type || '-';
-  document.getElementById('mcinlb-detail-nlb-scope').textContent = data.scope || '-';
+  document.getElementById('mcinlb-detail-nlb-type').textContent = data.type ?? data.Type ?? '-';
+  document.getElementById('mcinlb-detail-nlb-scope').textContent = data.scope ?? data.Scope ?? '-';
   document.getElementById('mcinlb-detail-nlb-listener').textContent =
     listener.protocol || listener.port ? `${listener.protocol || ''}:${listener.port || ''}` : '-';
   document.getElementById('mcinlb-detail-nlb-endpoint').textContent = listener.dnsName || listener.ip || '-';
