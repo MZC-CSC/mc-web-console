@@ -163,7 +163,7 @@ async function loadHistory() {
 // ── Add Schedule Modal ────────────────────────────────────────────────────────
 
 window.scheduleToggleModalMci = function () {
-  const vmOn = document.querySelector('.modal-type-cb[value="vm"]')?.checked;
+  const vmOn = document.querySelector('.modal-type-cb[value="node"]')?.checked;
   document.getElementById('modal-mci-group').style.display = vmOn ? '' : 'none';
 };
 
@@ -181,7 +181,8 @@ async function loadModalDropdowns() {
   selNs.innerHTML   = '<option value="">Select Namespace</option>';
 
   connections.forEach(c => {
-    const name = c.connectionName || c.name || String(c);
+    const name = c.configName || c.connectionName || c.name;
+    if (!name) return;
     selConn.appendChild(new Option(name, name));
   });
   nsList.forEach(n => {
@@ -195,7 +196,7 @@ window.scheduleSubmitCreate = async function () {
   const connectionName = document.getElementById('modal-connection').value;
   const types          = Array.from(document.querySelectorAll('.modal-type-cb:checked')).map(c => c.value);
   const interval       = parseInt(document.getElementById('modal-interval').value) || 60;
-  const vmOn           = types.includes('vm');
+  const vmOn           = types.includes('node');
   const mciPrefix      = document.getElementById('modal-mci-prefix').value.trim();
 
   if (!nsId)           { alert('Select a Namespace.');  return; }
@@ -209,8 +210,8 @@ window.scheduleSubmitCreate = async function () {
       connectionName,
       option: types.join(','),
       intervalSeconds: interval,
-      mciFlag: vmOn ? 'y' : 'n',
-      mciNamePrefix: vmOn ? mciPrefix : undefined,
+      infraFlag: vmOn ? 'y' : 'n',
+      infraNamePrefix: vmOn ? mciPrefix : undefined,
     });
     bootstrap.Modal.getInstance(document.getElementById('modal-add-schedule'))?.hide();
     await loadScheduleList();

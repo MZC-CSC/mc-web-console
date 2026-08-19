@@ -353,16 +353,16 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <!-- Target Project (읽기전용) -->
+        <!-- Target Project (등록 대상 NS 선택) -->
         <div class="mb-3">
           <label class="form-label">Target Project</label>
-          <input type="text" class="form-control" id="sync-target-project" readonly>
+          <select class="form-select" id="sync-target-project"></select>
         </div>
-        <!-- CSP Account 선택 -->
+        <!-- CSP Connection 선택 -->
         <div class="mb-3">
           <label class="form-label">CSP Connection</label>
           <select class="form-select" id="sync-connection-select">
-            <option value="">All Accounts</option>
+            <option value="">All Connections</option>
           </select>
         </div>
         <!-- 자원 유형 선택 -->

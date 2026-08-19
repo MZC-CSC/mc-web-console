@@ -791,11 +791,49 @@ const ReadyzManager = {
 // ─── CSP Resource Sync (RQ-CLOUD-ADMIN-007) ────────────────────────────
 
 /**
- * Sync 팝업 오픈 — 현재 Project nsId 표시 + Connection 목록 로드
+ * Target Project 드롭다운 채우기.
+ * 관리자 화면이므로 현재 선택된 프로젝트에 고정하지 않고 원하는 프로젝트를 고를 수 있게 한다.
+ * 현재 워크스페이스의 프로젝트를 우선 노출하고, 없으면 mc-infra-manager 의 NS 목록으로 대체한다.
+ */
+async function loadSyncProjectOptions() {
+    const select = document.getElementById('sync-target-project');
+    select.innerHTML = '';
+
+    const wsApi = webconsolejs["common/api/services/workspace_api"];
+    const currentNsId = wsApi.getCurrentProject()?.NsId || '';
+    const curWs = wsApi.getCurrentWorkspace();
+
+    // 등록 대상은 NS 단위이므로 NS 전체를 후보로 둔다.
+    // 현재 워크스페이스의 프로젝트는 이름을 함께 보여 알아보기 쉽게 한다.
+    const [nsList, projects] = await Promise.all([
+        webconsolejs["common/api/services/cspimport_api"].getAllNs().catch(() => []),
+        curWs?.Id ? wsApi.getProjectListByWorkspaceId(curWs.Id).catch(() => []) : Promise.resolve([]),
+    ]);
+
+    const nameByNsId = {};
+    for (const p of projects || []) {
+        const nsId = p.nsid || p.NsId || p.ns_id;
+        if (nsId && p.name) nameByNsId[nsId] = p.name;
+    }
+
+    for (const n of nsList || []) {
+        const nsId = n.id || n.nsId || n.name;
+        if (!nsId) continue;
+        const name = nameByNsId[nsId];
+        const label = name && name !== nsId ? `${name} (${nsId})` : nsId;
+        select.appendChild(new Option(label, nsId));
+    }
+
+    if (currentNsId && [...select.options].some(o => o.value === currentNsId)) {
+        select.value = currentNsId;
+    }
+}
+
+/**
+ * Sync 팝업 오픈 — 등록 대상 Project 및 Connection 목록 로드
  */
 export async function openSyncPopup() {
-    const nsId = webconsolejs["common/api/services/workspace_api"].getCurrentProject()?.NsId;
-    document.getElementById('sync-target-project').value = nsId || '(No project selected)';
+    await loadSyncProjectOptions();
 
     // Connection 드롭다운 — mc-infra-manager 에 등록된 ConnConfig 로 채운다.
     // mc-iam-manager 의 CSP 계정(AppState.csp.list)에는 connectionName 이 없어
@@ -824,9 +862,9 @@ export async function openSyncPopup() {
  * 동기화 실행
  */
 export async function executeSyncCspResources() {
-    const nsId = webconsolejs["common/api/services/workspace_api"].getCurrentProject()?.NsId;
+    const nsId = document.getElementById('sync-target-project').value;
     if (!nsId) {
-        alert('Please select a project first.');
+        alert('Please select a target project first.');
         return;
     }
 
@@ -921,16 +959,15 @@ document.addEventListener("DOMContentLoaded", async function () {
         "document.getElementById('view-mode-cards').classList.remove('show'); bootstrap.Collapse.getOrCreateInstance(document.getElementById('cspcreate')).toggle()"
     );
 
-    // Sync 버튼 삽입 (Project 선택 시에만 활성화)
+    // Sync 버튼 삽입 (대상 프로젝트는 모달에서 선택)
     const syncBtn = document.createElement('button');
-    syncBtn.className = 'btn btn-secondary ms-2';
+    syncBtn.className = 'btn btn-outline-primary ms-2';
     syncBtn.id = 'sync-csp-btn';
     syncBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg> Sync';
     syncBtn.onclick = () => webconsolejs['pages/settings/environment/cloudsps/cloudoverview'].openSyncPopup();
 
-    const nsId = webconsolejs["common/api/services/workspace_api"].getCurrentProject()?.NsId;
-    if (!nsId) syncBtn.disabled = true;
-    syncBtn.title = nsId ? 'Resource Sync' : 'Select a project first';
+    // 대상 프로젝트는 모달 안에서 고르므로 현재 프로젝트 선택 여부와 무관하게 활성화한다.
+    syncBtn.title = 'Resource Sync';
 
     document.getElementById('page-header-btn-list').appendChild(syncBtn);
 

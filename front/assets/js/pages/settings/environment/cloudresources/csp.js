@@ -62,7 +62,7 @@ async function loadAllUnmanaged() {
     return;
   }
 
-  const resourceTypes = ['vNet', 'securityGroup', 'sshKey', 'vm'];
+  const resourceTypes = ['vNet', 'securityGroup', 'sshKey', 'node'];
   AppState.allRegistered = [];
   const tasks = [];
   for (const conn of connections) {
@@ -183,7 +183,7 @@ window.cspUnregister = async function () {
       case 'vNet':          await api().deregisterVNet(nsId, idByTb); break;
       case 'securityGroup': await api().deregisterSecurityGroup(nsId, idByTb); break;
       case 'sshKey':        await api().deregisterSshKey(nsId, idByTb); break;
-      case 'vm':            await api().deregisterMciVm(nsId, mciId, idByTb); break;
+      case 'node':          await api().deregisterMciVm(nsId, mciId, idByTb); break;
       default: alert(`Unregister not supported for type: ${resourceType}`); return;
     }
     alert('Unregistered successfully.');
@@ -196,7 +196,7 @@ window.cspUnregister = async function () {
 // ── Toggle helpers ────────────────────────────────────────────────────────────
 
 window.cspToggleMciName = function () {
-  const vmChecked = document.querySelector('.target-type-cb[value="vm"]')?.checked;
+  const vmChecked = document.querySelector('.target-type-cb[value="node"]')?.checked;
   document.getElementById('mci-name-group').style.display = vmChecked ? '' : 'none';
 };
 
@@ -219,7 +219,7 @@ window.cspSubmitRegist = async function () {
   if (!nsId)           { alert('Select a Namespace.');  return; }
   if (targetTypes.length === 0) { alert('Select at least one resource type.'); return; }
 
-  const vmChecked = targetTypes.includes('vm');
+  const vmChecked = targetTypes.includes('node');
   const mciName   = document.getElementById('target-mci-name').value.trim();
   if (vmChecked && !mciName) { alert('Enter an Infra Name for Node registration.'); return; }
 
@@ -286,8 +286,8 @@ async function submitImmediate(nsId, connectionName, targetTypes, mciName) {
   }
 
   // VM: MCI 단위
-  if (targetTypes.includes('vm')) {
-    const vms = selectedRows.filter(r => r.resourceType === 'vm');
+  if (targetTypes.includes('node')) {
+    const vms = selectedRows.filter(r => r.resourceType === 'node');
     if (vms.length > 0) {
       try {
         await api().registerCspVm(nsId, mciName, vms.map(r => ({
@@ -336,7 +336,7 @@ async function submitImmediate(nsId, connectionName, targetTypes, mciName) {
 
 async function submitSchedule(nsId, connectionName, targetTypes, mciNamePrefix) {
   const interval = parseInt(document.getElementById('schedule-interval').value) || 60;
-  const vmChecked = targetTypes.includes('vm');
+  const vmChecked = targetTypes.includes('node');
   try {
     await api().createSchedule({
       jobType: 'registerCspResources',
@@ -344,8 +344,8 @@ async function submitSchedule(nsId, connectionName, targetTypes, mciNamePrefix) 
       connectionName,
       option: targetTypes.join(','),
       intervalSeconds: interval,
-      mciFlag: vmChecked ? 'y' : 'n',
-      mciNamePrefix: vmChecked ? mciNamePrefix : undefined,
+      infraFlag: vmChecked ? 'y' : 'n',
+      infraNamePrefix: vmChecked ? mciNamePrefix : undefined,
     });
     alert('Schedule created. Check the CSP Schedule page.');
   } catch (e) {
