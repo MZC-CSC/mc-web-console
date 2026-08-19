@@ -2032,6 +2032,10 @@ serviceActions:
       method: get
       resourcePath: /ns/{nsId}/infra/{infraId}/nlb
       description: List all NLBs or NLBs' ID
+    GetAllNLBInNs:
+      method: get
+      resourcePath: /ns/{nsId}/resources/nlb
+      description: List all NLBs in a namespace (each item carries infraId)
     GetAllNs:
       method: get
       resourcePath: /ns

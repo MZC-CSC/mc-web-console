@@ -11,6 +11,15 @@ export async function getAllNLB(nsId, infraId) {
   return response?.data?.responseData;
 }
 
+/** namespace 전체 NLB 목록 (Infra 무관, 각 항목에 infraId 포함) — Infra별 N+1 조회 대체 */
+export async function getAllNLBInNs(nsId) {
+  const controller = '/api/mc-infra-manager/GetAllNLBInNs';
+  const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
+    pathParams: { nsId }
+  });
+  return response?.data?.responseData;
+}
+
 export async function getNLB(nsId, infraId, nlbId) {
   const controller = '/api/mc-infra-manager/GetNLB';
   const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
