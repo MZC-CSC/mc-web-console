@@ -135,16 +135,14 @@ export async function getMciListSimple(nsId) {
 }
 
 /**
- * CSP VNet 목록 조회 (ForwardAnyReqToAny → mc-spider)
- * ⚠️ 실제 operationId 및 파라미터는 테스트로 확인 필요
+ * CSP VNet 목록 조회 (ForwardAnyReqToAny → CB-Spider GET /vpc)
+ * resourcePath가 /forward/{path} pathParam 기반이라 path에 CB-Spider 경로를,
+ * request에 CB-Spider가 요구하는 PascalCase 필드(ConnectionName)를 담아 보낸다.
  */
 export async function getCspVNets(connectionName) {
     const data = {
-        queryParams: {
-            connectionName,
-            targetUrl: "/spider/vpc",
-            method: "GET",
-        },
+        pathParams: { path: "vpc" },
+        request: { ConnectionName: connectionName },
     };
 
     const response = await webconsolejs["common/api/http"].commonAPIPost(
@@ -155,16 +153,12 @@ export async function getCspVNets(connectionName) {
 }
 
 /**
- * CSP VM 목록 조회 (ForwardAnyReqToAny → mc-spider)
- * ⚠️ 실제 operationId 및 파라미터는 테스트로 확인 필요
+ * CSP VM 목록 조회 (ForwardAnyReqToAny → CB-Spider GET /vm)
  */
 export async function getCspVMs(connectionName) {
     const data = {
-        queryParams: {
-            connectionName,
-            targetUrl: "/spider/vm",
-            method: "GET",
-        },
+        pathParams: { path: "vm" },
+        request: { ConnectionName: connectionName },
     };
 
     const response = await webconsolejs["common/api/http"].commonAPIPost(
