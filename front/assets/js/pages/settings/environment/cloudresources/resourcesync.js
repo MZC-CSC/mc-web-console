@@ -833,45 +833,74 @@ window.syncResRegister = async function () {
     return;
   }
 
+  // securityGroup / sshKey 는 개별 등록 API 가 없어 connection 단위로만 등록된다.
+  // 선택한 한 건이 아니라 해당 connection 의 그 유형 전체가 등록되므로 먼저 확인받는다.
+  const bulkTypes = ['securityGroup', 'sshKey'].filter(t => selected.some(r => r.resourceType === t));
+  const bulkConns = [...new Set(selected.filter(r => bulkTypes.includes(r.resourceType)).map(r => r.connectionName))];
+  const expanded = bulkTypes.length > 0 ? expandResourceTypeDeps(bulkTypes) : [];
+
+  if (bulkTypes.length > 0) {
+    const label = (t) => api().RESOURCE_TYPE_LABELS[t] || t;
+    const added = expanded.filter(t => !bulkTypes.includes(t));
+    const lines = [
+      `${bulkTypes.map(label).join(' / ')} cannot be registered individually.`,
+      '',
+      `Registering will register ALL resources of the types below in the selected connection(s), not just the rows you picked.`,
+      '',
+      `Namespace: ${nsId}`,
+      `Connections: ${bulkConns.join(', ')}`,
+      `Resource types: ${expanded.map(label).join(', ')}`,
+    ];
+    if (added.length > 0) {
+      lines.push('', `${added.map(label).join(', ')} is included automatically because the selected types require it.`);
+    }
+    lines.push('', 'Do you want to continue?');
+    if (!confirm(lines.join('\n'))) return;
+  }
+
   const statusEl = document.getElementById('res-register-status');
   statusEl.className = 'text-secondary small ms-2';
   statusEl.textContent = 'Registering…';
 
-  let success = 0, conflict = 0, failed = 0;
+  // 자원 유형별 등록 건수를 실제 응답에서 집계한다 (API 호출 수가 아니라 자원 수)
+  const tally = {};
+  let failedCount = 0;
   const errors = [];
-  const notes = [];
+  const failedOutputs = [];
+
+  function addOverview(result) {
+    const ov = result?.registerationOverview || {};
+    for (const [k, v] of Object.entries(ov)) {
+      if (k === 'failed') { failedCount += Number(v) || 0; continue; }
+      const n = Number(v) || 0;
+      if (n > 0) tally[k] = (tally[k] || 0) + n;
+    }
+    for (const line of (result?.registerationOutputs?.output || [])) {
+      if (String(line).includes('[Failed]')) failedOutputs.push(String(line));
+    }
+  }
 
   // vNet — 개별 등록 API 가 있어 선택한 자원만 등록한다
   for (const row of selected.filter(r => r.resourceType === 'vNet')) {
     try {
       await api().registerVNet(nsId, row.connectionName, row.cspResourceId, row.refNameOrId);
-      success++;
+      tally.vNet = (tally.vNet || 0) + 1;
     } catch (e) {
-      if (httpStatus(e) === 409) conflict++;
-      else { failed++; errors.push(`vNet ${row.cspResourceId}: ${e?.response?.data?.message || e.message}`); }
+      if (httpStatus(e) === 409) continue;   // 이미 등록됨
+      failedCount++;
+      errors.push(`vNet ${row.cspResourceId}: ${e?.response?.data?.message || e.message}`);
     }
   }
 
-  // securityGroup / sshKey — 개별 등록 API 가 없어 connection 단위로 일괄 등록한다
-  const bulkTypes = ['securityGroup', 'sshKey'].filter(t => selected.some(r => r.resourceType === t));
-  if (bulkTypes.length > 0) {
-    const expanded = expandResourceTypeDeps(bulkTypes);
-    const added = expanded.filter(t => !bulkTypes.includes(t));
-    if (added.length > 0) {
-      notes.push(
-        `${added.map(t => api().RESOURCE_TYPE_LABELS[t] || t).join(', ')} was included automatically ` +
-        `because the selected types require it.`
-      );
-    }
-    const conns = [...new Set(selected.filter(r => bulkTypes.includes(r.resourceType)).map(r => r.connectionName))];
-    for (const connectionName of conns) {
-      try {
-        await api().registerCspNativeResources(nsId, { connectionName }, expanded);
-        success++;
-      } catch (e) {
-        if (httpStatus(e) === 409) conflict++;
-        else { failed++; errors.push(`${connectionName}: ${e?.response?.data?.message || e.message}`); }
-      }
+  // securityGroup / sshKey — connection 단위 일괄 등록
+  for (const connectionName of bulkConns) {
+    try {
+      const result = await api().registerCspNativeResources(nsId, { connectionName }, expanded);
+      addOverview(result);
+    } catch (e) {
+      if (httpStatus(e) === 409) continue;
+      failedCount++;
+      errors.push(`${connectionName}: ${e?.response?.data?.message || e.message}`);
     }
   }
 
@@ -886,21 +915,28 @@ window.syncResRegister = async function () {
           cspResourceId: r.cspResourceId,
           name: r.refNameOrId,
         })));
-        success++;
+        tally.node = (tally.node || 0) + rows.length;
       } catch (e) {
-        if (httpStatus(e) === 409) conflict++;
-        else { failed++; errors.push(`Node (${connectionName}): ${e?.response?.data?.message || e.message}`); }
+        if (httpStatus(e) === 409) continue;
+        failedCount++;
+        errors.push(`Node (${connectionName}): ${e?.response?.data?.message || e.message}`);
       }
     }
   }
 
-  statusEl.className = failed > 0 ? 'text-warning small ms-2' : 'text-success small ms-2';
-  statusEl.textContent = `Completed: ${success} succeeded, ${conflict} skipped (already registered), ${failed} failed`;
+  const summary = Object.entries(tally)
+    .map(([k, v]) => `${api().RESOURCE_TYPE_LABELS[k] || k} ${v}`)
+    .join(', ');
+  const registeredTotal = Object.values(tally).reduce((a, b) => a + b, 0);
 
-  const parts = [];
-  if (notes.length > 0)  parts.push(notes.join('\n'));
-  if (failed > 0)        parts.push(`Failed:\n${errors.join('\n')}`);
-  if (parts.length > 0)  alert(parts.join('\n\n'));
+  statusEl.className = failedCount > 0 ? 'text-warning small ms-2' : 'text-success small ms-2';
+  statusEl.textContent = registeredTotal > 0
+    ? `Registered ${registeredTotal} resource(s) — ${summary}. Failed: ${failedCount}`
+    : `No resource was registered. Failed: ${failedCount}`;
+
+  if (failedCount > 0) {
+    alert(['Some resources failed to register.', '', ...errors, ...failedOutputs.slice(0, 20)].join('\n'));
+  }
 
   await window.syncResQuery();
 };
