@@ -192,22 +192,6 @@ menus:
     priority: 2
     menunumber: 1555
 
-  - id: csp
-    parentid: cloudresources
-    displayname: CSP Overview
-    restype: menu
-    isaction: true
-    priority: 2
-    menunumber: 1580
-
-  - id: cspschedule
-    parentid: cloudresources
-    displayname: CSP Schedule
-    restype: menu
-    isaction: true
-    priority: 2
-    menunumber: 1590
-
   - id: resourcesync
     parentid: cloudresources
     displayname: Resource Sync
