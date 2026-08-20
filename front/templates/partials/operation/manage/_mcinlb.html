@@ -4,13 +4,22 @@
       <div class="card-header">
         <h3 class="card-title">NLB</h3>
         <div class="card-options ms-auto d-flex gap-2">
-          <!-- Create NLB -->
-          <a class="btn-action" type="button" title="Create NLB"
-            onclick="webconsolejs['partials/operation/manage/mcinlb'].openCreateMciNlbModal()">
+          <!-- Assign nodes to NLB -->
+          <a class="btn-action" type="button" title="Assign nodes to NLB"
+            onclick="webconsolejs['partials/operation/manage/mcinlb'].openAssignNlbModal()">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
               stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
               <path d="M12 5l0 14"/><path d="M5 12l14 0"/>
+            </svg>
+          </a>
+          <!-- Unassign nodes from selected NLB -->
+          <a class="btn-action" type="button" title="Unassign nodes from selected NLB"
+            onclick="webconsolejs['partials/operation/manage/mcinlb'].openUnassignNlbModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+              stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M5 12l14 0"/>
             </svg>
           </a>
           <!-- Check Health (selected) -->
@@ -69,8 +78,8 @@
               <select id="mcinlb-filter-field" class="form-select form-select-sm">
                 <option value="">-- select --</option>
                 <option value="id">Id</option>
-                <option value="type">Type</option>
-                <option value="scope">Scope</option>
+                <option value="_type">Type</option>
+                <option value="_scope">Scope</option>
               </select>
             </div>
             <div class="col-auto">
@@ -152,6 +161,10 @@
               <div class="datagrid-content" id="mcinlb-detail-nlb-nodegroup">-</div>
             </div>
             <div class="datagrid-item">
+              <div class="datagrid-title">Assigned Nodes</div>
+              <div class="datagrid-content" id="mcinlb-detail-nlb-nodes">-</div>
+            </div>
+            <div class="datagrid-item">
               <div class="datagrid-title">Target Port</div>
               <div class="datagrid-content" id="mcinlb-detail-nlb-target-port">-</div>
             </div>
@@ -178,56 +191,58 @@
   </div>
 </div>
 
-<!-- Create NLB 모달 (이 탭의 MCI로 Infra 고정) -->
-<div class="modal modal-blur fade" id="mcinlb-create-nlb-modal" tabindex="-1" role="dialog" aria-hidden="true">
+<!-- Assign 모달 — 기존 NLB에 노드 추가 (생성은 Cloud Resources > NLBs) -->
+<div class="modal modal-blur fade" id="mcinlb-assign-modal" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Create NLB</h5>
+        <h5 class="modal-title">Assign Nodes to NLB</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <div class="alert alert-info mb-3">
-          NLB is created per target NodeGroup of this Infra. The NLB id follows the NodeGroup id.
+          Add nodes of this Infra to an existing NLB. To create a new NLB, use Cloud Resources &gt; NLBs.
         </div>
         <div class="mb-3">
-          <label class="form-label required">Target NodeGroup</label>
-          <select class="form-select" id="mcinlb-create-nlb-nodegroup"></select>
-          <div class="form-text" id="mcinlb-create-nlb-nodegroup-status"></div>
-        </div>
-        <div class="row">
-          <div class="col-6 mb-3">
-            <label class="form-label required">Listener Port</label>
-            <input type="number" class="form-control" id="mcinlb-create-nlb-listener-port" min="1" max="65535" value="80">
-          </div>
-          <div class="col-6 mb-3">
-            <label class="form-label required">Target Port</label>
-            <input type="number" class="form-control" id="mcinlb-create-nlb-target-port" min="1" max="65535" value="80">
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-6 mb-3">
-            <label class="form-label">Protocol</label>
-            <select class="form-select" id="mcinlb-create-nlb-protocol">
-              <option value="TCP" selected>TCP</option>
-              <option value="UDP">UDP</option>
-            </select>
-          </div>
-          <div class="col-6 mb-3">
-            <label class="form-label">Type / Scope</label>
-            <input type="text" class="form-control" value="PUBLIC / REGION" readonly>
-          </div>
+          <label class="form-label required">NLB</label>
+          <select class="form-select" id="mcinlb-assign-nlb-select"></select>
         </div>
         <div class="mb-2">
-          <label class="form-label">Description</label>
-          <input type="text" class="form-control" id="mcinlb-create-nlb-description" placeholder="optional">
+          <label class="form-label required">Nodes</label>
+          <div id="mcinlb-assign-node-list" class="border rounded p-2" style="max-height: 240px; overflow-y: auto;"></div>
+          <div class="form-text text-warning" id="mcinlb-assign-node-status"></div>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="mcinlb-create-nlb-execute-btn"
-          onclick="webconsolejs['partials/operation/manage/mcinlb'].executeCreateMciNlb()">
-          <span id="mcinlb-create-nlb-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>Create
+        <button type="button" class="btn btn-primary" id="mcinlb-assign-execute-btn"
+          onclick="webconsolejs['partials/operation/manage/mcinlb'].executeAssignNlbNodes()">
+          <span id="mcinlb-assign-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>Assign
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UnAssign 모달 — 선택한 NLB에서 노드 해제 -->
+<div class="modal modal-blur fade" id="mcinlb-unassign-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Unassign Nodes — <span id="mcinlb-unassign-nlb-name" class="text-primary"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+          <label class="form-label required">Assigned Nodes</label>
+          <div id="mcinlb-unassign-node-list" class="border rounded p-2" style="max-height: 240px; overflow-y: auto;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="mcinlb-unassign-execute-btn"
+          onclick="webconsolejs['partials/operation/manage/mcinlb'].executeUnassignNlbNodes()">
+          <span id="mcinlb-unassign-spinner" class="spinner-border spinner-border-sm d-none me-1" role="status"></span>Unassign
         </button>
       </div>
     </div>
