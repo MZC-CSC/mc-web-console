@@ -148,15 +148,75 @@ function renderDetail(data) {
   document.getElementById('mcinlb-detail-nlb-scope').textContent = data.scope ?? data.Scope ?? '-';
   document.getElementById('mcinlb-detail-nlb-listener').textContent =
     listener.protocol || listener.port ? `${listener.protocol || ''}:${listener.port || ''}` : '-';
-  document.getElementById('mcinlb-detail-nlb-endpoint').textContent = listener.dnsName || listener.ip || '-';
+  renderTruncatableCopyable('mcinlb-detail-nlb-endpoint', listener.dnsName || listener.ip || '-');
   document.getElementById('mcinlb-detail-nlb-nodegroup').textContent = target.nodeGroupId || target.subGroupId || '-';
   document.getElementById('mcinlb-detail-nlb-nodes').textContent = _assignedNodes(data).join(', ') || '-';
   document.getElementById('mcinlb-detail-nlb-target-port').textContent = target.port || '-';
   document.getElementById('mcinlb-detail-nlb-healthchecker').textContent =
     hc.protocol || hc.port ? `${hc.protocol || ''}:${hc.port || ''} (interval ${hc.interval || '-'}, threshold ${hc.threshold || '-'})` : '-';
-  document.getElementById('mcinlb-detail-nlb-csp-id').textContent = data.cspResourceId || '-';
+  renderTruncatableCopyable('mcinlb-detail-nlb-csp-id', data.cspResourceId || '-');
   document.getElementById('mcinlb-detail-nlb-description').textContent = data.description || '-';
   document.getElementById('mcinlb-detail-nlb-health').textContent = '-';
+}
+
+// 길어서 "..."으로 잘리는 값(Listener IP/DNS, CSP Resource ID)을 hover 툴팁(전체 텍스트) +
+// 클립보드 복사 버튼과 함께 렌더링한다. nlbs.js의 renderTruncatableCopyable과 동일 구현
+// (페이지 간 공통 모듈화는 회귀 위험으로 보류 — 세 번째 소비처 생기면 재검토).
+function renderTruncatableCopyable(targetId, fullText) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  // 이전 렌더의 툴팁 인스턴스가 body에 남지 않도록 정리
+  if (window.bootstrap?.Tooltip) {
+    target.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => bootstrap.Tooltip.getInstance(el)?.dispose());
+  }
+  target.innerHTML = '';
+
+  if (!fullText || fullText === '-') {
+    target.textContent = '-';
+    return;
+  }
+
+  target.style.display = 'inline-flex';
+  target.style.alignItems = 'center';
+  target.style.gap = '4px';
+  target.style.maxWidth = '100%';
+
+  const span = document.createElement('span');
+  span.textContent = fullText;
+  span.style.maxWidth = '240px';
+  span.style.overflow = 'hidden';
+  span.style.textOverflow = 'ellipsis';
+  span.style.whiteSpace = 'nowrap';
+  span.style.cursor = 'default';
+  // 잘린 값은 hover 시 Bootstrap 툴팁으로 전체 텍스트를 즉시 보여준다
+  span.setAttribute('data-bs-toggle', 'tooltip');
+  span.setAttribute('data-bs-placement', 'top');
+  span.setAttribute('title', fullText);
+  if (window.bootstrap?.Tooltip) {
+    new bootstrap.Tooltip(span, { container: 'body', trigger: 'hover focus', customClass: 'nlb-full-text-tooltip' });
+  }
+
+  const copyBtn = document.createElement('a');
+  copyBtn.href = '#';
+  copyBtn.className = 'copy-icon-btn flex-shrink-0';
+  copyBtn.title = 'Copy to clipboard';
+  copyBtn.innerHTML =
+    '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-sm" width="16" height="16" viewBox="0 0 24 24" ' +
+    'stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path stroke="none" d="M0 0h24v24H0z" fill="none"/>' +
+    '<path d="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z"/>' +
+    '<path d="M16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"/>' +
+    '</svg>';
+  copyBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    navigator.clipboard
+      .writeText(fullText)
+      .then(() => showToast(TOAST_TYPES.SUCCESS, 'Copied to clipboard'))
+      .catch(() => showToast(TOAST_TYPES.ERROR, 'Failed to copy'));
+  });
+
+  target.appendChild(span);
+  target.appendChild(copyBtn);
 }
 
 function showDetail() {
