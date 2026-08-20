@@ -157,9 +157,17 @@ export async function registerCspVm(nsId, mciName, vmList) {
 
 // ── Deregister ───────────────────────────────────────────────────────────────
 
-/** vNet 등록 해제 - DELETE /ns/{nsId}/deregisterResource/vNet/{vNetId} */
-export async function deregisterVNet(nsId, vNetId) {
-  return call('DeleteDeregisterVNet', { pathParams: { nsId, vNetId } });
+/**
+ * vNet 등록 해제 - DELETE /ns/{nsId}/deregisterResource/vNet/{vNetId}
+ * 서브넷이 하나라도 남아 있으면 cb-tumblebug 이 withSubnets 없이는 거부한다
+ * ("has N subnet(s); set withSubnets=true"). 등록 해제는 CSP 자원을 지우지 않으므로
+ * 부모 vNet 을 내릴 때 서브넷도 함께 내리는 것이 기본 동작이다.
+ */
+export async function deregisterVNet(nsId, vNetId, withSubnets = true) {
+  return call('DeleteDeregisterVNet', {
+    pathParams: { nsId, vNetId },
+    queryParams: { withSubnets: withSubnets ? 'true' : 'false' },
+  });
 }
 
 /** SecurityGroup 등록 해제 */
