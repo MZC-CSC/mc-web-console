@@ -3900,3 +3900,28 @@ export async function executeSaveAsTemplate() {
     bootstrap.Modal.getInstance(document.getElementById('save-as-template-modal'))?.hide();
   }).catch(() => {});
 }
+
+// ─── MCI를 JSON으로 Export (Node Import에서 재사용할 파일 생성) ────────────
+export async function exportInfraAsJson() {
+  const mciId = window.currentMciId;
+  const nsId = window.currentNsId;
+  if (mciId == undefined || mciId == "") {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an Infra first')
+    return;
+  }
+
+  try {
+    const infraDynamicReq = await webconsolejs["common/api/services/infratemplate_api"].getInfraReqFromInfra(nsId, mciId);
+    const payload = { infraDynamicReq };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    a.href = url;
+    a.download = `${mciId}-nodegroups-${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Error', 'Failed to export Infra as JSON: ' + (e?.message || e));
+  }
+}

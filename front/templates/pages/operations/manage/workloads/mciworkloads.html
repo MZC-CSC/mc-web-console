@@ -329,7 +329,10 @@
                       </svg>
                       Save as Template
                     </a>
-                    <a class="dropdown-item" href="#">
+                    <a
+                      class="dropdown-item"
+                      onclick="webconsolejs['pages/operation/manage/mci'].exportInfraAsJson()"
+                    >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         class="icon dropdown-item-icon"
@@ -352,7 +355,7 @@
                         ></path>
                         <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
                       </svg>
-                      Export
+                      Export as JSON
                     </a>
                   </div>
                 </div>
@@ -653,6 +656,7 @@
                   <option value="simple">Simple</option>
                   <option value="expert">Expert</option>
                   <option value="template">Template</option>
+                  <option value="import_json">Import from JSON</option>
                 </select>
               </div>
 
@@ -832,6 +836,7 @@
                   <option value="simple">Simple</option>
                   <option value="expert">Expert</option>
                   <option value="template">Template</option>
+                  <option value="import_json">Import from JSON</option>
                 </select>
               </div>
 
@@ -1786,6 +1791,69 @@
           onclick="webconsolejs['partials/operation/manage/mcicreate'].deployFromSelectedTemplate()"
         >
           Deploy from Template
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import NodeGroups from JSON (진짜 Node Import — export한 JSON을 읽어 Add Node 처리) -->
+<div class="modal modal-blur fade" id="import-nodegroups-json-modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Import NodeGroups from JSON</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-2">
+          Select a JSON file exported from an existing Infra ("Export" action). Its NodeGroups will be added to the
+          form below — review/edit them before clicking Deploy.
+        </p>
+        <input
+          type="file"
+          class="form-control"
+          id="import-nodegroups-json-file"
+          accept=".json"
+          onchange="webconsolejs['partials/operation/manage/mcicreate'].handleImportJsonFileChange(this)"
+        />
+
+        <!-- 파싱된 NodeGroups 미리보기 -->
+        <div id="import-json-preview" class="mt-3">
+          <p id="import-json-preview-hint" class="text-muted mb-0">
+            Choose a JSON file to preview its NodeGroups.
+          </p>
+          <div id="import-json-preview-content" class="d-none">
+            <h4 class="mb-1">NodeGroups</h4>
+            <div class="table-responsive" style="overflow-x:auto">
+              <table class="table table-vcenter table-sm">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Spec ID</th>
+                    <th>Image ID</th>
+                    <th>Size</th>
+                    <th>Connection</th>
+                    <th>Root Disk</th>
+                    <th>Zone</th>
+                  </tr>
+                </thead>
+                <tbody id="import-json-nodegroup-rows"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button
+          type="button"
+          id="btn-add-imported-nodegroups"
+          class="btn btn-primary"
+          disabled
+          onclick="webconsolejs['partials/operation/manage/mcicreate'].applyImportedNodeGroups()"
+        >
+          Add NodeGroup(s)
         </button>
       </div>
     </div>

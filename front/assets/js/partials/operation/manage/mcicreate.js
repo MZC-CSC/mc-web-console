@@ -1671,9 +1671,11 @@ let templateModalSourceSelectId = "mci_deploy_algorithm"; // 모달을 연 selec
 let templateDeploySucceeded = false;
 let templateDeployInFlight = false;
 
+const MODAL_DEPLOY_ALGORITHM_VALUES = ["template", "import_json"]; // 별도 모달을 여는 select 값 — 모달 트리거일 뿐 실제 배포 알고리즘이 아님
+
 function revertDeployAlgorithmSelect() {
 	const sel = document.getElementById(templateModalSourceSelectId);
-	if (sel && sel.value === "template") sel.value = deployAlgorithmPrev[templateModalSourceSelectId] || "express";
+	if (sel && MODAL_DEPLOY_ALGORITHM_VALUES.includes(sel.value)) sel.value = deployAlgorithmPrev[templateModalSourceSelectId] || "express";
 }
 
 // 템플릿 미리보기 초기화 (선택 없음 → 안내문구 표시)
@@ -1735,7 +1737,7 @@ function initTemplateDeploySelect() {
 		if (!sel) return;
 		deployAlgorithmPrev[selId] = sel.value;
 		sel.addEventListener("change", async function () {
-			if (this.value !== "template") {
+			if (!MODAL_DEPLOY_ALGORITHM_VALUES.includes(this.value)) {
 				deployAlgorithmPrev[selId] = this.value;
 				return;
 			}
@@ -1750,7 +1752,11 @@ function initTemplateDeploySelect() {
 				}
 			}
 			templateModalSourceSelectId = selId;
-			await openTemplateSelectModal();
+			if (this.value === "import_json") {
+				openImportJsonModal();
+			} else {
+				await openTemplateSelectModal();
+			}
 		});
 	});
 }
@@ -1864,6 +1870,45 @@ export async function deployFromSelectedTemplate() {
 	}
 }
 
+// nodeGroups[] 원소(InfraDynamicReq 스키마, template/JSON import 공용) → express_form 매핑.
+// req는 상위 InfraDynamicReq(postCommand.command를 idx===0에만 carry-through하기 위해 필요), idx는 groups.forEach의 인덱스.
+function mapNodeGroupToExpressForm(g, req, idx) {
+	var express_form = {};
+	express_form["provider"] = (g.specId || "").split("+")[0];
+	express_form["connectionName"] = g.connectionName || "";
+	express_form["name"] = g.name || "";
+	express_form["description"] = g.description || "";
+	express_form["subGroupSize"] = String(g.nodeGroupSize != null ? g.nodeGroupSize : 1);
+	express_form["rootDiskSize"] = g.rootDiskSize;
+	express_form["rootDiskType"] = g.rootDiskType || "";
+	express_form["commonSpec"] = g.specId || "";
+	express_form["commonImage"] = g.imageId || "";
+	express_form["imageId"] = g.imageId || "";
+	express_form["specId"] = g.specId || "";
+	// infra 단위 postCommand는 첫 NodeGroup에만 반영(기존 command 처리 관례와 동일)
+	express_form["command"] = idx === 0 ? (req?.postCommand?.command || []).join("\n") : "";
+
+	// 정식 매핑 승격 5필드(CreateNodeGroupDynamicReq) — 값이 있을 때만 carry-through
+	if (g.zone) express_form["zone"] = g.zone;
+	if (g.nodeUserPassword) express_form["nodeUserPassword"] = g.nodeUserPassword;
+	if (g.label && Object.keys(g.label).length > 0) express_form["label"] = g.label;
+	if (g.vNetTemplateId) express_form["vNetTemplateId"] = g.vNetTemplateId;
+	if (g.sgTemplateId) express_form["sgTemplateId"] = g.sgTemplateId;
+
+	return express_form;
+}
+
+// nodeGroups[] 전체를 폼에 append(항상 신규 추가 모드) — template/JSON import 공용
+function appendNodeGroupsToForm(req) {
+	const groups = req?.nodeGroups || [];
+	// 항상 append 모드로 동작 — 모달 오픈 시점에 편집 중이던 상태가 남아있지 않도록 방어
+	currentEditingIndex = -1;
+	groups.forEach(function (g, idx) {
+		addServerConfigToList(mapNodeGroupToExpressForm(g, req, idx));
+	});
+	return groups.length;
+}
+
 // 선택한 template의 nodeGroups를 기존 NodeGroup 목록에 추가(append) — 수정 후 배포용 프리필
 // infra 단위 값(description/policyOnPartialFailure/installMonAgent/sgTemplateId/vNetTemplateId/postCommand.userName·timeoutMinutes)은
 // 이 모듈 상태에 보관만 하고, 실제 배포 payload 병합은 WEB-TECH-019(FR-05-02)에서 처리한다.
@@ -1877,36 +1922,8 @@ export function addTemplateToForm() {
 	}
 	const template = selected[0];
 	const req = template.infraDynamicReq || {};
-	const groups = req.nodeGroups || [];
 
-	// 항상 append 모드로 동작 — 모달 오픈 시점에 편집 중이던 상태가 남아있지 않도록 방어
-	currentEditingIndex = -1;
-
-	groups.forEach(function (g, idx) {
-		var express_form = {};
-		express_form["provider"] = (g.specId || "").split("+")[0];
-		express_form["connectionName"] = g.connectionName || "";
-		express_form["name"] = g.name || "";
-		express_form["description"] = g.description || "";
-		express_form["subGroupSize"] = String(g.nodeGroupSize != null ? g.nodeGroupSize : 1);
-		express_form["rootDiskSize"] = g.rootDiskSize;
-		express_form["rootDiskType"] = g.rootDiskType || "";
-		express_form["commonSpec"] = g.specId || "";
-		express_form["commonImage"] = g.imageId || "";
-		express_form["imageId"] = g.imageId || "";
-		express_form["specId"] = g.specId || "";
-		// infra 단위 postCommand는 첫 NodeGroup에만 반영(기존 command 처리 관례와 동일)
-		express_form["command"] = idx === 0 ? (req.postCommand?.command || []).join("\n") : "";
-
-		// 정식 매핑 승격 5필드(CreateNodeGroupDynamicReq) — template에 값이 있을 때만 carry-through
-		if (g.zone) express_form["zone"] = g.zone;
-		if (g.nodeUserPassword) express_form["nodeUserPassword"] = g.nodeUserPassword;
-		if (g.label && Object.keys(g.label).length > 0) express_form["label"] = g.label;
-		if (g.vNetTemplateId) express_form["vNetTemplateId"] = g.vNetTemplateId;
-		if (g.sgTemplateId) express_form["sgTemplateId"] = g.sgTemplateId;
-
-		addServerConfigToList(express_form);
-	});
+	appendNodeGroupsToForm(req);
 
 	templatePrefillInfraState = {
 		description: req.description || "",
@@ -1923,4 +1940,97 @@ export function addTemplateToForm() {
 	}
 
 	bootstrap.Modal.getInstance(document.getElementById("infra-template-select-modal"))?.hide();
+}
+
+// ─── JSON 파일로 NodeGroup Import ───────────────────────────────────────
+// "진짜 Node Import" — export한 JSON(InfraDynamicReq 형상, mci.js exportInfraAsJson()이 만드는 것과 동일 포맷)을
+// 읽어 Add Node 폼을 채운다. addTemplateToForm()과 동일하게 항상 "폼에 NodeGroup 추가" 경로로만 동작하고
+// (JSON을 직접 받는 배포 전용 백엔드 엔드포인트가 없음), 실제 배포는 기존 Deploy 버튼으로 제출한다.
+
+let importedNodeGroupsReq = null;
+
+function resetImportJsonPreview() {
+	const hint = document.getElementById("import-json-preview-hint");
+	const content = document.getElementById("import-json-preview-content");
+	if (hint) hint.classList.remove("d-none");
+	if (content) content.classList.add("d-none");
+	const btn = document.getElementById("btn-add-imported-nodegroups");
+	if (btn) btn.disabled = true;
+}
+
+function renderImportJsonPreview(req) {
+	const hint = document.getElementById("import-json-preview-hint");
+	const content = document.getElementById("import-json-preview-content");
+	if (!content) return;
+	if (hint) hint.classList.add("d-none");
+	content.classList.remove("d-none");
+
+	const tbody = document.getElementById("import-json-nodegroup-rows");
+	tbody.innerHTML = "";
+	(req.nodeGroups || []).forEach(g => {
+		const tr = document.createElement("tr");
+		const rootDisk = [g.rootDiskType, g.rootDiskSize].filter(v => v !== undefined && v !== "" && v !== 0).join(" / ");
+		[g.name, g.specId, g.imageId, g.nodeGroupSize, g.connectionName, rootDisk, g.zone].forEach(val => {
+			const td = document.createElement("td");
+			td.textContent = (val === undefined || val === null || val === "") ? "-" : String(val);
+			tr.appendChild(td);
+		});
+		tbody.appendChild(tr);
+	});
+}
+
+export function openImportJsonModal() {
+	const fileInput = document.getElementById("import-nodegroups-json-file");
+	if (fileInput) fileInput.value = "";
+	importedNodeGroupsReq = null;
+	resetImportJsonPreview();
+
+	const modalEl = document.getElementById("import-nodegroups-json-modal");
+	templateDeploySucceeded = false;
+	modalEl.addEventListener("hidden.bs.modal", function () {
+		if (!templateDeploySucceeded) revertDeployAlgorithmSelect();
+	}, { once: true });
+	bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+export async function handleImportJsonFileChange(input) {
+	const file = input.files && input.files[0];
+	if (!file) {
+		importedNodeGroupsReq = null;
+		resetImportJsonPreview();
+		return;
+	}
+	try {
+		const text = await file.text();
+		const parsed = JSON.parse(text);
+		// { infraDynamicReq: { nodeGroups: [...] } } 래핑 형태와 { nodeGroups: [...] } 형태 둘 다 허용
+		const req = parsed.infraDynamicReq || parsed;
+		const groups = req.nodeGroups;
+		if (!Array.isArray(groups) || groups.length === 0) {
+			throw new Error("JSON must contain a non-empty 'nodeGroups' array (optionally wrapped in 'infraDynamicReq').");
+		}
+		const REQUIRED_FIELDS = ["name", "specId", "imageId", "nodeGroupSize", "connectionName"];
+		groups.forEach(function (g, i) {
+			const missing = REQUIRED_FIELDS.filter(k => g[k] === undefined || g[k] === null || g[k] === "");
+			if (missing.length > 0) {
+				throw new Error("nodeGroups[" + i + "] is missing required field(s): " + missing.join(", "));
+			}
+		});
+
+		importedNodeGroupsReq = req;
+		renderImportJsonPreview(req);
+		const btn = document.getElementById("btn-add-imported-nodegroups");
+		if (btn) btn.disabled = false;
+	} catch (e) {
+		importedNodeGroupsReq = null;
+		resetImportJsonPreview();
+		webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR, "Invalid JSON file: " + (e?.message || e));
+	}
+}
+
+export function applyImportedNodeGroups() {
+	if (!importedNodeGroupsReq) return;
+	const count = appendNodeGroupsToForm(importedNodeGroupsReq);
+	webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.SUCCESS, count + " NodeGroup(s) added from JSON.");
+	bootstrap.Modal.getInstance(document.getElementById("import-nodegroups-json-modal"))?.hide();
 }
