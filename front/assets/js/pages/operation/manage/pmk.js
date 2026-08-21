@@ -2109,10 +2109,10 @@ export function showClusterTerminalModal() {
         return;
     }
 
-    // Namespace는 상단에서 선택한 Project를 그대로 쓴다 — 입력받지 않고 보여주기만 한다
-    const namespaceText = document.getElementById('modalNamespaceText');
-    if (namespaceText) {
-        namespaceText.textContent = getTerminalNamespace() || '-';
+    // 입력 필드 초기화
+    const namespaceInput = document.getElementById('modalNamespace');
+    if (namespaceInput) {
+        namespaceInput.value = '';
     }
 
     const podNameInput = document.getElementById('modalPodName');
@@ -2130,11 +2130,6 @@ export function showClusterTerminalModal() {
     }
 }
 
-// 터미널이 접속할 K8s Namespace — 상단에서 선택한 Project를 사용한다
-function getTerminalNamespace() {
-    return webconsolejs["common/api/services/workspace_api"].getCurrentProject().NsId;
-}
-
 // Cluster Terminal 연결 함수
 export async function connectToClusterTerminal() {
     const nsId = webconsolejs["common/api/services/workspace_api"].getCurrentProject().NsId
@@ -2145,12 +2140,10 @@ export async function connectToClusterTerminal() {
         return;
     }
 
-    // Namespace는 상단 Project 값을 그대로 쓴다 (입력받지 않는다)
-    const namespace = getTerminalNamespace();
-    if (!namespace) {
-        alert("Please select a project first.");
-        return;
-    }
+    // K8s Namespace는 클러스터 안의 네임스페이스로, 상단 Project(=tumblebug nsId)와는 다른 계층이다.
+    // 사용자가 입력하며, 비워두면 K8s 기본값인 default를 쓴다.
+    const namespaceInput = document.getElementById('modalNamespace');
+    const namespace = (namespaceInput ? namespaceInput.value.trim() : '') || 'default';
 
     const podNameInput = document.getElementById('modalPodName');
     const podName = podNameInput ? podNameInput.value.trim() : '';
