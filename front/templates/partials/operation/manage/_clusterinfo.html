@@ -8,10 +8,10 @@
     </h3>
     <!-- Terminal Button -->
     <div class="d-flex align-items-center gap-3">
+      <!-- data-bs-toggle을 쓰지 않는다 — onclick의 showClusterTerminalModal()이 직접 연다.
+           둘 다 두면 모달 인스턴스가 2개 생성돼 backdrop이 화면에 남는다 -->
       <a
         class="btn btn-outline-secondary"
-        data-bs-toggle="modal"
-        data-bs-target="#clusterTerminalModal"
         onclick="webconsolejs['pages/operation/manage/pmk'].showClusterTerminalModal()"
       >
         Terminal

@@ -1118,14 +1118,9 @@
 
       <div class="modal-body">
         <div class="form-group mb-3">
-          <label for="modalNamespace" class="form-label">Namespace</label>
-          <input
-            type="text"
-            class="form-control"
-            id="modalNamespace"
-            placeholder="default"
-          />
-          <div class="form-text">Enter the Kubernetes namespace</div>
+          <label class="form-label">Namespace</label>
+          <div class="form-control-plaintext fw-bold" id="modalNamespaceText">-</div>
+          <div class="form-text">Taken from the selected project</div>
         </div>
         
         <div class="form-group mb-3">
