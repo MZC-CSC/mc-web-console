@@ -289,32 +289,39 @@ export async function initClusterTerminal(id, nsId, clusterId, namespace, podNam
         }
     });
 
-    dropzoneInstance = new Dropzone("#dropzone-custom", {
-        autoProcessQueue: false,
-        addRemoveLinks: true,
-        acceptedFiles: ".sh",
-        init: function () {
-            this.on("addedfile", function (file) {
-                if (file.name.endsWith(".sh")) {
-                    const reader = new FileReader();
-                    reader.onload = function (event) {
-                        const fileText = event.target.result;
-                        const modifiedContent = fileText
-                            .split('\n')
-                            .map(line => line.trim())
-                            .filter(line => line.length > 0);
-                        fileContents.push(modifiedContent);
-                    };
-                    reader.onerror = function () {
-                        alert("Failed to read file");
-                    };
-                    reader.readAsText(file);
-                } else {
-                    alert("Only shell script files (.sh) are allowed.");
-                }
-            });
-        }
-    });
+    // Dropzone은 url 옵션이 없으면 "No URL provided."로 throw한다. 이 초기화가
+    // initClusterTerminal 본문에서 동기로 실행되므로, 실패하면 터미널 창 자체가 뜨지 않는다.
+    // (autoProcessQueue: false라 실제 업로드는 아래 버튼 핸들러가 처리하고 url은 쓰이지 않는다)
+    const clusterDropzoneEl = document.querySelector("#dropzone-custom");
+    if (clusterDropzoneEl && !clusterDropzoneEl.dropzone) {
+        dropzoneInstance = new Dropzone("#dropzone-custom", {
+            url: "#",
+            autoProcessQueue: false,
+            addRemoveLinks: true,
+            acceptedFiles: ".sh",
+            init: function () {
+                this.on("addedfile", function (file) {
+                    if (file.name.endsWith(".sh")) {
+                        const reader = new FileReader();
+                        reader.onload = function (event) {
+                            const fileText = event.target.result;
+                            const modifiedContent = fileText
+                                .split('\n')
+                                .map(line => line.trim())
+                                .filter(line => line.length > 0);
+                            fileContents.push(modifiedContent);
+                        };
+                        reader.onerror = function () {
+                            alert("Failed to read file");
+                        };
+                        reader.readAsText(file);
+                    } else {
+                        alert("Only shell script files (.sh) are allowed.");
+                    }
+                });
+            }
+        });
+    }
 
     document.getElementById("show-content-btn").addEventListener("click", async function () {
         if (fileContents.length > 0) {
@@ -978,10 +985,17 @@ async function processCommand(nsid, resourceId, targetId, command, term, callbac
         clearInterval(loadingInterval);
         term.write('\r                          \r');
 
-        const response = result.results[0];
+        const response = Array.isArray(result && result.results) ? result.results[0] : null;
+        if (!response) {
+            const message = (result && (result.message || result.error)) || 'No command result returned by the remote command API';
+            writeAutoWrap(term, " > Error: \x1b[1m\x1b[31m" + message + "\x1b[0m");
+            callback({ error: message });
+            return;
+        }
+
         const callErr = response.err;
-        const stdout = response.stdout;
-        const stderr = response.stderr;
+        const stdout = toOutputChunks(response.stdout);
+        const stderr = toOutputChunks(response.stderr);
 
         if (callErr && Object.keys(callErr).length > 0) {
             const formattedError = JSON.stringify(callErr, null, 2);
@@ -990,16 +1004,16 @@ async function processCommand(nsid, resourceId, targetId, command, term, callbac
             return;
         }
 
-        if (stderr && Object.values(stderr).some(value => value.trim() !== '')) {
+        if (stderr.some(value => value.trim() !== '')) {
             term.write('\r\n\x1b[1m\x1b[31mSTDERR RESPONSE:\r\n');
-            Object.values(stderr).forEach(value => {
+            stderr.forEach(value => {
                 writeAutoWrap(term, value);
             });
             term.write("\x1b[0m\r\n");
         }
 
-        if (stdout && Object.values(stdout).some(value => value.trim() !== '')) {
-            Object.values(stdout).forEach(value => {
+        if (stdout.some(value => value.trim() !== '')) {
+            stdout.forEach(value => {
                 writeAutoWrap(term, value);
             });
         } else {
@@ -1013,6 +1027,14 @@ async function processCommand(nsid, resourceId, targetId, command, term, callbac
         term.write(`Error: ${error.message}\r\n`);
         callback({ error: error.message });
     }
+}
+
+// PostCmdInfra는 stdout/stderr를 map[int]string(객체)으로, PostCmdK8sCluster는
+// 단일 문자열로 돌려준다. 두 형태를 출력 단위 배열로 통일한다.
+function toOutputChunks(value) {
+    if (!value) return [];
+    if (typeof value === 'string') return [value];
+    return Object.values(value).map(v => (typeof v === 'string' ? v : String(v)));
 }
 
 function writeAutoWrap(term, text) {
