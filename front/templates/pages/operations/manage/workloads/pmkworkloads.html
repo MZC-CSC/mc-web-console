@@ -1118,23 +1118,26 @@
 
       <div class="modal-body">
         <div class="form-group mb-3">
-          <label for="modalNamespace" class="form-label">Namespace</label>
+          <label for="modalNamespace" class="form-label">K8s Namespace</label>
           <input
             type="text"
             class="form-control"
             id="modalNamespace"
             placeholder="default"
           />
-          <div class="form-text">Enter the Kubernetes namespace</div>
+          <div class="form-text">
+            Namespace inside the Kubernetes cluster &mdash; not the console project.
+            Defaults to "default".
+          </div>
         </div>
-        
+
         <div class="form-group mb-3">
           <label for="modalPodName" class="form-label">Pod Name</label>
           <input
             type="text"
             class="form-control"
             id="modalPodName"
-            placeholder="cluster-pod"
+            placeholder="coredns-69775bf776-47wvd"
           />
           <div class="form-text">Enter the target pod name</div>
         </div>

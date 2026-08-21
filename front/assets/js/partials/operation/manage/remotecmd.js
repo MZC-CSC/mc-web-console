@@ -9,6 +9,7 @@ import { postRemoteCmd, postFileToMci } from '../../../common/api/services/remot
 
 let terminalInstance = null;
 let dropzoneInstance = null;
+let clusterScriptHandler = null;
 
 // 터미널 관련 함수들
 export async function initTerminal(id, nsId, mciId, targetId, targetType) {
@@ -257,15 +258,11 @@ export async function initClusterTerminal(id, nsId, clusterId, namespace, podNam
         term.write('\r\n\r\n $ ');
     }
 
-    // SSH Private IP 메시지 제거 - 기존 로직은 유지하되 화면에 표시하지 않음
-    const ipcmd = "client_ip=$(echo $SSH_CLIENT | awk '{print $1}'); echo SSH Private IP is: $client_ip";
-
-    await processCommand(nsId, clusterId, { namespace, podName, containerName }, [ipcmd], term, () => {
-        prompt();
-    }, 'cluster');
-
-    // 터미널 초기화 후 바로 프롬프트 표시
-    // prompt();
+    // 터미널을 열자마자 프롬프트만 띄운다.
+    // (VM 경로에서 쓰던 SSH_CLIENT IP 조회 명령을 여기서도 보내고 있었으나,
+    //  K8s는 cb-tumblebug이 명령 문자열을 공백으로 잘라 argv로 직접 exec 하므로
+    //  셸 문법($(), ;, 파이프)이 동작하지 않아 터미널을 열 때마다 에러만 찍혔다)
+    prompt();
 
     let userInput = '';
     term.onData(async (data) => {
@@ -289,49 +286,81 @@ export async function initClusterTerminal(id, nsId, clusterId, namespace, podNam
         }
     });
 
-    dropzoneInstance = new Dropzone("#dropzone-custom", {
-        autoProcessQueue: false,
-        addRemoveLinks: true,
-        acceptedFiles: ".sh",
-        init: function () {
-            this.on("addedfile", function (file) {
-                if (file.name.endsWith(".sh")) {
-                    const reader = new FileReader();
-                    reader.onload = function (event) {
-                        const fileText = event.target.result;
-                        const modifiedContent = fileText
-                            .split('\n')
-                            .map(line => line.trim())
-                            .filter(line => line.length > 0);
-                        fileContents.push(modifiedContent);
-                    };
-                    reader.onerror = function () {
-                        alert("Failed to read file");
-                    };
-                    reader.readAsText(file);
-                } else {
-                    alert("Only shell script files (.sh) are allowed.");
-                }
-            });
-        }
-    });
-
-    document.getElementById("show-content-btn").addEventListener("click", async function () {
-        if (fileContents.length > 0) {
-            for (const cmdarr of fileContents) {
-                try {
-                    await processCommand(nsId, clusterId, { namespace, podName, containerName }, cmdarr, terminalInstance, () => {
-                        prompt();
-                    }, 'cluster');
-                } catch (error) {
-                    alert("An error occurred while processing the command.");
-                    console.error(error);
-                }
+    // Dropzone은 url 옵션이 없으면 "No URL provided."로 throw한다. 이 초기화가
+    // initClusterTerminal 본문에서 동기로 실행되므로, 실패하면 터미널 창 자체가 뜨지 않는다.
+    // (autoProcessQueue: false라 실제 업로드는 아래 버튼 핸들러가 처리하고 url은 쓰이지 않는다)
+    const clusterDropzoneEl = document.querySelector("#dropzone-custom");
+    if (clusterDropzoneEl && !clusterDropzoneEl.dropzone) {
+        dropzoneInstance = new Dropzone("#dropzone-custom", {
+            url: "#",
+            autoProcessQueue: false,
+            addRemoveLinks: true,
+            acceptedFiles: ".sh",
+            init: function () {
+                this.on("addedfile", function (file) {
+                    if (file.name.endsWith(".sh")) {
+                        const reader = new FileReader();
+                        reader.onload = function (event) {
+                            const fileText = event.target.result;
+                            const modifiedContent = fileText
+                                .split('\n')
+                                .map(line => line.trim())
+                                .filter(line => line.length > 0);
+                            fileContents.push(modifiedContent);
+                        };
+                        reader.onerror = function () {
+                            alert("Failed to read file");
+                        };
+                        reader.readAsText(file);
+                    } else {
+                        alert("Only shell script files (.sh) are allowed.");
+                    }
+                });
             }
-        } else {
-            alert("No file content available or file not loaded.");
+        });
+    }
+
+    // 터미널을 열 때마다 리스너가 쌓이지 않도록 이전 핸들러를 먼저 떼어낸다
+    const scriptBtn = document.getElementById("show-content-btn");
+    if (scriptBtn) {
+        if (clusterScriptHandler) {
+            scriptBtn.removeEventListener("click", clusterScriptHandler);
         }
-    });
+        clusterScriptHandler = async function () {
+            if (fileContents.length > 0) {
+                for (const cmdarr of fileContents) {
+                    try {
+                        await processCommand(nsId, clusterId, { namespace, podName, containerName }, cmdarr, terminalInstance, () => {
+                            prompt();
+                        }, 'cluster');
+                    } catch (error) {
+                        alert("An error occurred while processing the command.");
+                        console.error(error);
+                    }
+                }
+            } else {
+                alert("No file content available or file not loaded.");
+            }
+        };
+        scriptBtn.addEventListener("click", clusterScriptHandler);
+    }
+}
+
+// 터미널 모달을 닫을 때 호출 — 터미널·Dropzone·리스너를 정리한다
+export function disposeClusterTerminal() {
+    if (terminalInstance) {
+        terminalInstance.dispose();
+        terminalInstance = null;
+    }
+    if (dropzoneInstance) {
+        dropzoneInstance.destroy();
+        dropzoneInstance = null;
+    }
+    const scriptBtn = document.getElementById("show-content-btn");
+    if (scriptBtn && clusterScriptHandler) {
+        scriptBtn.removeEventListener("click", clusterScriptHandler);
+    }
+    clusterScriptHandler = null;
 }
 
 // MCI/NodeGroup용 단발성 명령어 실행 초기화 함수
@@ -978,10 +1007,17 @@ async function processCommand(nsid, resourceId, targetId, command, term, callbac
         clearInterval(loadingInterval);
         term.write('\r                          \r');
 
-        const response = result.results[0];
+        const response = Array.isArray(result && result.results) ? result.results[0] : null;
+        if (!response) {
+            const message = (result && (result.message || result.error)) || 'No command result returned by the remote command API';
+            writeAutoWrap(term, " > Error: \x1b[1m\x1b[31m" + message + "\x1b[0m");
+            callback({ error: message });
+            return;
+        }
+
         const callErr = response.err;
-        const stdout = response.stdout;
-        const stderr = response.stderr;
+        const stdout = toOutputChunks(response.stdout);
+        const stderr = toOutputChunks(response.stderr);
 
         if (callErr && Object.keys(callErr).length > 0) {
             const formattedError = JSON.stringify(callErr, null, 2);
@@ -990,16 +1026,16 @@ async function processCommand(nsid, resourceId, targetId, command, term, callbac
             return;
         }
 
-        if (stderr && Object.values(stderr).some(value => value.trim() !== '')) {
+        if (stderr.some(value => value.trim() !== '')) {
             term.write('\r\n\x1b[1m\x1b[31mSTDERR RESPONSE:\r\n');
-            Object.values(stderr).forEach(value => {
+            stderr.forEach(value => {
                 writeAutoWrap(term, value);
             });
             term.write("\x1b[0m\r\n");
         }
 
-        if (stdout && Object.values(stdout).some(value => value.trim() !== '')) {
-            Object.values(stdout).forEach(value => {
+        if (stdout.some(value => value.trim() !== '')) {
+            stdout.forEach(value => {
                 writeAutoWrap(term, value);
             });
         } else {
@@ -1013,6 +1049,14 @@ async function processCommand(nsid, resourceId, targetId, command, term, callbac
         term.write(`Error: ${error.message}\r\n`);
         callback({ error: error.message });
     }
+}
+
+// PostCmdInfra는 stdout/stderr를 map[int]string(객체)으로, PostCmdK8sCluster는
+// 단일 문자열로 돌려준다. 두 형태를 출력 단위 배열로 통일한다.
+function toOutputChunks(value) {
+    if (!value) return [];
+    if (typeof value === 'string') return [value];
+    return Object.values(value).map(v => (typeof v === 'string' ? v : String(v)));
 }
 
 function writeAutoWrap(term, text) {

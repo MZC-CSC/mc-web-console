@@ -2111,20 +2111,20 @@ export function showClusterTerminalModal() {
 
     // 입력 필드 초기화
     const namespaceInput = document.getElementById('modalNamespace');
-    const podNameInput = document.getElementById('modalPodName');
-
     if (namespaceInput) {
         namespaceInput.value = '';
     }
+
+    const podNameInput = document.getElementById('modalPodName');
     if (podNameInput) {
         podNameInput.value = '';
     }
 
-    // 모달 표시
+    // 모달 표시 — getOrCreateInstance로 인스턴스 중복 생성을 막는다
+    // (인스턴스를 새로 만들면 이전 인스턴스의 backdrop이 고아가 되어 화면에 남는다)
     const modalElement = document.getElementById('clusterTerminalModal');
     if (modalElement) {
-        const modalInstance = new bootstrap.Modal(modalElement);
-        modalInstance.show();
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
     } else {
         alert("Terminal modal not found");
     }
@@ -2140,16 +2140,17 @@ export async function connectToClusterTerminal() {
         return;
     }
 
-    // 모달에서 값 가져오기
+    // K8s Namespace는 클러스터 안의 네임스페이스로, 상단 Project(=tumblebug nsId)와는 다른 계층이다.
+    // 사용자가 입력하며, 비워두면 K8s 기본값인 default를 쓴다.
     const namespaceInput = document.getElementById('modalNamespace');
+    const namespace = (namespaceInput ? namespaceInput.value.trim() : '') || 'default';
+
     const podNameInput = document.getElementById('modalPodName');
-
-    const userNamespace = namespaceInput ? namespaceInput.value.trim() : '';
-    const userPodName = podNameInput ? podNameInput.value.trim() : '';
-
-    // 사용자가 입력한 값이 있으면 사용, 없으면 기본값 사용
-    const namespace = userNamespace || 'default';
-    const podName = userPodName || 'cluster-pod';
+    const podName = podNameInput ? podNameInput.value.trim() : '';
+    if (!podName) {
+        alert("Please enter the target pod name.");
+        return;
+    }
 
     try {
         // 클러스터 데이터에서 실제 정보 가져오기
@@ -2160,14 +2161,10 @@ export async function connectToClusterTerminal() {
             return;
         }
 
-        // 연결 모달 닫기
-        const terminalModal = document.getElementById('clusterTerminalModal');
-        if (terminalModal) {
-            const modalInstance = bootstrap.Modal.getInstance(terminalModal);
-            if (modalInstance) {
-                modalInstance.hide();
-            }
-        }
+        // 연결 모달이 완전히 닫힌 뒤에 터미널 모달을 연다.
+        // hide 트랜지션 도중에 다음 모달을 show 하면 backdrop 회계가 깨져
+        // 닫은 뒤에도 backdrop이 화면에 남는다.
+        await hideModal('clusterTerminalModal');
 
         await webconsolejs["partials/operation/manage/remotecmd"].initClusterTerminal(
             'cluster-xterm-container',
@@ -2179,15 +2176,43 @@ export async function connectToClusterTerminal() {
         );
 
         const modalElement = document.getElementById('cluster-cmdtestmodal');
-        if (modalElement) {
-            const modalInstance = new bootstrap.Modal(modalElement);
-            modalInstance.show();
-        } else {
+        if (!modalElement) {
             alert("Terminal modal element not found");
+            return;
         }
+
+        // 닫을 때 터미널·Dropzone을 정리한다 (열 때마다 인스턴스가 쌓이지 않도록)
+        if (!modalElement.dataset.disposeBound) {
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                webconsolejs["partials/operation/manage/remotecmd"].disposeClusterTerminal();
+            });
+            modalElement.dataset.disposeBound = 'true';
+        }
+
+        bootstrap.Modal.getOrCreateInstance(modalElement).show();
     } catch (error) {
         alert("Error initializing terminal: " + error.message);
     }
+}
+
+// 모달을 닫고 hidden 이벤트까지 기다린다
+function hideModal(modalId) {
+    return new Promise((resolve) => {
+        const el = document.getElementById(modalId);
+        if (!el) return resolve();
+
+        const instance = bootstrap.Modal.getInstance(el);
+        if (!instance || !el.classList.contains('show')) return resolve();
+
+        const done = () => {
+            el.removeEventListener('hidden.bs.modal', done);
+            resolve();
+        };
+        el.addEventListener('hidden.bs.modal', done);
+        instance.hide();
+        // 트랜지션 이벤트가 오지 않는 경우를 대비한 안전장치
+        setTimeout(done, 1000);
+    });
 }
 
 // Cluster Terminal 버튼 상태 업데이트

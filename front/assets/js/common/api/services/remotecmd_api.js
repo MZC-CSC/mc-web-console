@@ -59,6 +59,7 @@ export async function postRemoteCmd(nsid, resourceId, targetId, cmdarr, targetTy
             queryParams.k8sClusterContainerName = targetId.containerName;
         }
 
+        // PostCmdK8sCluster의 body 스펙(model.K8sClusterContainerCmdReq)은 command만 받는다
         data = {
             pathParams: {
                 nsId: nsid,
@@ -66,15 +67,14 @@ export async function postRemoteCmd(nsid, resourceId, targetId, cmdarr, targetTy
             },
             queryParams: queryParams,
             Request: {
-                command: cmdarr,
-                userName: "cb-user"
+                command: cmdarr
             }
         };
     }
 
     let controller;
     if (targetType === 'cluster') {
-        controller = "/api/" + "mc-infra-manager/" + "Postclusterremotecmd";
+        controller = "/api/" + "mc-infra-manager/" + "PostCmdK8sCluster";
     } else {
         controller = "/api/" + "mc-infra-manager/" + "PostCmdInfra";
     }
