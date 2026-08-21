@@ -3900,3 +3900,86 @@ export async function executeSaveAsTemplate() {
     bootstrap.Modal.getInstance(document.getElementById('save-as-template-modal'))?.hide();
   }).catch(() => {});
 }
+
+// ─── MCI를 JSON으로 Export (Node Import에서 재사용할 파일 생성) ────────────
+function exportDateStamp() {
+  return new Date().toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+function downloadJson(payload, filename) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function exportInfraAsJson() {
+  const mciId = window.currentMciId;
+  const nsId = window.currentNsId;
+  if (mciId == undefined || mciId == "") {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an Infra first')
+    return;
+  }
+
+  try {
+    const infraDynamicReq = await webconsolejs["common/api/services/infratemplate_api"].getInfraReqFromInfra(nsId, mciId);
+    downloadJson({ infraDynamicReq }, `${mciId}-nodegroups-${exportDateStamp()}.json`);
+  } catch (e) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Error', 'Failed to export Infra as JSON: ' + (e?.message || e));
+  }
+}
+
+// ─── 선택한 Node가 속한 NodeGroup만 JSON으로 Export ────────────────────────
+// Node List / Status 카드의 Action 항목. 형제 액션(Delete/Create MyImage)과 동일하게
+// 단일 선택(selectedVmId) 규약을 따르므로 결과는 NodeGroup 1개다.
+// 산출물은 전체 Export와 같은 형상이라 Import 모달이 그대로 받아들인다.
+export async function exportSelectedNodeGroupAsJson() {
+  const mciId = window.currentMciId;
+  const nsId = window.currentNsId;
+  if (mciId == undefined || mciId == "") {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select an Infra first')
+    return;
+  }
+  // 형제 액션들은 currentVmId로 가드하는데 그 값은 체크 해제 시 초기화되지 않는다.
+  // selectedVmId가 실제 선택 상태를 반영하므로 이쪽을 쓴다.
+  if (!selectedVmId) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Validation', 'Please select a Node')
+    return;
+  }
+
+  const infra = (window.totalMciListObj || []).find(m => m.id === mciId);
+  const node = ((infra && infra.node) || []).find(n => n.id === selectedVmId);
+  const nodeGroupId = node && node.nodeGroupId;
+  if (!nodeGroupId) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Error', 'Could not determine the NodeGroup of the selected node.')
+    return;
+  }
+
+  try {
+    const req = await webconsolejs["common/api/services/infratemplate_api"].getInfraReqFromInfra(nsId, mciId);
+    const groups = (req && req.nodeGroups) || [];
+    // 1차 정확 일치 → 2차 대소문자 무시 일치
+    const norm = v => String(v == null ? "" : v).trim().toLowerCase();
+    const wanted = new Set([nodeGroupId]);
+    let filtered = groups.filter(g => wanted.has(g.name));
+    if (filtered.length === 0) {
+      const wantedNorm = new Set([norm(nodeGroupId)]);
+      filtered = groups.filter(g => wantedNorm.has(norm(g.name)));
+    }
+    if (filtered.length === 0) {
+      webconsolejs['partials/layout/modal'].commonShowDefaultModal('Error', 'Could not find the NodeGroup definition for the selected node.')
+      return;
+    }
+
+    // infra 레벨 필드(description/installMonAgent/postCommand 등)를 보존해야
+    // import 시 carry-through 동작이 전체 Export와 동일해진다.
+    // nodeGroupSize는 원본 정의 값을 그대로 둔다 — 선택 노드 수로 축소하지 않는다.
+    const payload = { infraDynamicReq: { ...req, nodeGroups: filtered } };
+    downloadJson(payload, `${mciId}-${nodeGroupId}-nodegroup-${exportDateStamp()}.json`);
+  } catch (e) {
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal('Error', 'Failed to export NodeGroup as JSON: ' + (e?.message || e));
+  }
+}

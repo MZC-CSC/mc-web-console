@@ -308,7 +308,10 @@
             </svg>
             Delete
           </a>
-          <a class="dropdown-item" href="#">
+          <a
+            class="dropdown-item"
+            onclick="webconsolejs['pages/operation/manage/mci'].exportSelectedNodeGroupAsJson()"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="icon dropdown-item-icon"
@@ -327,7 +330,7 @@
               ></path>
               <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
             </svg>
-            Export
+            Export NodeGroup as JSON
           </a>
         </div>
       </div>
