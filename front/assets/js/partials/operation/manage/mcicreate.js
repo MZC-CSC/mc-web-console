@@ -1,4 +1,5 @@
 import { TabulatorFull as Tabulator } from "tabulator-tables";
+import { Dropzone } from "dropzone";
 //import { selectedMciObj } from "./mci";
 //document.addEventListener("DOMContentLoaded", initMciCreate) // page가 아닌 partials에서는 제거
 
@@ -649,7 +650,16 @@ export async function expressDone_btn() {
       return;
     }
   }
-  
+
+  // 1-1. 이름 중복 검증 — precheck(review) 호출 앞에 두어 확정 실패에 네트워크 왕복을 쓰지 않는다.
+  // currentEditingIndex 제외가 필수: 이름을 안 바꾼 항목을 다시 Done 하면 자기 자신과 충돌한다.
+  var nameErr = checkNodeGroupNameAvailable($("#ep_name").val(), currentEditingIndex);
+  if (nameErr) {
+    alert(nameErr);
+    $("#ep_name").focus();
+    return;
+  }
+
   // 2. VM 개수 숫자 검증
   var vmAddCnt = $("#ep_vm_add_cnt").val();
   if (isNaN(vmAddCnt) || parseInt(vmAddCnt) < 1) {
@@ -770,6 +780,74 @@ function showPrecheckConfirmModal(title, content) {
     modalEl.addEventListener("hidden.bs.modal", function () { resolve(confirmed); }, { once: true });
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
   });
+}
+
+// alert형(#commonDefaultModal) — 확인만 받고 진행 여부를 묻지 않는다.
+// commonShowDefaultModal은 white-space를 세팅하지 않는데 showPrecheckConfirmModal이 같은
+// 엘리먼트에 pre-line을 영구로 남기므로 호출 순서에 의존한다. 여기서 명시 세팅해 의존을 없앤다.
+function showAlertModal(title, content) {
+  var modalEl = document.getElementById("commonDefaultModal");
+  if (!modalEl) {
+    alert(title + "\n\n" + content);
+    return;
+  }
+  document.getElementById("commonDefaultModal-title").innerText = title;
+  var contentEl = document.getElementById("commonDefaultModal-content");
+  contentEl.style.whiteSpace = "pre-line";
+  contentEl.innerText = content;
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+// 배포 직전 NodeGroup 이름 최종 검증. 통과하면 true, 막으면 false(모달 표시).
+function validateNodeGroupNamesBeforeDeploy() {
+  if (Express_Server_Config_Arr.length === 0) {
+    showAlertModal("NodeGroup Required", "Add at least one NodeGroup before Deploy.");
+    return false;
+  }
+
+  var missing = [];
+  Express_Server_Config_Arr.forEach(function (cfg, i) {
+    if (!normalizeNodeGroupName(cfg && cfg.name)) missing.push(i + 1);
+  });
+  if (missing.length > 0) {
+    showAlertModal(
+      "NodeGroup Name Required",
+      missing.length + " NodeGroup(s) have no name (position: " + missing.join(", ") + ").\n"
+      + "Click each item in the NodeGroup list and enter a unique name, then Deploy again."
+    );
+    return false;
+  }
+
+  var seen = new Set();
+  var dupes = [];
+  Express_Server_Config_Arr.forEach(function (cfg) {
+    var key = normalizeNodeGroupName(cfg && cfg.name);
+    if (seen.has(key)) dupes.push(String(cfg.name).trim());
+    else seen.add(key);
+  });
+  if (dupes.length > 0) {
+    showAlertModal(
+      "Duplicate NodeGroup Name",
+      "These NodeGroup names are used more than once: " + dupes.join(", ") + ".\n"
+      + "NodeGroup names must be unique. Please rename them and Deploy again."
+    );
+    return false;
+  }
+
+  var existing = getExistingNodeGroupNames();
+  var clash = Express_Server_Config_Arr
+    .filter(function (cfg) { return existing.has(normalizeNodeGroupName(cfg && cfg.name)); })
+    .map(function (cfg) { return String(cfg.name).trim(); });
+  if (clash.length > 0) {
+    showAlertModal(
+      "Duplicate NodeGroup Name",
+      "These NodeGroup names already exist in this Infra: " + clash.join(", ") + ".\n"
+      + "Please rename them and Deploy again."
+    );
+    return false;
+  }
+
+  return true;
 }
 
 
@@ -972,7 +1050,10 @@ async function precheckNodeGroup(express_form) {
 
 // express_form을 Express_Server_Config_Arr에 반영(신규 push 또는 수정 모드 갱신) + <li> 렌더
 function addServerConfigToList(express_form) {
-  var server_name = express_form.name;
+  // 이름이 비어 있으면(중복 충돌로 clear된 경우) 클릭 대상을 식별할 수 있도록 placeholder 라벨을 쓴다.
+  // btn-info는 "NodeGroup 칩"의 안정적 마커이므로 유지하고, 상태는 별도 클래스로만 표현한다.
+  var hasName = !!(express_form.name && String(express_form.name).trim());
+  var server_name = hasName ? express_form.name : NO_NAME_LABEL;
   var server_cnt = parseInt(express_form.subGroupSize);
 
   // 수정 모드인지 신규 추가 모드인지 판단
@@ -988,6 +1069,7 @@ function addServerConfigToList(express_form) {
     var displayServerCnt = '(' + server_cnt + ')';
     var listItem = $("#" + vmEleId + "_server_list li").eq(currentEditingIndex + 1); // +1은 plusIcon 때문
     listItem.text(server_name + displayServerCnt);
+    listItem.toggleClass("nodegroup-name-missing border border-danger", !hasName);
 
     // 수정 모드 플래그 초기화
     currentEditingIndex = -1;
@@ -998,7 +1080,8 @@ function addServerConfigToList(express_form) {
     Express_Server_Config_Arr.push(express_form);
 
     var displayServerCnt = '(' + server_cnt + ')';
-    add_server_html += '<li class="removebullet btn btn-info" onclick="webconsolejs[\'partials/operation/manage/mcicreate\'].view_express(\'' + express_data_cnt + '\')">'
+    var missingClass = hasName ? '' : ' nodegroup-name-missing border border-danger';
+    add_server_html += '<li class="removebullet btn btn-info' + missingClass + '" onclick="webconsolejs[\'partials/operation/manage/mcicreate\'].view_express(\'' + express_data_cnt + '\')">'
       + server_name + displayServerCnt
       + '</li>';
 
@@ -1291,6 +1374,9 @@ export function deployMci() {
 	// }    
 }
 export async function createMciDynamic() {
+	// 이름 검증은 review 호출보다 앞에 둔다 — 확정 실패에 네트워크 왕복을 낭비하지 않는다.
+	if (!validateNodeGroupNamesBeforeDeploy()) return;
+
 	// var namespace = webconsolejs["common/api/services/workspace_api"].getCurrentProject()
 	// nsid = namespace.Name
 	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
@@ -1384,6 +1470,9 @@ export async function createMciDynamic() {
 }
 
 export async function createVmDynamic() {
+    // vmDynamic 호출 전에 막아야 scheduleDiskAttachForConfigs·완료 alert·페이지 이동이 실행되지 않는다.
+    if (!validateNodeGroupNamesBeforeDeploy()) return;
+
     var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
     var selectedNsId = selectedWorkspaceProject.nsId;
     var mciId = window.currentMciId;
@@ -1898,15 +1987,86 @@ function mapNodeGroupToExpressForm(g, req, idx) {
 	return express_form;
 }
 
+// ─── NodeGroup 이름 중복 검사 ─────────────────────────────────────────────
+// Tumblebug이 리소스 id를 정규화하므로 g1/G1은 서버에서 충돌한다 → 대소문자 무시 비교.
+const NO_NAME_LABEL = "(name required)";
+
+function normalizeNodeGroupName(n) {
+	return String(n == null ? "" : n).trim().toLowerCase();
+}
+
+// Add Node 경로에서 대상 Infra에 이미 존재하는 NodeGroup 이름 집합.
+// Create Infra 경로(대상 Infra 없음)에서는 빈 Set.
+// 조회 실패는 "기존 이름 없음"으로 취급하고 차단하지 않는다 — 최종 안전망은 백엔드다.
+function getExistingNodeGroupNames() {
+	const names = new Set();
+	if (!isVm) return names;
+	const infra = (window.totalMciListObj || []).find(m => m.id === window.currentMciId);
+	((infra && infra.node) || []).forEach(function (n) {
+		if (n && n.nodeGroupId) names.add(normalizeNodeGroupName(n.nodeGroupId));
+	});
+	return names;
+}
+
+// 현재 시점에 점유된 이름 집합(기존 Infra ∪ 폼에 쌓인 것). skipIndex는 수정 모드에서 자기 자신 제외용.
+function collectTakenNodeGroupNames(skipIndex) {
+	const taken = getExistingNodeGroupNames();
+	Express_Server_Config_Arr.forEach(function (cfg, i) {
+		if (i === skipIndex) return;
+		const key = normalizeNodeGroupName(cfg && cfg.name);
+		if (key) taken.add(key);
+	});
+	return taken;
+}
+
+// 사용 가능하면 null, 아니면 영문 사유 문자열
+function checkNodeGroupNameAvailable(name, selfIndex) {
+	const key = normalizeNodeGroupName(name);
+	if (!key) return null; // 빈 값은 필수항목 검증이 따로 처리
+	if (getExistingNodeGroupNames().has(key)) {
+		return "NodeGroup name '" + String(name).trim() + "' already exists in this Infra. Please use a different name.";
+	}
+	const dup = Express_Server_Config_Arr.some(function (cfg, i) {
+		return i !== selfIndex && normalizeNodeGroupName(cfg && cfg.name) === key;
+	});
+	if (dup) {
+		return "NodeGroup name '" + String(name).trim() + "' is already used by another NodeGroup in this list. Please use a different name.";
+	}
+	return null;
+}
+
+// import 대상 nodeGroups의 충돌 여부를 미리 계산(표시 전용). 반환: boolean[] (행 순서 그대로)
+function detectNodeGroupNameConflicts(groups) {
+	const taken = collectTakenNodeGroupNames(-1);
+	return (groups || []).map(function (g) {
+		const key = normalizeNodeGroupName(g && g.name);
+		if (!key) return false;
+		if (taken.has(key)) return true;
+		taken.add(key); // 파일 내부 중복도 두 번째부터 충돌로 잡는다
+		return false;
+	});
+}
+
 // nodeGroups[] 전체를 폼에 append(항상 신규 추가 모드) — template/JSON import 공용
+// 이름이 이미 점유돼 있으면 비워서 넣는다. 필수항목이므로 사용자가 직접 입력해야 Deploy가 통과한다.
 function appendNodeGroupsToForm(req) {
 	const groups = req?.nodeGroups || [];
 	// 항상 append 모드로 동작 — 모달 오픈 시점에 편집 중이던 상태가 남아있지 않도록 방어
 	currentEditingIndex = -1;
+	const taken = collectTakenNodeGroupNames(-1);
+	let cleared = 0;
 	groups.forEach(function (g, idx) {
-		addServerConfigToList(mapNodeGroupToExpressForm(g, req, idx));
+		const express_form = mapNodeGroupToExpressForm(g, req, idx);
+		const key = normalizeNodeGroupName(express_form.name);
+		if (key && taken.has(key)) {
+			express_form.name = "";
+			cleared++;
+		} else if (key) {
+			taken.add(key);
+		}
+		addServerConfigToList(express_form);
 	});
-	return groups.length;
+	return { added: groups.length, cleared: cleared };
 }
 
 // 선택한 template의 nodeGroups를 기존 NodeGroup 목록에 추가(append) — 수정 후 배포용 프리필
@@ -1948,31 +2108,64 @@ export function addTemplateToForm() {
 // (JSON을 직접 받는 배포 전용 백엔드 엔드포인트가 없음), 실제 배포는 기존 Deploy 버튼으로 제출한다.
 
 let importedNodeGroupsReq = null;
+let importJsonDropzone = null;
+// 드롭존과 파일선택 input을 동기화할 때 removedfile 핸들러가 미리보기를 지우지 않도록 막는 플래그
+let isSyncingImportSources = false;
 
 function resetImportJsonPreview() {
 	const hint = document.getElementById("import-json-preview-hint");
 	const content = document.getElementById("import-json-preview-content");
 	if (hint) hint.classList.remove("d-none");
 	if (content) content.classList.add("d-none");
+	const warnEl = document.getElementById("import-json-conflict-warning");
+	if (warnEl) {
+		warnEl.textContent = "";
+		warnEl.classList.add("d-none");
+	}
 	const btn = document.getElementById("btn-add-imported-nodegroups");
 	if (btn) btn.disabled = true;
 }
 
-function renderImportJsonPreview(req) {
+function renderImportJsonPreview(req, conflicts) {
 	const hint = document.getElementById("import-json-preview-hint");
 	const content = document.getElementById("import-json-preview-content");
 	if (!content) return;
 	if (hint) hint.classList.add("d-none");
 	content.classList.remove("d-none");
 
+	const groups = req.nodeGroups || [];
+	const flags = conflicts || [];
+	const conflictCount = flags.filter(Boolean).length;
+
+	// 충돌 경고 배너 — 이름이 비워진 채 추가된다는 사실을 Add 누르기 전에 알린다
+	const warnEl = document.getElementById("import-json-conflict-warning");
+	if (warnEl) {
+		if (conflictCount > 0) {
+			warnEl.textContent = conflictCount + " NodeGroup name(s) are already in use. "
+				+ "Their names will be cleared — enter a unique name for each before Deploy.";
+			warnEl.classList.remove("d-none");
+		} else {
+			warnEl.textContent = "";
+			warnEl.classList.add("d-none");
+		}
+	}
+
 	const tbody = document.getElementById("import-json-nodegroup-rows");
 	tbody.innerHTML = "";
-	(req.nodeGroups || []).forEach(g => {
+	groups.forEach((g, idx) => {
 		const tr = document.createElement("tr");
 		const rootDisk = [g.rootDiskType, g.rootDiskSize].filter(v => v !== undefined && v !== "" && v !== 0).join(" / ");
-		[g.name, g.specId, g.imageId, g.nodeGroupSize, g.connectionName, rootDisk, g.zone].forEach(val => {
+		[g.name, g.specId, g.imageId, g.nodeGroupSize, g.connectionName, rootDisk, g.zone].forEach((val, col) => {
 			const td = document.createElement("td");
 			td.textContent = (val === undefined || val === null || val === "") ? "-" : String(val);
+			// Name 컬럼(col 0)이 충돌이면 강조 + 배지. textContent 패턴을 깨지 않도록 배지만 append.
+			if (col === 0 && flags[idx]) {
+				td.classList.add("text-danger");
+				const badge = document.createElement("span");
+				badge.className = "badge bg-orange-lt ms-1";
+				badge.textContent = "Duplicate";
+				td.appendChild(badge);
+			}
 			tr.appendChild(td);
 		});
 		tbody.appendChild(tr);
@@ -1987,14 +2180,79 @@ export function openImportJsonModal() {
 
 	const modalEl = document.getElementById("import-nodegroups-json-modal");
 	templateDeploySucceeded = false;
+	// 트랜지션 완료 후 초기화 — setTimeout 추측값 대신 shown 이벤트를 쓴다(fade 150ms)
+	modalEl.addEventListener("shown.bs.modal", initImportJsonDropzone, { once: true });
 	modalEl.addEventListener("hidden.bs.modal", function () {
+		clearImportJsonDropzoneFiles();
 		if (!templateDeploySucceeded) revertDeployAlgorithmSelect();
 	}, { once: true });
 	bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
+// 드롭존에 쌓인 파일 비우기 — 미리보기를 지우는 removedfile 핸들러가 재진입하지 않도록 플래그로 감싼다
+function clearImportJsonDropzoneFiles() {
+	if (!importJsonDropzone) return;
+	isSyncingImportSources = true;
+	try { importJsonDropzone.removeAllFiles(true); } finally { isSyncingImportSources = false; }
+}
+
+function initImportJsonDropzone() {
+	const el = document.getElementById("import-json-dropzone");
+	if (!el) return;
+	// 중복 초기화 가드 — Dropzone은 이미 붙은 엘리먼트에 다시 붙이면 예외를 던진다
+	if (el.dropzone) {
+		importJsonDropzone = el.dropzone;
+		clearImportJsonDropzoneFiles();
+		return;
+	}
+	importJsonDropzone = new Dropzone(el, {
+		// <div> 기반이라 form action이 없다 — autoProcessQueue:false여도 url은 필수다
+		url: "/",
+		autoProcessQueue: false,
+		maxFiles: 1,
+		acceptedFiles: ".json,application/json",
+		maxFilesize: 10,
+		addRemoveLinks: true,
+		clickable: true,
+		dictDefaultMessage: "Drop a JSON file here or click to browse",
+		init: function () {
+			const dz = this;
+			dz.on("addedfile", async function (file) {
+				// maxFiles:1 — 새 파일이 이전 것을 대체한다
+				if (dz.files.length > 1) {
+					isSyncingImportSources = true;
+					try { dz.removeFile(dz.files[0]); } finally { isSyncingImportSources = false; }
+				}
+				// 두 진입점(드롭/파일선택)의 상태가 어긋나지 않도록 input을 비운다
+				const inp = document.getElementById("import-nodegroups-json-file");
+				if (inp) inp.value = "";
+				await loadImportJsonFile(file);
+			});
+			dz.on("removedfile", function () {
+				if (isSyncingImportSources) return; // 프로그램적 제거는 미리보기를 지우지 않는다
+				importedNodeGroupsReq = null;
+				resetImportJsonPreview();
+			});
+			dz.on("error", function (file, msg) {
+				dz.removeFile(file);
+				webconsolejs["common/utils/toast"].showToast(
+					webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR,
+					typeof msg === "string" ? msg : "Invalid file"
+				);
+			});
+		}
+	});
+}
+
+// onchange 어댑터 — 시그니처와 export 이름을 유지해 HTML 인라인 핸들러를 그대로 둔다
 export async function handleImportJsonFileChange(input) {
 	const file = input.files && input.files[0];
+	if (file) clearImportJsonDropzoneFiles();
+	await loadImportJsonFile(file);
+}
+
+// 파싱·검증·미리보기 — 드롭존과 파일선택이 공유하는 실제 진입점
+export async function loadImportJsonFile(file) {
 	if (!file) {
 		importedNodeGroupsReq = null;
 		resetImportJsonPreview();
@@ -2018,7 +2276,7 @@ export async function handleImportJsonFileChange(input) {
 		});
 
 		importedNodeGroupsReq = req;
-		renderImportJsonPreview(req);
+		renderImportJsonPreview(req, detectNodeGroupNameConflicts(groups));
 		const btn = document.getElementById("btn-add-imported-nodegroups");
 		if (btn) btn.disabled = false;
 	} catch (e) {
@@ -2030,7 +2288,16 @@ export async function handleImportJsonFileChange(input) {
 
 export function applyImportedNodeGroups() {
 	if (!importedNodeGroupsReq) return;
-	const count = appendNodeGroupsToForm(importedNodeGroupsReq);
-	webconsolejs["common/utils/toast"].showToast(webconsolejs["common/utils/toast"].TOAST_TYPES.SUCCESS, count + " NodeGroup(s) added from JSON.");
+	const result = appendNodeGroupsToForm(importedNodeGroupsReq);
+	const msg = result.cleared > 0
+		? result.added + " NodeGroup(s) added from JSON. " + result.cleared
+			+ " name(s) were already in use and have been cleared — enter a unique name for each before Deploy."
+		: result.added + " NodeGroup(s) added from JSON.";
+	webconsolejs["common/utils/toast"].showToast(
+		result.cleared > 0
+			? webconsolejs["common/utils/toast"].TOAST_TYPES.WARNING
+			: webconsolejs["common/utils/toast"].TOAST_TYPES.SUCCESS,
+		msg
+	);
 	bootstrap.Modal.getInstance(document.getElementById("import-nodegroups-json-modal"))?.hide();
 }
