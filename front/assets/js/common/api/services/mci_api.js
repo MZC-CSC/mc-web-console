@@ -318,10 +318,10 @@ export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_A
       "installMonAgent": "no",
       "label": labels || {},
       "policyOnPartialFailure": "continue",
-      "postCommand": {
-        "command": command,
-        "userName": "cb-user"
-      },
+      // 단일 명령은 phase 1개로 표현 (cb-tumblebug v0.12.29+ postCommands 배열 구조)
+      ...(command.length ? {
+        "postCommands": [{ "command": command, "userName": "cb-user" }]
+      } : {}),
       "nodeGroups": nodeGroups,
       "systemLabel": ""
     }
@@ -370,10 +370,10 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
       "label": labels || {},
       "nodeGroups": nodeGroups,
       "policyOnPartialFailure": policyOnPartialFailure,
-      "postCommand": {
-        "command": command,
-        "userName": "cb-user"
-      }
+      // 단일 명령은 phase 1개로 표현 (cb-tumblebug v0.12.29+ postCommands 배열 구조)
+      ...(command.length ? {
+        "postCommands": [{ "command": command, "userName": "cb-user" }]
+      } : {})
     }
   }
 
