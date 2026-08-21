@@ -257,15 +257,11 @@ export async function initClusterTerminal(id, nsId, clusterId, namespace, podNam
         term.write('\r\n\r\n $ ');
     }
 
-    // SSH Private IP 메시지 제거 - 기존 로직은 유지하되 화면에 표시하지 않음
-    const ipcmd = "client_ip=$(echo $SSH_CLIENT | awk '{print $1}'); echo SSH Private IP is: $client_ip";
-
-    await processCommand(nsId, clusterId, { namespace, podName, containerName }, [ipcmd], term, () => {
-        prompt();
-    }, 'cluster');
-
-    // 터미널 초기화 후 바로 프롬프트 표시
-    // prompt();
+    // 터미널을 열자마자 프롬프트만 띄운다.
+    // (VM 경로에서 쓰던 SSH_CLIENT IP 조회 명령을 여기서도 보내고 있었으나,
+    //  K8s는 cb-tumblebug이 명령 문자열을 공백으로 잘라 argv로 직접 exec 하므로
+    //  셸 문법($(), ;, 파이프)이 동작하지 않아 터미널을 열 때마다 에러만 찍혔다)
+    prompt();
 
     let userInput = '';
     term.onData(async (data) => {
