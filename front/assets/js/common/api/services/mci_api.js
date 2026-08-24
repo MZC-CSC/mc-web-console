@@ -297,7 +297,6 @@ export async function mciDynamicReview(mciName, mciDesc, Express_Server_Config_A
     rootDiskSize: (config.rootDiskSize !== "" && config.rootDiskSize !== undefined) ? parseInt(config.rootDiskSize) : 0,
     rootDiskType: config.rootDiskType,
     ...(config.zone ? { zone: config.zone } : {}),
-    ...(config.nodeUserPassword ? { nodeUserPassword: config.nodeUserPassword } : {}),
     ...(config.label && Object.keys(config.label).length > 0 ? { label: config.label } : {}),
     ...(config.vNetTemplateId ? { vNetTemplateId: config.vNetTemplateId } : {}),
     ...(config.sgTemplateId ? { sgTemplateId: config.sgTemplateId } : {})
@@ -349,7 +348,6 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
     rootDiskSize: (config.rootDiskSize !== "" && config.rootDiskSize !== undefined) ? parseInt(config.rootDiskSize) : 0,
     rootDiskType: config.rootDiskType,
     ...(config.zone ? { zone: config.zone } : {}),
-    ...(config.nodeUserPassword ? { nodeUserPassword: config.nodeUserPassword } : {}),
     ...(config.label && Object.keys(config.label).length > 0 ? { label: config.label } : {}),
     ...(config.vNetTemplateId ? { vNetTemplateId: config.vNetTemplateId } : {}),
     ...(config.sgTemplateId ? { sgTemplateId: config.sgTemplateId } : {})
@@ -415,7 +413,6 @@ export async function vmDynamicReview(mciId, nsId, config) {
       "rootDiskSize": (config.rootDiskSize !== "" && config.rootDiskSize !== undefined) ? parseInt(config.rootDiskSize) : 0,
       "rootDiskType": config.rootDiskType,
       ...(config.zone ? { zone: config.zone } : {}),
-      ...(config.nodeUserPassword ? { nodeUserPassword: config.nodeUserPassword } : {}),
       ...(config.label && Object.keys(config.label).length > 0 ? { label: config.label } : {}),
       ...(config.vNetTemplateId ? { vNetTemplateId: config.vNetTemplateId } : {}),
       ...(config.sgTemplateId ? { sgTemplateId: config.sgTemplateId } : {})
@@ -451,7 +448,6 @@ export async function vmDynamic(mciId, nsId, Express_Server_Config_Arr) {
         "rootDiskSize": (obj.rootDiskSize !== "" && obj.rootDiskSize !== undefined) ? parseInt(obj.rootDiskSize) : 0,
         "rootDiskType": obj.rootDiskType,
         ...(obj.zone ? { zone: obj.zone } : {}),
-        ...(obj.nodeUserPassword ? { nodeUserPassword: obj.nodeUserPassword } : {}),
         ...(obj.label && Object.keys(obj.label).length > 0 ? { label: obj.label } : {}),
         ...(obj.vNetTemplateId ? { vNetTemplateId: obj.vNetTemplateId } : {}),
         ...(obj.sgTemplateId ? { sgTemplateId: obj.sgTemplateId } : {})

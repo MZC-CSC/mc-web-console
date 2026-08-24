@@ -232,7 +232,15 @@
                   </div>
                 </div>
               </div>
-              <div class="form-group mb-2">
+              <!--
+                Node User Password — Express(dynamic) 모드에서는 숨긴다.
+                cb-tumblebug v0.12.28이 dynamic 경로에서 이 필드를 의도적으로 폐지했다
+                (Linux는 SSH 키페어로 접근, Windows용 패스워드는 서버가 랜덤 생성).
+                입력을 받아도 서버가 무시하므로 노출하면 거짓 UI가 된다.
+                엘리먼트는 남겨둔다 — 비-dynamic PostInfra를 쓰는 Expert 모드(WEB-TECH-052)에서
+                모드 게이팅으로 다시 노출할 예정이다.
+              -->
+              <div class="form-group mb-2" id="ep_node_user_password_group" style="display: none">
                 <label class="form-label">Node User Password</label>
                 <input
                   type="password"
