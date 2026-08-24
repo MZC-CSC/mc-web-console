@@ -2836,14 +2836,16 @@ function transformPolicyResponse(resp) {
       const {
         actionType = '',
         placementAlgo = '',
-        postCommand = {},
+        postCommands = [],
         nodeGroupDynamicReq = {}
       } = autoAction;
 
+      // postCommands는 다단계 phase 배열(cb-tumblebug v0.12.29+).
+      // 현재 화면은 단일 명령만 표시하므로 첫 phase를 읽는다.
       const {
         command = [],
         userName = ''
-      } = postCommand;
+      } = (postCommands[0] || {});
 
       const {
         imageId: commonImage = '',
@@ -3246,10 +3248,10 @@ function buildPolicyRequestData(data) {
       autoAction: {
         actionType: data.actionType,
         placementAlgo: data.placementAlgo,
-        postCommand: {
-          command: data.command ? [data.command] : [],
-          userName: data.userName
-        },
+        // 명령이 있을 때만 phase 1개로 전송 (cb-tumblebug v0.12.29+ postCommands 배열 구조)
+        ...(data.command ? {
+          postCommands: [{ command: [data.command], userName: data.userName || "cb-user" }]
+        } : {}),
         nodeGroupDynamicReq: {
           imageId: data.commonImage,
           specId: data.commonSpec,
@@ -3262,8 +3264,7 @@ function buildPolicyRequestData(data) {
           name: data.name,
           rootDiskSize: data.rootDiskSize,
           rootDiskType: data.rootDiskType,
-          nodeGroupSize: data.nodeGroupSize,
-          vmUserPassword: ""
+          nodeGroupSize: data.nodeGroupSize
         }
       },
       autoCondition: {
