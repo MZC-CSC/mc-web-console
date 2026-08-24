@@ -1811,7 +1811,8 @@ function renderTemplateSelectDetail(template) {
 	}
 
 	const block = document.getElementById("template-select-postcommand-block");
-	const commands = req.postCommand?.command || [];
+	// postCommands는 다단계 phase 배열(cb-tumblebug v0.12.29+) — 전 phase를 순서대로 이어붙인다.
+	const commands = (req.postCommands || []).flatMap(pc => pc.command || []);
 	if (commands.length > 0) {
 		block.classList.remove("d-none");
 		document.getElementById("template-select-postcommand").textContent = commands.join("\n");
@@ -1960,7 +1961,7 @@ export async function deployFromSelectedTemplate() {
 }
 
 // nodeGroups[] 원소(InfraDynamicReq 스키마, template/JSON import 공용) → express_form 매핑.
-// req는 상위 InfraDynamicReq(postCommand.command를 idx===0에만 carry-through하기 위해 필요), idx는 groups.forEach의 인덱스.
+// req는 상위 InfraDynamicReq(postCommands[].command를 idx===0에만 carry-through하기 위해 필요), idx는 groups.forEach의 인덱스.
 function mapNodeGroupToExpressForm(g, req, idx) {
 	var express_form = {};
 	express_form["provider"] = (g.specId || "").split("+")[0];
@@ -1974,8 +1975,11 @@ function mapNodeGroupToExpressForm(g, req, idx) {
 	express_form["commonImage"] = g.imageId || "";
 	express_form["imageId"] = g.imageId || "";
 	express_form["specId"] = g.specId || "";
-	// infra 단위 postCommand는 첫 NodeGroup에만 반영(기존 command 처리 관례와 동일)
-	express_form["command"] = idx === 0 ? (req?.postCommand?.command || []).join("\n") : "";
+	// infra 단위 postCommands는 첫 NodeGroup에만 반영(기존 command 처리 관례와 동일).
+	// 다단계 phase 배열이므로 전 phase의 command를 순서대로 이어붙인다.
+	express_form["command"] = idx === 0
+		? (req?.postCommands || []).flatMap(pc => pc.command || []).join("\n")
+		: "";
 
 	// 정식 매핑 승격 5필드(CreateNodeGroupDynamicReq) — 값이 있을 때만 carry-through
 	if (g.zone) express_form["zone"] = g.zone;
@@ -2070,7 +2074,7 @@ function appendNodeGroupsToForm(req) {
 }
 
 // 선택한 template의 nodeGroups를 기존 NodeGroup 목록에 추가(append) — 수정 후 배포용 프리필
-// infra 단위 값(description/policyOnPartialFailure/installMonAgent/sgTemplateId/vNetTemplateId/postCommand.userName·timeoutMinutes)은
+// infra 단위 값(description/policyOnPartialFailure/installMonAgent/sgTemplateId/vNetTemplateId/postCommands[0].userName·timeoutMinutes)은
 // 이 모듈 상태에 보관만 하고, 실제 배포 payload 병합은 WEB-TECH-019(FR-05-02)에서 처리한다.
 let templatePrefillInfraState = null;
 
@@ -2091,8 +2095,9 @@ export function addTemplateToForm() {
 		installMonAgent: req.installMonAgent || "",
 		vNetTemplateId: req.vNetTemplateId || "",
 		sgTemplateId: req.sgTemplateId || "",
-		postCommandUserName: req.postCommand?.userName || "",
-		postCommandTimeoutMinutes: req.postCommand?.timeoutMinutes
+		// postCommands는 다단계 phase 배열 — 첫 phase 기준으로 이관(model.PostCommandReq에 두 필드 모두 존재)
+		postCommandUserName: req.postCommands?.[0]?.userName || "",
+		postCommandTimeoutMinutes: req.postCommands?.[0]?.timeoutMinutes
 	};
 	// Create MCI 경로에서만 — Extend VM은 기존 MCI의 description을 유지한다
 	if (!isVm && !$("#mci_desc").val() && templatePrefillInfraState.description) {
