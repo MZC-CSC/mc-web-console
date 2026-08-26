@@ -12,6 +12,7 @@ export const ASYNC_TRACK_OPERATION_IDS = Object.freeze([
   'PostInfraDynamic',
   'PostInfraDynamicFromTemplate',
   'PostK8sClusterDynamic',
+  'PostK8sCluster',
   // Expert 모드(WEB-TECH-052) — 비-dynamic이지만 동일한 fire-and-forget +
   // async-requests 폴링 패턴을 쓴다. PostInfra/PostInfraNode는 완전 동기 API라
   // (노드 생성이 끝날 때까지 응답하지 않음) 응답을 직접 기다리면 브라우저가
@@ -24,6 +25,9 @@ export const ASYNC_TRACK_OPERATION_IDS = Object.freeze([
   'PostInfraNodeGroupScaleOut',
   'PostK8sNodeGroupDynamic',
   'Postk8snodegroup',
+  // Phase 2 — nodegroup autoscaling
+  'PutSetK8sNodeGroupAutoscaling',
+  'PutChangeK8sNodeGroupAutoscaleSize',
   // Phase 2 — control
   'GetControlInfra',
   'GetControlInfraNode',
