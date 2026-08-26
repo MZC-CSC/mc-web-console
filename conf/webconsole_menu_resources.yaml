@@ -55,6 +55,7 @@ menus:
     isaction: true
     priority: 2
     menunumber: 1230
+    icon: approvals
 
   - id: accesscontrols
     parentid: organizations
