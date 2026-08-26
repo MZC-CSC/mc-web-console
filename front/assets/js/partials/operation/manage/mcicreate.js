@@ -1532,6 +1532,8 @@ export async function createMciDynamic() {
 }
 
 // Expert 모드 Create Infra — PostInfra(model.InfraReq) 직접 배포.
+// mciStatic()이 fire-and-forget으로 요청을 쏘고 자체적으로 navigate하므로 여기서는 await하지 않는다
+// (dynamic 경로의 createMciDynamic()이 mciDynamic()을 호출하는 방식과 동일).
 // Disk Attach 오케스트레이션(scheduleDiskAttachForConfigs)은 dataDiskIds 미지원 범위라 호출하지 않는다.
 async function createMciStatic() {
 	if (!validateNodeGroupNamesBeforeDeploy()) return;
@@ -1553,34 +1555,9 @@ async function createMciStatic() {
 
 	const deployLabels = getInfraDeployLabels();
 
-	// PostInfra는 완전 동기 API라 노드 생성이 끝날 때까지 응답하지 않는다(수십 초 소요, 실측).
-	// dynamic처럼 즉시 navigate하면 브라우저가 요청을 끊어버리므로 완료까지 대기하고
-	// 버튼을 잠가 중복 제출을 막는다.
-	var btn = document.getElementById("mci_deploy_btn");
-	var btnOrigHtml;
-	if (btn) {
-		btnOrigHtml = btn.innerHTML;
-		btn.disabled = true;
-		btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Deploying...';
-	}
-
-	try {
-		const resp = await webconsolejs["common/api/services/mci_api"].mciStatic(
-			mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure, deployLabels
-		);
-		if (resp && resp.status >= 200 && resp.status < 300) {
-			window.location = "/webconsole/operations/manage/workloads/mciworkloads";
-		} else {
-			alert("Failed to create Infra: " + (resp?.data?.responseData?.message || resp?.data?.message || "unknown error"));
-		}
-	} catch (e) {
-		alert("Failed to create Infra: " + (e?.response?.data?.responseData?.message || e?.message || e));
-	} finally {
-		if (btn) {
-			btn.disabled = false;
-			btn.innerHTML = btnOrigHtml;
-		}
-	}
+	webconsolejs["common/api/services/mci_api"].mciStatic(
+		mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure, deployLabels
+	);
 }
 
 export async function createVmDynamic() {

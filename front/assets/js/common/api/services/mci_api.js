@@ -439,23 +439,26 @@ export async function mciStatic(mciName, mciDesc, Express_Server_Config_Arr, nsI
   }
 
   // PostInfra(비-dynamic)는 PostInfraDynamic과 달리 완전 동기 API다 — 노드 생성이
-  // 끝날 때까지 응답하지 않는다(실측 40초 이상). PostInfraDynamic처럼 fire-and-forget으로
-  // 쏘고 즉시 navigate하면 브라우저가 페이지 이동과 함께 요청을 끊어버려 front가 502를
-  // 반환하고(진행 중이던 백엔드 작업은 계속돼도 결과를 알 방법이 없다), async-requests에도
-  // 추적되지 않는다(ASYNC_TRACK_OPERATION_IDS 허용목록에 PostInfra가 없음 — 애초에
-  // PostInfraDynamic류의 "빠른 ack + 백그라운드 처리" 모델이 아니기 때문). 따라서 응답을
-  // 기다린 뒤 호출자가 완료 처리를 하도록 response를 그대로 반환한다.
+  // 끝날 때까지 응답하지 않는다(실측 40초 이상). 응답을 직접 기다렸다가 navigate하면
+  // 그 시간만큼 화면이 멈춰 있어야 한다. mciDynamic()과 동일하게 fire-and-forget으로
+  // 쏘고 즉시 navigate한다 — PostInfra를 ASYNC_TRACK_OPERATION_IDS(front)/
+  // AsyncTrackOperationIDs(api) 허용목록에 추가해뒀으므로, api의
+  // async_request_poller가 cb-tumblebug의 reqID 기반 진행상황(RequestMap)을
+  // 별도로 폴링해 완료를 추적한다. x-request-id를 보내지 않으면(또는 허용목록에
+  // 없으면) 이 추적이 동작하지 않으므로 그 경우엔 응답을 직접 기다려야 한다.
   var controller = "/api/" + "mc-infra-manager/" + "PostInfra";
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'PostInfra',
     'Infra create (Expert): ' + mciName
   );
-  return await webconsolejs["common/api/http"].commonAPIPost(
+  webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data,
-    false,
+    undefined,
     tracked.httpOptions
   );
+
+  window.location = "/webconsole/operations/manage/workloads/mciworkloads"
 }
 
 // Add NodeGroup(Extend VM) Done 시점 단건 사전 검증.
