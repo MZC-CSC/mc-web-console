@@ -369,15 +369,11 @@ export async function displayNewNodeForm() {
 	var selectedNsId = selectedWorkspaceProject.nsId;
 	
 	// Get selected cluster's provider information for SSH Key filtering
-	// selectedPmkObj는 체크박스 선택(rowSelectionChanged) 시에만 갱신되어 비어있을 수 있으므로,
-	// 행 클릭마다 항상 갱신되는 currentProvider를 우선 사용한다
-	var selectedCluster = webconsolejs["pages/operation/manage/pmk"].selectedPmkObj;
-	var clusterProvider = webconsolejs["pages/operation/manage/pmk"].currentProvider || null;
-	var clusterConnection = null;
-	if (selectedCluster && selectedCluster.length > 0) {
-		clusterProvider = clusterProvider || selectedCluster[0].provider; // e.g., "aws", "azure", "gcp"
-		clusterConnection = selectedCluster[0].connectionName;
-	}
+	var selectedCluster = webconsolejs["pages/operation/manage/pmk"].getSelectedClusterContext();
+	var clusterProvider = webconsolejs["pages/operation/manage/pmk"].currentProvider
+		|| (selectedCluster && selectedCluster.provider)
+		|| null; // e.g., "aws", "azure", "gcp"
+	var clusterConnection = selectedCluster ? selectedCluster.connectionName : null;
 
 	// Root Disk Type 옵션을 provider/connection 기준으로 동적 조회 (이미 알려진 값 사용)
 	// ssh key 조회보다 먼저 실행해, 이후 블록의 예외와 무관하게 항상 호출되도록 한다
@@ -501,7 +497,14 @@ export async function createNode() {
 
 	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
 	var selectedNsId = selectedWorkspaceProject.nsId;
-	var selectedPmk = webconsolejs["pages/operation/manage/pmk"].selectedPmkObj[0];
+	var selectedPmk = webconsolejs["pages/operation/manage/pmk"].getSelectedClusterContext();
+	if (!selectedPmk) {
+		webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+			'Cluster Selection Required',
+			'Please select a cluster first before adding a NodeGroup.'
+		);
+		return;
+	}
 	var k8sClusterId = selectedPmk.id;
 	var provider = selectedPmk.provider; // CSP별 동시 전송 정책 판단용
 
@@ -512,10 +515,9 @@ export async function createNode() {
 		provider
 	);
 
+	// 사전 검증 실패 — 사용자가 값을 고칠 수 있도록 폼을 닫지 않는다
 	if (result === false) return;
 
-	webconsolejs['common/util'].showToast('NodeGroup creation request has been sent', 'info');
-	
 	// NodeGroup Configuration 폼 닫기
 	var nodeGroupConfigDiv = document.getElementById("nodegroup_configuration");
 	if (nodeGroupConfigDiv) {
@@ -575,10 +577,10 @@ export async function addNewNodeGroup() {
 	Create_Node_Config_Arr = new Array();
 	currentEditingNodeGroupIndex = null; // Create 모드로 초기화
 
-	var selectedCluster = webconsolejs["pages/operation/manage/pmk"].selectedPmkObj;
+	var selectedCluster = webconsolejs["pages/operation/manage/pmk"].getSelectedClusterContext();
 
 	// Validation: Check if cluster is selected
-	if (!selectedCluster || selectedCluster.length === 0) {
+	if (!selectedCluster) {
 		webconsolejs['partials/layout/modal'].commonShowDefaultModal(
 			'Cluster Selection Required',
 			'Please select a cluster first before adding a NodeGroup.'
@@ -590,16 +592,14 @@ export async function addNewNodeGroup() {
 	// The button is only enabled when cluster status is Active
 	// See updateAddNodeGroupButtonState() in pmk.js
 
-	var cluster_name = selectedCluster[0].name;
-	var cluster_desc = selectedCluster[0].description;
-	// selectedPmkObj는 체크박스 선택 시에만 갱신되어 값이 비어있을 수 있으므로,
-	// 행 클릭마다 항상 갱신되는 currentProvider를 우선 사용한다
-	var cluster_provider = webconsolejs["pages/operation/manage/pmk"].currentProvider || selectedCluster[0].provider;
-	var cluster_connection = selectedCluster[0].connectionName;
-	var cluster_vpc = selectedCluster[0].vpc;
-	var cluster_subnet = selectedCluster[0].subnet;
-	var cluster_securitygroup = selectedCluster[0].securitygroup;
-	var cluster_version = selectedCluster[0].version;
+	var cluster_name = selectedCluster.name;
+	var cluster_desc = selectedCluster.description;
+	var cluster_provider = webconsolejs["pages/operation/manage/pmk"].currentProvider || selectedCluster.provider;
+	var cluster_connection = selectedCluster.connectionName;
+	var cluster_vpc = selectedCluster.vpc;
+	var cluster_subnet = selectedCluster.subnet;
+	var cluster_securitygroup = selectedCluster.securitygroup;
+	var cluster_version = selectedCluster.version;
 
 	// Extract region from connectionName
 	var cluster_region = extractRegionFromConnection(cluster_connection, cluster_provider);
@@ -820,7 +820,53 @@ export async function createCluster() {
 		return;
 	}
 
+	// 생성 요청만 보내고 결과는 기다리지 않는다 — 진행/완료는 asyncRequestTracker가 알린다
 	webconsolejs["common/api/services/pmk_api"].CreateCluster(clusterName, selectedConnection, clusterVersion, selectedVpc, selectedSubnet, selectedSecurityGroup, Create_Cluster_Config_Arr, selectedNsId)
+
+	webconsolejs['common/util'].showToast('Cluster creation request has been sent', 'info');
+
+	// 폼 초기화
+	$("#cluster_name").val("");
+	$("#cluster_desc").val("");
+	$("#cluster_cloudconnection").val("");
+	$("#cluster_version").val("");
+	$("#cluster_vpc").val("");
+	$("#cluster_subnet").val("");
+	$("#cluster_sg").val("");
+	Create_Cluster_Config_Arr = new Array();
+	Create_Node_Config_Arr = new Array();
+
+	// CSP에 생성 명령이 전달되는 시간을 고려해 잠시 뒤 목록을 갱신한다
+	// (완료 시점 갱신은 pmk.js의 asyncRequestTracker 구독이 처리한다)
+	await new Promise(resolve => setTimeout(resolve, 2000));
+	if (webconsolejs["pages/operation/manage/pmk"] &&
+		typeof webconsolejs["pages/operation/manage/pmk"].refreshPmkList === 'function') {
+		await webconsolejs["pages/operation/manage/pmk"].refreshPmkList();
+	}
+
+	// #createcluster(Simple)와 #createcluster-original(Expert)는 형제 섹션이고,
+	// Expert 전환은 style.display 인라인 스타일로만 토글된다(.active class 무관).
+	// 인라인 style이 남은 채로 .active만 지우면 .section.active{display:block} 규칙보다
+	// 인라인 style이 우선해 실제로는 숨겨지지 않는다 — 두 폼 모두 정리한다.
+	const originalForm = document.getElementById("createcluster-original");
+	if (originalForm) {
+		originalForm.style.display = "none";
+		const expertBtn = document.querySelector('button[onclick*="toggleExpertCreation"]');
+		if (expertBtn) {
+			expertBtn.classList.remove("btn-primary");
+			expertBtn.classList.add("btn-outline-primary");
+			expertBtn.textContent = "Expert Creation";
+		}
+	}
+
+	// 클러스터 생성 섹션 닫기 (이미 pmkworkloads 화면이므로 페이지 이동은 하지 않는다)
+	const createClusterSection = document.querySelector('#createcluster');
+	if (createClusterSection) {
+		createClusterSection.style.removeProperty('display');
+		if (createClusterSection.classList.contains('active')) {
+			webconsolejs["partials/layout/navigatePages"].toggleElement(createClusterSection);
+		}
+	}
 }
 
 // nodegroup configuration done 클릭시
@@ -1044,6 +1090,76 @@ export function clusterFormDone_btn() {
 	$("#node_desirednodesize").val("1"); // 기본값 1로 설정
 }
 
+// select에 없는 값이면 option을 만들어 넣는다.
+// min/max Node Size 셀렉트는 1~5만 미리 들어 있어, 그보다 큰 값을 그대로 세팅하면 조용히 비워진다.
+function ensureSelectOption(selector, value) {
+	if (value === undefined || value === null || value === "") return;
+	const $sel = $(selector);
+	if ($sel.length === 0) return;
+	if ($sel.find('option[value="' + value + '"]').length === 0) {
+		$sel.append('<option value="' + value + '">' + value + '</option>');
+	}
+}
+
+// 값이 select에 존재할 때만 세팅한다.
+// sshKey/Root Disk Type은 조회 결과로 채워지므로, 없는 값을 억지로 넣기보다
+// 비워 두고 사용자가 유효한 값을 고르게 하는 편이 안전하다.
+function setSelectIfOptionExists(selector, value) {
+	const $sel = $(selector);
+	if ($sel.length === 0) return false;
+	if (!value || $sel.find('option[value="' + value + '"]').length === 0) {
+		$sel.val("");
+		return false;
+	}
+	$sel.val(value);
+	return true;
+}
+
+// NodeGroup Configuration 폼(#node_*)과 hidden 필드(#n_*)를 하나의 NodeGroup 데이터로 채운다.
+// Edit 모드(view_ngForm)와 JSON Import가 공유한다.
+// 인자는 model.K8sNodeGroupReq 형태:
+//   {name, specId, imageId, sshKeyId, rootDiskType, rootDiskSize,
+//    desiredNodeSize, minNodeSize, maxNodeSize, onAutoScaling}
+export function prefillNodeGroupForm(nodeGroupData) {
+	if (!nodeGroupData) return { sshKeyMatched: false, rootDiskTypeMatched: false };
+
+	$("#node_name").val(nodeGroupData.name || "");
+	$("#node_specid").val(nodeGroupData.specId || "");
+	$("#node_commonSpecId").val(nodeGroupData.specId || "");
+	$("#node_imageid").val(nodeGroupData.imageId || "");
+
+	const autoScalingOn = String(nodeGroupData.onAutoScaling || "false") === "true";
+	$("#node_autoscaling").val(autoScalingOn ? "true" : "false");
+	if (autoScalingOn) {
+		$('#node_minnodesize, #node_maxnodesize').prop('disabled', false);
+		ensureSelectOption("#node_minnodesize", nodeGroupData.minNodeSize);
+		ensureSelectOption("#node_maxnodesize", nodeGroupData.maxNodeSize);
+		$("#node_minnodesize").val(nodeGroupData.minNodeSize || "");
+		$("#node_maxnodesize").val(nodeGroupData.maxNodeSize || "");
+	} else {
+		$('#node_minnodesize, #node_maxnodesize').val('').prop('disabled', true);
+	}
+
+	const sshKeyMatched = setSelectIfOptionExists("#node_sshkey", nodeGroupData.sshKeyId);
+	const rootDiskTypeMatched = setSelectIfOptionExists("#node_rootdisk", nodeGroupData.rootDiskType);
+	$("#node_rootdisksize").val(nodeGroupData.rootDiskSize || "");
+	$("#node_desirednodesize").val(nodeGroupData.desiredNodeSize || "1");
+
+	// Hidden 필드에도 설정
+	$("#n_name").val(nodeGroupData.name || "");
+	$("#n_specid").val(nodeGroupData.specId || "");
+	$("#n_imageid").val(nodeGroupData.imageId || "");
+	$("#n_minnodesize").val(autoScalingOn ? (nodeGroupData.minNodeSize || "") : "");
+	$("#n_maxnodesize").val(autoScalingOn ? (nodeGroupData.maxNodeSize || "") : "");
+	$("#n_sshkey").val($("#node_sshkey").val() || "");
+	$("#n_rootdisk").val($("#node_rootdisk").val() || "");
+	$("#n_rootdisksize").val(nodeGroupData.rootDiskSize || "");
+	$("#n_autoscaling").val(autoScalingOn ? "true" : "false");
+	$("#n_desirednodesize").val(nodeGroupData.desiredNodeSize || "1");
+
+	return { sshKeyMatched, rootDiskTypeMatched };
+}
+
 export function view_ngForm(cnt){
 	// NodeGroup Configuration 폼 표시
 	var div = document.getElementById("nodegroup_configuration");
@@ -1055,38 +1171,10 @@ export function view_ngForm(cnt){
 		currentEditingNodeGroupIndex = cnt;
 		
 		var nodeGroupData = Create_Node_Config_Arr[cnt];
-		
+
 		// Form 필드에 기존 데이터 채우기
-		$("#node_name").val(nodeGroupData.name || "");
-		$("#node_specid").val(nodeGroupData.specId || "");
-		$("#node_commonSpecId").val(nodeGroupData.specId || "");
-		$("#node_imageid").val(nodeGroupData.imageId || "");
-		const editAutoScalingOn = (nodeGroupData.onAutoScaling || "false") === "true";
-		$("#node_autoscaling").val(nodeGroupData.onAutoScaling || "false");
-		if (editAutoScalingOn) {
-			$('#node_minnodesize, #node_maxnodesize').prop('disabled', false);
-			$("#node_minnodesize").val(nodeGroupData.minNodeSize || "");
-			$("#node_maxnodesize").val(nodeGroupData.maxNodeSize || "");
-		} else {
-			$('#node_minnodesize, #node_maxnodesize').val('').prop('disabled', true);
-		}
-		$("#node_sshkey").val(nodeGroupData.sshKeyId || "");
-		$("#node_rootdisk").val(nodeGroupData.rootDiskType || "");
-		$("#node_rootdisksize").val(nodeGroupData.rootDiskSize || "");
-		$("#node_desirednodesize").val(nodeGroupData.desiredNodeSize || "1");
-		
-		// Hidden 필드에도 설정
-		$("#n_name").val(nodeGroupData.name || "");
-		$("#n_specid").val(nodeGroupData.specId || "");
-		$("#n_imageid").val(nodeGroupData.imageId || "");
-		$("#n_minnodesize").val(nodeGroupData.minNodeSize || "");
-		$("#n_maxnodesize").val(nodeGroupData.maxNodeSize || "");
-		$("#n_sshkey").val(nodeGroupData.sshKeyId || "");
-		$("#n_rootdisk").val(nodeGroupData.rootDiskType || "");
-		$("#n_rootdisksize").val(nodeGroupData.rootDiskSize || "");
-		$("#n_autoscaling").val(nodeGroupData.onAutoScaling || "false");
-		$("#n_desirednodesize").val(nodeGroupData.desiredNodeSize || "1");
-		
+		prefillNodeGroupForm(nodeGroupData);
+
 		console.log("Edit mode: Loaded NodeGroup data at index", cnt, ":", nodeGroupData);
 	} else {
 		// Create 모드 (+ NodeGroup 클릭 시)
