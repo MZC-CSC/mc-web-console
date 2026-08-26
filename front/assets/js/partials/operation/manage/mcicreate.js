@@ -289,6 +289,11 @@ export async function callbackServerRecommendation(vmSpec) {
 	var diskResp = await webconsolejs["common/api/services/disk_api"].getCommonLookupDiskInfo(vmSpec.provider, vmSpec.connectionName)
 	getCommonLookupDiskInfoSuccess(vmSpec.provider, diskResp)
 
+	// Expert 모드: connection이 확정된 시점에 vNet/SecurityGroup/SSHKey 후보를 채운다
+	if (currentDeployMode() === "expert") {
+		await loadExpertResourceOptions(vmSpec.connectionName);
+	}
+
 	// Data Disk attach 후보 목록도 connectionName 확정 시점에 함께 갱신
 	await _populateCreateDiskCandidates(vmSpec.connectionName);
 
@@ -352,182 +357,6 @@ function getCommonLookupDiskInfoSuccess(provider, data) {
 
 }
 
-export async function setProviderList(providerList) {
-	// TODO: simple form
-
-	// expert form
-	// 모든 provider들을 대문자로 변환
-	myProviderList = providerList.map(str => str.toUpperCase());
-	// 알파벳 순으로 정렬
-	myProviderList.sort()
-
-	var html = '<option value="">Select Provider</option>'
-	myProviderList.forEach(item => {
-		html += '<option value="' + item + '">' + item + '</option>'
-	})
-
-	$("#expert_provider").empty();
-	$("#expert_provider").append(html);
-
-}
-
-// region 목록 SET
-export async function setRegionList(regionList) {
-	// TODO: simple form
-
-	// expert form
-	if (Array.isArray(regionList) && typeof regionList[0] === 'string') {
-		var html = '<option value="">Select Region</option>'
-		myRegionList.forEach(item => {
-			html += '<option value="' + item + '">' + item + '</option>'
-		})
-
-		$("#expert_region").empty();
-		$("#expert_region").append(html);
-	} else if (Array.isArray(regionList)) {
-		// object에서 [providerName] + regionName 형태로 배열 생성
-		regionList.forEach(region => {
-			var providerName = region.ProviderName
-			var regionName = region.RegionName
-
-			var myRegionName = `[${providerName}] ${regionName}`
-
-			myRegionList.push(myRegionName)
-		})
-
-		var html = '<option value="">Select Region</option>'
-		myRegionList.forEach(item => {
-			html += '<option value="' + item + '">' + item + '</option>'
-		})
-
-		$("#expert_region").empty();
-		$("#expert_region").append(html);
-	}
-}
-
-export async function setCloudConnection(cloudConnection) {
-	// TODO: simple form
-
-	// expert form
-	if (Array.isArray(cloudConnection) && typeof cloudConnection[0] === 'string') {
-		// 배열이고 첫 번째 요소가 문자열인 경우 / filter에서 사용
-
-		// 알파벳 순으로 정렬
-		cloudConnection.sort();
-
-		var html = '<option value="">Select Connection</option>';
-		cloudConnection.forEach(item => {
-			html += '<option value="' + item + '">' + item + '</option>';
-		});
-
-		$("#expert_cloudconnection").empty();
-		$("#expert_cloudconnection").append(html);
-
-	} else if (Array.isArray(cloudConnection)) {
-		// array 형태일 때
-
-		myCloudConnection = cloudConnection.map(item => item.configName);
-		// 알파벳 순으로 정렬
-		myCloudConnection.sort()
-
-		var html = '<option value="">Select Connection</option>'
-		myCloudConnection.forEach(item => {
-			html += '<option value="' + item + '">' + item + '</option>'
-		})
-
-		$("#expert_cloudconnection").empty();
-		$("#expert_cloudconnection").append(html);
-
-	} else {
-		console.error("Unknown cloudConnection format");
-		return;
-	}
-}
-// for filterRegion func
-// set된 값들
-var myProviderList = []
-var myRegionList = []
-var myCloudConnection = []
-
-// provider region cloudconnection filtering
-var providerSelect = document.getElementById('expert_provider');
-var regionSelect = document.getElementById('expert_region');
-var connectionSelect = document.getElementById('expert_connection');
-providerSelect.addEventListener('change', updateConfigurationFilltering);
-regionSelect.addEventListener('change', updateConfigurationFilltering);
-// connectionSelect.addEventListener('change', updateConfigurationFilltering);
-
-async function updateConfigurationFilltering() {
-
-	var selectedProvider = providerSelect.value; // 선택된 provider
-	var selectedRegion = regionSelect.value; // 선택된 region
-	// var selectedConnection = connectionSelect.value; // 선택된 connection
-
-	//초기화 했을 시 
-	if (selectedProvider === "") {
-		await setRegionList(myRegionList)
-		await setCloudConnection(myCloudConnection)
-
-		return
-	}
-
-	// providr 선택시 region, connection filtering
-	if (selectedProvider !== "" && selectedRegion === "") {
-
-		// region filter
-		var filteredRegion = myRegionList.filter(region => {
-			return region.startsWith(`[${selectedProvider}]`)
-		})
-
-		var html = '<option value="">Select Region</option>'
-		filteredRegion.forEach(item => {
-			html += '<option value="' + item + '">' + item + '</option>'
-		})
-
-		$("#expert_region").empty();
-		$("#expert_region").append(html);
-
-		// connection filter
-
-		// 비교를 위해 소문자로 변환
-		var lowerSelectedProvider = selectedProvider.toLowerCase();
-		var filteredConnection = myCloudConnection.filter(connection => {
-
-			return connection.startsWith(lowerSelectedProvider);
-		});
-
-		var nhtml = '<option value="">Select Connection</option>'
-		filteredConnection.forEach(item => {
-			nhtml += '<option value="' + item + '">' + item + '</option>'
-		})
-
-		$("#expert_cloudconnection").empty();
-		$("#expert_cloudconnection").append(nhtml);
-
-	}
-
-	// region 선택시 connection filtering
-	if (selectedRegion != "") {
-
-		var cspRegex = /^\[(.*?)\]/; // "[CSP]" 형식의 문자열에서 CSP 이름 추출
-		var cspMatch = selectedRegion.match(cspRegex);
-		var provider = cspMatch ? cspMatch[1].toLowerCase() : null; // CSP 이름 추출 및 소문자 변환
-
-		var filteredConnections = myCloudConnection.filter(connection => {
-			return connection.startsWith(`${provider}`);
-		});
-
-		var html = '<option value="">Select Connection</option>'
-		filteredConnections.forEach(item => {
-			html += '<option value="' + item + '">' + item + '</option>'
-		})
-
-		$("#expert_cloudconnection").empty();
-		$("#expert_cloudconnection").append(html);
-
-	}
-
-}
 
 var createMciListObj = new Object();
 var isVm = false // mci 생성(false) / vm 추가(true)
@@ -535,6 +364,159 @@ var Express_Server_Config_Arr = new Array();
 var express_data_cnt = 0
 var currentEditingIndex = -1 // 현재 수정 중인 서버의 인덱스 (-1: 신규 추가 모드)
 
+// ─── Expert Mode — 리소스 직접 선택 (WEB-TECH-052) ──────────────────────
+// cb-tumblebug 비-dynamic PostInfra/PostInfraNode(model.CreateNodeGroupReq)는
+// vNetId/subnetId/securityGroupIds/sshKeyId를 정확한 리소스 ID로 요구한다.
+// Spec 선택으로 connection이 정해지면 그 connection으로 네임스페이스 전체 목록을
+// 필터해 채운다. VNetInfo/SecurityGroupInfo/SshKeyInfo 모두 connectionName 필드를
+// 그대로 가지므로(cb-tumblebug 스키마 공통), 별도 provider/region 유도 없이
+// 정확히 일치하는 것만 남긴다.
+
+function currentDeployMode() {
+  return $(isVm ? "#vm_deploy_algorithm" : "#mci_deploy_algorithm").val();
+}
+
+let expertVNetList = []; // subnetInfoList·zone 조회용 캐시(현재 connection 기준)
+let expertSGList = []; // connection 기준 캐시 — SG는 vNetId로 한 번 더 좁혀야 한다(아래 설명)
+
+function fillSelect(selectEl, items, placeholder) {
+  selectEl.innerHTML = "";
+  const ph = document.createElement("option");
+  ph.value = "";
+  ph.textContent = placeholder;
+  selectEl.appendChild(ph);
+  items.forEach((it) => {
+    const opt = document.createElement("option");
+    opt.value = it.id;
+    opt.textContent = it.cspResourceName ? `${it.name} (${it.cspResourceName})` : it.name;
+    selectEl.appendChild(opt);
+  });
+}
+
+function resetExpertResourceSection() {
+  expertVNetList = [];
+  const vnet = document.getElementById("ep_expert_vnet");
+  const subnet = document.getElementById("ep_expert_subnet");
+  const sg = document.getElementById("ep_expert_sg");
+  const sshkey = document.getElementById("ep_expert_sshkey");
+  const zoneHint = document.getElementById("ep_expert_subnet_zone_hint");
+  if (vnet) { vnet.innerHTML = '<option value="">Select Spec/Image first</option>'; vnet.disabled = true; }
+  if (subnet) { subnet.innerHTML = '<option value="">Select a VNet first</option>'; subnet.disabled = true; }
+  expertSGList = [];
+  if (sg) { sg.innerHTML = '<option value="">Select a VNet first</option>'; sg.disabled = true; }
+  if (sshkey) { sshkey.innerHTML = '<option value="">Select Spec/Image first</option>'; sshkey.disabled = true; }
+  if (zoneHint) zoneHint.textContent = "";
+}
+
+// Spec 선택으로 connection이 확정된 시점(callbackServerRecommendation)에 호출된다.
+async function loadExpertResourceOptions(connectionName) {
+  const vnet = document.getElementById("ep_expert_vnet");
+  const sg = document.getElementById("ep_expert_sg");
+  const sshkey = document.getElementById("ep_expert_sshkey");
+  if (!vnet || !sg || !sshkey) return;
+
+  try {
+    const [vNetData, sgData, sshkeyData] = await Promise.all([
+      webconsolejs["common/api/services/vpc_api"].getAllVNet(AppStateNs()),
+      webconsolejs["common/api/services/securitygroup_api"].list(AppStateNs()),
+      webconsolejs["common/api/services/sshkey_api"].list(AppStateNs()),
+    ]);
+    const rawVNets = vNetData?.vNet || (Array.isArray(vNetData) ? vNetData : []);
+    const rawSGs = sgData?.securityGroup || (Array.isArray(sgData) ? sgData : []);
+    const rawSshKeys = sshkeyData?.sshKey || (Array.isArray(sshkeyData) ? sshkeyData : []);
+
+    expertVNetList = rawVNets.filter((v) => v.connectionName === connectionName);
+    // SG는 connection 기준으로만 우선 캐시한다 — vNetId로 좁히는 건 VNet 선택 이후(onExpertVNetChange)
+    expertSGList = rawSGs.filter((s) => s.connectionName === connectionName);
+    const filteredSshKeys = rawSshKeys.filter((k) => k.connectionName === connectionName);
+
+    fillSelect(vnet, expertVNetList, expertVNetList.length ? "Select VNet" : "No VNet found for this connection");
+    vnet.disabled = expertVNetList.length === 0;
+
+    // SG는 VNet을 고르기 전까지 비활성 — 선택 가능한 SG가 VNet에 종속되기 때문
+    sg.innerHTML = '<option value="">Select a VNet first</option>';
+    sg.disabled = true;
+
+    fillSelect(sshkey, filteredSshKeys, filteredSshKeys.length ? "Select SSH Key" : "No SSH Key found for this connection");
+    sshkey.disabled = filteredSshKeys.length === 0;
+
+    // VNet이 바뀌지 않았어도 Subnet은 항상 VNet 재선택부터 다시 시작
+    const subnet = document.getElementById("ep_expert_subnet");
+    if (subnet) { subnet.innerHTML = '<option value="">Select a VNet first</option>'; subnet.disabled = true; }
+    const zoneHint = document.getElementById("ep_expert_subnet_zone_hint");
+    if (zoneHint) zoneHint.textContent = "";
+  } catch (e) {
+    console.error("Failed to load Expert mode resources:", e);
+    webconsolejs["common/utils/toast"]?.showToast?.(
+      webconsolejs["common/utils/toast"].TOAST_TYPES.ERROR,
+      "Failed to load VNet/SecurityGroup/SSHKey list: " + (e?.message || e)
+    );
+  }
+}
+
+// VNet 선택 변경 시 Subnet 목록을 subnetInfoList에서 채운다 (별도 API 없음)
+export function onExpertVNetChange() {
+  const vnetSel = document.getElementById("ep_expert_vnet");
+  const subnetSel = document.getElementById("ep_expert_subnet");
+  const sgSel = document.getElementById("ep_expert_sg");
+  const zoneHint = document.getElementById("ep_expert_subnet_zone_hint");
+  if (!vnetSel || !subnetSel) return;
+
+  const vNetId = vnetSel.value;
+  const vNet = expertVNetList.find((v) => v.id === vNetId);
+  const subnets = vNet?.subnetInfoList || [];
+
+  fillSelect(subnetSel, subnets, subnets.length ? "Select Subnet" : "No Subnet found in this VNet");
+  subnetSel.disabled = subnets.length === 0;
+  if (zoneHint) zoneHint.textContent = "";
+
+  // SG는 model.SecurityGroupInfo.vNetId로 선택한 VNet에 속하는 것만 남긴다.
+  // connection만으로 필터하면 다른 VNet 소속 SG가 섞여, 배포 시 cb-tumblebug이
+  // "Security group X and subnet Y belong to different networks" 400을 반환한다(실측 확인).
+  if (sgSel) {
+    const scopedSGs = vNetId ? expertSGList.filter((s) => s.vNetId === vNetId) : [];
+    sgSel.innerHTML = "";
+    scopedSGs.forEach((s) => {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = s.cspResourceName ? `${s.name} (${s.cspResourceName})` : s.name;
+      sgSel.appendChild(opt);
+    });
+    sgSel.disabled = scopedSGs.length === 0;
+    if (scopedSGs.length === 0) {
+      const ph = document.createElement("option");
+      ph.value = "";
+      ph.textContent = "No Security Group found in this VNet";
+      sgSel.appendChild(ph);
+    }
+  }
+}
+
+// Subnet 선택 변경 시 zone 안내 갱신 (CreateNodeGroupReq에는 zone 필드가 없다 — subnet.zone이 곧 배치 zone)
+export function onExpertSubnetChange() {
+  const vnetSel = document.getElementById("ep_expert_vnet");
+  const subnetSel = document.getElementById("ep_expert_subnet");
+  const zoneHint = document.getElementById("ep_expert_subnet_zone_hint");
+  if (!vnetSel || !subnetSel || !zoneHint) return;
+
+  const vNet = expertVNetList.find((v) => v.id === vnetSel.value);
+  const subnet = (vNet?.subnetInfoList || []).find((s) => s.id === subnetSel.value);
+  zoneHint.textContent = subnet?.zone ? `Zone: ${subnet.zone}` : "";
+}
+
+function getSelectedExpertSubnetZone() {
+  const vnetSel = document.getElementById("ep_expert_vnet");
+  const subnetSel = document.getElementById("ep_expert_subnet");
+  if (!vnetSel || !subnetSel) return "";
+  const vNet = expertVNetList.find((v) => v.id === vnetSel.value);
+  const subnet = (vNet?.subnetInfoList || []).find((s) => s.id === subnetSel.value);
+  return subnet?.zone || "";
+}
+
+function AppStateNs() {
+  // 이 모듈은 별도 AppState가 없어 navbar 헬퍼로 매번 조회한다 (다른 호출부와 동일 패턴)
+  return window.currentNsId;
+}
 
 // 서버 더하기버튼 클릭시 서버정보 입력area 보이기/숨기기
 // isExpert의 체크 여부에 따라 바뀜.
@@ -546,8 +528,8 @@ export async function displayNewServerForm() {
   // 화면별 select 참조 — Create MCI는 #mci_deploy_algorithm, Extend VM은 #vm_deploy_algorithm
   var deploymentAlgo = $(isVm ? "#vm_deploy_algorithm" : "#mci_deploy_algorithm").val();
 
-  if (deploymentAlgo == "express") {
-    // 폼을 열기 전에 추가 초기화
+  if (deploymentAlgo == "express" || deploymentAlgo == "expert") {
+    // 폼을 열기 전에 추가 초기화 (Express/Expert 공용 — Expert는 같은 폼을 리소스 선택 섹션만 더해 쓴다)
     $("#ep_name").val("");
     $("#ep_description").val("");
     $("#ep_imageId_input").val("");
@@ -565,32 +547,20 @@ export async function displayNewServerForm() {
     setNodeLabels(null);
     $("#ep_node_user_password").val("");
 
+    // Expert 전용 UI 노출/숨김 — 삭제가 아니라 게이팅(WEB-BUG-063에서 숨긴 것과 대칭)
+    var isExpert = deploymentAlgo == "expert";
+    var pwGroup = document.getElementById("ep_node_user_password_group");
+    if (pwGroup) pwGroup.style.display = isExpert ? "" : "none";
+    var expertSection = document.getElementById("ep_expert_resources_section");
+    if (expertSection) expertSection.style.display = isExpert ? "" : "none";
+    if (isExpert) resetExpertResourceSection();
+
     var div = document.getElementById("server_configuration");
     webconsolejs["partials/layout/navigatePages"].toggleSubElement(div)
 
   } else if (deploymentAlgo == "simple") {
     // var div = document.getElementById("server_configuration");
     // webconsolejs["partials/layout/navigatePages"].toggleElement(div)
-
-  } else if (deploymentAlgo == "expert") {
-    // call getProviderList API
-    var providerList = await webconsolejs["common/api/services/mci_api"].getProviderList()
-    // provider set
-    await setProviderList(providerList)
-
-    // call getRegion API
-    var regionList = await webconsolejs["common/api/services/mci_api"].getRegionList()
-    // region set
-    await setRegionList(regionList)
-
-    // call cloudconnection
-    var connectionList = await webconsolejs["common/api/services/mci_api"].getCloudConnection()
-    // cloudconnection set
-    await setCloudConnection(connectionList)
-
-    // toggle expert form
-    var div = document.getElementById("expert_server_configuration");
-    webconsolejs["partials/layout/navigatePages"].toggleSubElement(div)
 
   } else {
     console.error(e)
@@ -710,6 +680,27 @@ export async function expressDone_btn() {
   express_form["nodeUserPassword"] = $("#ep_node_user_password").val() || "";
   // Data Disk attach 옵션 — NodeGroup Size 1일 때만 유효(폼에서 이미 disabled 처리됨)
   express_form["diskOption"] = collectDiskOptionFromForm();
+
+  // Expert 모드 — model.CreateNodeGroupReq 필수 리소스(vNetId/subnetId/securityGroupIds/sshKeyId)
+  // zone은 별도 입력이 아니라 선택한 Subnet에서 결정된다.
+  if (currentDeployMode() === "expert") {
+    var expertVNetId = $("#ep_expert_vnet").val();
+    var expertSubnetId = $("#ep_expert_subnet").val();
+    var expertSgIds = $("#ep_expert_sg").val() || [];
+    var expertSshKeyId = $("#ep_expert_sshkey").val();
+
+    if (!expertVNetId || !expertSubnetId || expertSgIds.length === 0 || !expertSshKeyId) {
+      alert("Expert mode requires VNet, Subnet, at least one Security Group, and an SSH Key.");
+      return;
+    }
+
+    express_form["vNetId"] = expertVNetId;
+    express_form["subnetId"] = expertSubnetId;
+    express_form["securityGroupIds"] = expertSgIds;
+    express_form["sshKeyId"] = expertSshKeyId;
+    var expertZone = getSelectedExpertSubnetZone();
+    if (expertZone) express_form["zone"] = expertZone;
+  }
 
   // 3. Done 시점 NodeGroup 단건 사전 검증 — Error면 목록에 담지 않고 폼 유지 (spec/image 재선택 유도)
   var precheckAllowed = await precheckNodeGroup(express_form);
@@ -975,6 +966,12 @@ function getInfraDeployLabels() {
 // Deploy 시점 전체 review는 현행 유지되므로 최종 안전망은 유지된다.
 // 반환: true = 목록 추가 진행, false = 차단(폼 유지)
 async function precheckNodeGroup(express_form) {
+  // Expert 모드는 dynamic review(mciDynamicReview/vmDynamicReview) 대상이 아니다 —
+  // spec/image 자동탐색을 하지 않으므로 PostSpecImagePairReview로 조합 호환성만 검증한다.
+  if (currentDeployMode() === "expert") {
+    return await precheckNodeGroupExpert(express_form);
+  }
+
   if (isDonePrecheckRunning) {
     return false;
   }
@@ -1037,6 +1034,64 @@ async function precheckNodeGroup(express_form) {
     return true;
   } catch (e) {
     console.error("NodeGroup precheck failed:", e);
+    return await showPrecheckConfirmModal("NodeGroup Validation",
+      "NodeGroup validation could not be performed.\nIt will be validated again at Deploy.\n\nAdd to the list anyway?");
+  } finally {
+    isDonePrecheckRunning = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = btnOrigHtml;
+    }
+  }
+}
+
+// Expert 모드 precheck — PostSpecImagePairReview로 spec+image 조합 호환성만 확인한다.
+// vNet/Subnet/SG/SSHKey 정합성(connection 일치·subnet 소속)은 이 API로 검증되지 않으므로
+// expressDone_btn()에서 필수값 존재 여부를 먼저 걸러낸 뒤 이 함수가 호출된다.
+async function precheckNodeGroupExpert(express_form) {
+  if (isDonePrecheckRunning) {
+    return false;
+  }
+  isDonePrecheckRunning = true;
+
+  var btn = document.getElementById("express_done_btn");
+  var btnOrigHtml;
+  if (btn) {
+    btnOrigHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Validating...';
+  }
+
+  try {
+    var resp = await webconsolejs["common/api/services/mci_api"].specImagePairReview(
+      express_form.commonSpec, express_form.commonImage, express_form.rootDiskType, express_form.zone
+    );
+    var review = resp && resp.status === 200 ? resp.data.responseData : null;
+
+    if (!review) {
+      return await showPrecheckConfirmModal("NodeGroup Validation",
+        "NodeGroup validation could not be performed.\nIt will be validated again at Deploy.\n\nAdd to the list anyway?");
+    }
+
+    var errors = review.errors || [];
+    var warnings = review.warnings || [];
+
+    // Review는 배포를 막는 차단 장치가 아니라 사전 권고 — Express 모드와 동일한 안내 방식
+    if (review.isValid === false || review.status === "Error") {
+      return await showPrecheckConfirmModal("NodeGroup Validation Failed",
+        reviewReasonLines(errors.length ? errors : [review.message])
+        + "\n\nThis check is advisory. Deployment may still succeed if the configuration is correct."
+        + "\n\nAdd to the list anyway?");
+    }
+
+    if (review.status === "Warning" || warnings.length > 0) {
+      return await showPrecheckConfirmModal("NodeGroup Validation Warning",
+        reviewReasonLines(warnings.length ? warnings : [review.message])
+        + "\n\nAdd to the list anyway?");
+    }
+    return true;
+  } catch (e) {
+    console.error("Expert NodeGroup precheck failed:", e);
     return await showPrecheckConfirmModal("NodeGroup Validation",
       "NodeGroup validation could not be performed.\nIt will be validated again at Deploy.\n\nAdd to the list anyway?");
   } finally {
@@ -1374,6 +1429,13 @@ export function deployMci() {
 	// }    
 }
 export async function createMciDynamic() {
+	// Expert 모드는 PostInfra(비-dynamic)를 쓴다 — 전 nodeGroup이 이미 Done 시점에
+	// PostSpecImagePairReview로 개별 precheck을 마쳤으므로, 여기서는 infra 단위 review 없이 바로 배포한다
+	// (dynamic처럼 spec/image 자동탐색을 하지 않아 동일한 infra-level review API가 없다).
+	if (currentDeployMode() === "expert") {
+		return await createMciStatic();
+	}
+
 	// 이름 검증은 review 호출보다 앞에 둔다 — 확정 실패에 네트워크 왕복을 낭비하지 않는다.
 	if (!validateNodeGroupNamesBeforeDeploy()) return;
 
@@ -1469,7 +1531,65 @@ export async function createMciDynamic() {
 	}
 }
 
+// Expert 모드 Create Infra — PostInfra(model.InfraReq) 직접 배포.
+// Disk Attach 오케스트레이션(scheduleDiskAttachForConfigs)은 dataDiskIds 미지원 범위라 호출하지 않는다.
+async function createMciStatic() {
+	if (!validateNodeGroupNamesBeforeDeploy()) return;
+
+	var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
+	var selectedNsId = selectedWorkspaceProject.nsId;
+
+	var mciName = $("#mci_name").val();
+	var mciDesc = $("#mci_desc").val();
+	var policyOnPartialFailure = $("#mci_policy_on_partial_failure").val();
+
+	if (!mciName) {
+		alert("Please Input Infra Name!!!!!");
+		return;
+	}
+	if (!mciDesc) {
+		mciDesc = "Made in CB-TB";
+	}
+
+	const deployLabels = getInfraDeployLabels();
+
+	// PostInfra는 완전 동기 API라 노드 생성이 끝날 때까지 응답하지 않는다(수십 초 소요, 실측).
+	// dynamic처럼 즉시 navigate하면 브라우저가 요청을 끊어버리므로 완료까지 대기하고
+	// 버튼을 잠가 중복 제출을 막는다.
+	var btn = document.getElementById("mci_deploy_btn");
+	var btnOrigHtml;
+	if (btn) {
+		btnOrigHtml = btn.innerHTML;
+		btn.disabled = true;
+		btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Deploying...';
+	}
+
+	try {
+		const resp = await webconsolejs["common/api/services/mci_api"].mciStatic(
+			mciName, mciDesc, Express_Server_Config_Arr, selectedNsId, policyOnPartialFailure, deployLabels
+		);
+		if (resp && resp.status >= 200 && resp.status < 300) {
+			window.location = "/webconsole/operations/manage/workloads/mciworkloads";
+		} else {
+			alert("Failed to create Infra: " + (resp?.data?.responseData?.message || resp?.data?.message || "unknown error"));
+		}
+	} catch (e) {
+		alert("Failed to create Infra: " + (e?.response?.data?.responseData?.message || e?.message || e));
+	} finally {
+		if (btn) {
+			btn.disabled = false;
+			btn.innerHTML = btnOrigHtml;
+		}
+	}
+}
+
 export async function createVmDynamic() {
+    // Expert 모드는 PostInfraNode(비-dynamic)를 쓴다 — dataDiskIds 미지원 범위라
+    // Disk Attach 오케스트레이션은 생략한다.
+    if (currentDeployMode() === "expert") {
+        return await createVmStatic();
+    }
+
     // vmDynamic 호출 전에 막아야 scheduleDiskAttachForConfigs·완료 alert·페이지 이동이 실행되지 않는다.
     if (!validateNodeGroupNamesBeforeDeploy()) return;
 
@@ -1482,6 +1602,19 @@ export async function createVmDynamic() {
     // sessionStorage에 먼저 기록됨(scheduleDiskAttachAfterDeploy 내부), mciworkloads
     // 페이지 로드 시 resumePendingDiskAttachJobs()가 이어받는다.
     scheduleDiskAttachForConfigs(selectedNsId, mciId, Express_Server_Config_Arr);
+
+    alert("Node creation request completed")
+    window.location = `/webconsole/operations/manage/workloads/mciworkloads`;
+}
+
+async function createVmStatic() {
+    if (!validateNodeGroupNamesBeforeDeploy()) return;
+
+    var selectedWorkspaceProject = await webconsolejs["partials/layout/navbar"].workspaceProjectInit();
+    var selectedNsId = selectedWorkspaceProject.nsId;
+    var mciId = window.currentMciId;
+
+    await webconsolejs["common/api/services/mci_api"].vmStatic(mciId, selectedNsId, Express_Server_Config_Arr)
 
     alert("Node creation request completed")
     window.location = `/webconsole/operations/manage/workloads/mciworkloads`;

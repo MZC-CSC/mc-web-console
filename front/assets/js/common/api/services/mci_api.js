@@ -394,6 +394,70 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
   window.location = "/webconsole/operations/manage/workloads/mciworkloads"
 }
 
+// Expert 모드 Create Infra — 비-dynamic PostInfra(model.InfraReq). Spec/Image 자동탐색을 하지
+// 않고 vNetId/subnetId/securityGroupIds/sshKeyId를 사용자가 직접 지정한 model.CreateNodeGroupReq를 쓴다.
+// dynamic 경로와 달리 nodeUserPassword를 그대로 전송한다(model.CreateNodeGroupReq에 존재하는 필드 —
+// WEB-BUG-063이 숨긴 것은 dynamic 전용 model.CreateNodeGroupDynamicReq 쪽이다).
+export async function mciStatic(mciName, mciDesc, Express_Server_Config_Arr, nsId, policyOnPartialFailure, labels) {
+
+  const nodeGroups = Express_Server_Config_Arr.map(config => ({
+    name: config.name,
+    specId: config.commonSpec,
+    imageId: config.commonImage,
+    connectionName: config.connectionName,
+    description: config.description,
+    nodeGroupSize: parseInt(config.subGroupSize) || 1,
+    rootDiskSize: (config.rootDiskSize !== "" && config.rootDiskSize !== undefined) ? parseInt(config.rootDiskSize) : 0,
+    rootDiskType: config.rootDiskType,
+    vNetId: config.vNetId,
+    subnetId: config.subnetId,
+    securityGroupIds: config.securityGroupIds || [],
+    sshKeyId: config.sshKeyId,
+    ...(config.nodeUserPassword ? { nodeUserPassword: config.nodeUserPassword } : {}),
+    ...(config.label && Object.keys(config.label).length > 0 ? { label: config.label } : {})
+  }));
+
+  const command = Express_Server_Config_Arr.length > 0 && Express_Server_Config_Arr[0].command
+    ? Express_Server_Config_Arr[0].command.split('\n').filter(cmd => cmd.trim() !== '')
+    : [];
+
+  const data = {
+    pathParams: {
+      "nsId": nsId
+    },
+    Request: {
+      "name": mciName,
+      "description": mciDesc,
+      "label": labels || {},
+      "nodeGroups": nodeGroups,
+      "policyOnPartialFailure": policyOnPartialFailure,
+      // 단일 명령은 phase 1개로 표현 (cb-tumblebug v0.12.29+ postCommands 배열 구조)
+      ...(command.length ? {
+        "postCommands": [{ "command": command, "userName": "cb-user" }]
+      } : {})
+    }
+  }
+
+  // PostInfra(비-dynamic)는 PostInfraDynamic과 달리 완전 동기 API다 — 노드 생성이
+  // 끝날 때까지 응답하지 않는다(실측 40초 이상). PostInfraDynamic처럼 fire-and-forget으로
+  // 쏘고 즉시 navigate하면 브라우저가 페이지 이동과 함께 요청을 끊어버려 front가 502를
+  // 반환하고(진행 중이던 백엔드 작업은 계속돼도 결과를 알 방법이 없다), async-requests에도
+  // 추적되지 않는다(ASYNC_TRACK_OPERATION_IDS 허용목록에 PostInfra가 없음 — 애초에
+  // PostInfraDynamic류의 "빠른 ack + 백그라운드 처리" 모델이 아니기 때문). 따라서 응답을
+  // 기다린 뒤 호출자가 완료 처리를 하도록 response를 그대로 반환한다.
+  var controller = "/api/" + "mc-infra-manager/" + "PostInfra";
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostInfra',
+    'Infra create (Expert): ' + mciName
+  );
+  return await webconsolejs["common/api/http"].commonAPIPost(
+    controller,
+    data,
+    false,
+    tracked.httpOptions
+  );
+}
+
 // Add NodeGroup(Extend VM) Done 시점 단건 사전 검증.
 // 핸들러가 infra 존재를 선검증하므로 기존 infra에만 사용 가능 — 신규 Create 플로우는 mciDynamicReview(단건 배열) 사용.
 // 응답 responseData는 review 단건 객체(infra 래퍼 없음).
@@ -468,6 +532,71 @@ export async function vmDynamic(mciId, nsId, Express_Server_Config_Arr) {
     responses.push(response);
   }
   return responses;
+}
+
+// Expert 모드 Extend Node — 비-dynamic PostInfraNode(model.CreateNodeGroupReq).
+// vmDynamic()과 동일하게 nodeGroup별로 순차 호출한다(PostInfraNode는 단건 API).
+export async function vmStatic(mciId, nsId, Express_Server_Config_Arr) {
+
+  var controller = "/api/" + "mc-infra-manager/" + "PostInfraNode";
+  const responses = [];
+  for (const obj of Express_Server_Config_Arr) {
+    const data = {
+      pathParams: {
+        nsId: nsId,
+        infraId: mciId,
+      },
+      request: {
+        "name": obj.name,
+        "specId": obj.commonSpec,
+        "imageId": obj.commonImage,
+        "connectionName": obj.connectionName,
+        "description": obj.description,
+        "nodeGroupSize": parseInt(obj.subGroupSize) || 1,
+        "rootDiskSize": (obj.rootDiskSize !== "" && obj.rootDiskSize !== undefined) ? parseInt(obj.rootDiskSize) : 0,
+        "rootDiskType": obj.rootDiskType,
+        "vNetId": obj.vNetId,
+        "subnetId": obj.subnetId,
+        "securityGroupIds": obj.securityGroupIds || [],
+        "sshKeyId": obj.sshKeyId,
+        ...(obj.nodeUserPassword ? { nodeUserPassword: obj.nodeUserPassword } : {}),
+        ...(obj.label && Object.keys(obj.label).length > 0 ? { label: obj.label } : {})
+      }
+    }
+
+    const ngName = (obj && obj.name) ? obj.name : 'nodegroup';
+    const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+      'PostInfraNode',
+      'NodeGroup add (Expert): ' + ngName
+    );
+    const response = await webconsolejs["common/api/http"].commonAPIPost(
+      controller,
+      data,
+      false,
+      tracked.httpOptions
+    );
+    responses.push(response);
+  }
+  return responses;
+}
+
+// Expert 모드 precheck — spec+image 조합 호환성만 검증한다(Expert는 dynamic review 대상이 아님).
+export async function specImagePairReview(specId, imageId, rootDiskType, zone) {
+  const data = {
+    Request: {
+      "specId": specId,
+      "imageId": imageId,
+      ...(rootDiskType ? { rootDiskType } : {}),
+      ...(zone ? { zone } : {})
+    }
+  };
+
+  var controller = "/api/" + "mc-infra-manager/" + "PostSpecImagePairReview";
+  const response = await webconsolejs["common/api/http"].commonAPIPost(
+    controller,
+    data
+  );
+  return response;
 }
 
 export async function mciRecommendVm(data) {
