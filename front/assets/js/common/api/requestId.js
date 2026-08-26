@@ -12,11 +12,15 @@ export const ASYNC_TRACK_OPERATION_IDS = Object.freeze([
   'PostInfraDynamic',
   'PostInfraDynamicFromTemplate',
   'PostK8sClusterDynamic',
+  'PostK8sCluster',
   // Phase 2 — nodegroup / scale
   'PostInfraNodeGroupDynamic',
   'PostInfraNodeGroupScaleOut',
   'PostK8sNodeGroupDynamic',
   'Postk8snodegroup',
+  // Phase 2 — nodegroup autoscaling
+  'PutSetK8sNodeGroupAutoscaling',
+  'PutChangeK8sNodeGroupAutoscaleSize',
   // Phase 2 — control
   'GetControlInfra',
   'GetControlInfraNode',

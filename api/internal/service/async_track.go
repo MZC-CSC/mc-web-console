@@ -4,20 +4,23 @@ import "strings"
 
 // AsyncTrackOperationIDs mirrors Front ASYNC_TRACK_OPERATION_IDS (WEB-TECH-017).
 var AsyncTrackOperationIDs = map[string]struct{}{
-	"PostInfraDynamic":             {},
-	"PostInfraDynamicFromTemplate": {},
-	"PostK8sClusterDynamic":        {},
-	"PostInfraNodeGroupDynamic":    {},
-	"PostInfraNodeGroupScaleOut":   {},
-	"PostK8sNodeGroupDynamic":      {},
-	"Postk8snodegroup":             {},
-	"GetControlInfra":              {},
-	"GetControlInfraNode":          {},
-	"PostInfraNodeSnapshot":        {},
-	"DelInfra":                     {},
-	"DelInfraNode":                 {},
-	"Deletek8scluster":             {},
-	"Deletek8snodegroup":           {},
+	"PostInfraDynamic":                   {},
+	"PostInfraDynamicFromTemplate":       {},
+	"PostK8sClusterDynamic":              {},
+	"PostK8sCluster":                     {},
+	"PostInfraNodeGroupDynamic":          {},
+	"PostInfraNodeGroupScaleOut":         {},
+	"PostK8sNodeGroupDynamic":            {},
+	"Postk8snodegroup":                   {},
+	"PutSetK8sNodeGroupAutoscaling":      {},
+	"PutChangeK8sNodeGroupAutoscaleSize": {},
+	"GetControlInfra":                    {},
+	"GetControlInfraNode":                {},
+	"PostInfraNodeSnapshot":              {},
+	"DelInfra":                           {},
+	"DelInfraNode":                       {},
+	"Deletek8scluster":                   {},
+	"Deletek8snodegroup":                 {},
 }
 
 // IsAsyncTrackOperation reports whether operationId should be persisted.

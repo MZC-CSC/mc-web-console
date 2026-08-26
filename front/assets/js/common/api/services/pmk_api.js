@@ -125,17 +125,24 @@ export async function CreateCluster(clusterName, selectedConnection, clusterVers
   }
 
   var controller = "/api/" + "mc-infra-manager/" + "PostK8sCluster";
-  const response = webconsolejs["common/api/http"].commonAPIPost(
-    controller,
-    data
+
+  // 클러스터 생성은 CSP에 따라 10~20분이 걸린다. 응답을 기다리지 않고 보내되,
+  // requestId로 추적해 진행/완료를 toast와 navbar로 알린다 (createK8sClusterDynamic과 동일).
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PostK8sCluster',
+    'K8s create: ' + clusterName
   );
+  webconsolejs["common/api/http"].commonAPIPost(
+    controller,
+    data,
+    undefined,
+    tracked.httpOptions
+  ).catch(function (error) {
+    console.error('Failed to send cluster creation request:', error);
+    webconsolejs['common/util'].showToast('Failed to send cluster creation request', 'error');
+  });
 
-  alert("Creation request completed");
-  var urlParamMap = new Map();
-
-  // 생성요청했으므로 결과를 기다리지 않고 pmkList로 보냄
-  // webconsolejs["common/util"].changePage("PmkMng", urlParamMap)
-  window.location = "/webconsole/operations/manage/workloads/pmkworkloads"
+  return { dispatched: true };
 }
 
 export async function getVpcList(connectionName, nsId) {
@@ -455,7 +462,16 @@ export async function createNode(k8sClusterId, nsId, Create_Node_Config_Arr, pro
   if (concurrent && Create_Node_Config_Arr.length > 1) {
     return await dispatchNodeGroupsConcurrently(controller, k8sClusterId, nsId, Create_Node_Config_Arr);
   }
-  return await sendNodeGroupsSequentially(controller, k8sClusterId, nsId, Create_Node_Config_Arr);
+
+  // 순차 전송은 유지하되(tumblebug이 클러스터 단위로 직렬 처리, 비-GCP 동시 수용은 미실증)
+  // 그 체인을 기다리지 않는다 — 건당 40~47초를 스피너 없이 붙잡고 있던 원인.
+  // 완료 보고와 목록 갱신은 체인 끝에서 수행한다 (동시 전송 경로와 동일한 UX).
+  sendNodeGroupsSequentially(controller, k8sClusterId, nsId, Create_Node_Config_Arr);
+  webconsolejs["common/util"].showToast(
+    'NodeGroup creation requests dispatched (' + Create_Node_Config_Arr.length + ') — processing in background',
+    'info'
+  );
+  return { dispatched: Create_Node_Config_Arr.length };
 }
 
 // 동시 수용 CSP: 응답을 기다리지 않고 3초 간격으로 전송(fire) — 3초 내 즉시 오류만 감시하고
@@ -556,6 +572,12 @@ async function sendNodeGroupsSequentially(controller, k8sClusterId, nsId, config
     webconsolejs["common/util"].showToast('Node group creation request completed successfully (' + configArr.length + ')', 'success');
   } else {
     webconsolejs["common/util"].showToast('Failed to create node group: ' + failedNames.join(', '), 'error');
+  }
+
+  // 결과 수신 시점에 목록 갱신 (생성 접수 반영)
+  if (webconsolejs["pages/operation/manage/pmk"] &&
+      typeof webconsolejs["pages/operation/manage/pmk"].refreshPmkList === 'function') {
+    webconsolejs["pages/operation/manage/pmk"].refreshPmkList();
   }
   return responses;
 }
@@ -882,6 +904,99 @@ export function nodeGroupDelete(nsId, k8sClusterId, k8sNodeGroupName, options = 
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'Deletek8snodegroup',
     'K8s NG delete: ' + k8sNodeGroupName
+  );
+  const mergedOptions = Object.assign({}, options || {}, {
+    loaderType: 'none',
+    headers: Object.assign({}, (options && options.headers) || {}, tracked.headers),
+  });
+  let response = webconsolejs['common/api/http'].commonAPIPost(
+    controller,
+    data,
+    false,
+    mergedOptions
+  );
+  return response;
+}
+
+// NodeGroup의 Autoscaling On/Off 설정
+export function setNodeGroupAutoscaling(nsId, k8sClusterId, k8sNodeGroupName, onAutoScaling, options = {}) {
+  if (!nsId || nsId === '' ||
+      !k8sClusterId || k8sClusterId === '' ||
+      !k8sNodeGroupName || k8sNodeGroupName === '') {
+    console.error('Invalid parameters for NodeGroup autoscaling:', {
+      nsId: nsId,
+      k8sClusterId: k8sClusterId,
+      k8sNodeGroupName: k8sNodeGroupName
+    });
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Invalid Parameters',
+      'Invalid parameters for setting autoscaling. Please try again.'
+    );
+    return;
+  }
+
+  let data = {
+    pathParams: {
+      nsId: nsId,
+      k8sClusterId: k8sClusterId,
+      k8sNodeGroupName: k8sNodeGroupName
+    },
+    request: {
+      // tumblebug은 문자열 "true"/"false"를 받는다 (model.SetK8sNodeGroupAutoscalingReq)
+      onAutoScaling: String(onAutoScaling) === 'true' ? 'true' : 'false'
+    }
+  };
+  let controller = '/api/' + 'mc-infra-manager/' + 'PutSetK8sNodeGroupAutoscaling';
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PutSetK8sNodeGroupAutoscaling',
+    'K8s NG autoscaling: ' + k8sNodeGroupName
+  );
+  const mergedOptions = Object.assign({}, options || {}, {
+    loaderType: 'none',
+    headers: Object.assign({}, (options && options.headers) || {}, tracked.headers),
+  });
+  let response = webconsolejs['common/api/http'].commonAPIPost(
+    controller,
+    data,
+    false,
+    mergedOptions
+  );
+  return response;
+}
+
+// NodeGroup의 Autoscale Size(desired/min/max) 변경
+export function changeNodeGroupAutoscaleSize(nsId, k8sClusterId, k8sNodeGroupName, sizes, options = {}) {
+  if (!nsId || nsId === '' ||
+      !k8sClusterId || k8sClusterId === '' ||
+      !k8sNodeGroupName || k8sNodeGroupName === '') {
+    console.error('Invalid parameters for NodeGroup autoscale size:', {
+      nsId: nsId,
+      k8sClusterId: k8sClusterId,
+      k8sNodeGroupName: k8sNodeGroupName
+    });
+    webconsolejs['partials/layout/modal'].commonShowDefaultModal(
+      'Invalid Parameters',
+      'Invalid parameters for changing autoscale size. Please try again.'
+    );
+    return;
+  }
+
+  let data = {
+    pathParams: {
+      nsId: nsId,
+      k8sClusterId: k8sClusterId,
+      k8sNodeGroupName: k8sNodeGroupName
+    },
+    request: {
+      desiredNodeSize: parseInt(sizes.desiredNodeSize) || 1,
+      minNodeSize: parseInt(sizes.minNodeSize) || 1,
+      maxNodeSize: parseInt(sizes.maxNodeSize) || parseInt(sizes.desiredNodeSize) || 1
+    }
+  };
+  let controller = '/api/' + 'mc-infra-manager/' + 'PutChangeK8sNodeGroupAutoscaleSize';
+  const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
+    'PutChangeK8sNodeGroupAutoscaleSize',
+    'K8s NG autoscale size: ' + k8sNodeGroupName
   );
   const mergedOptions = Object.assign({}, options || {}, {
     loaderType: 'none',
