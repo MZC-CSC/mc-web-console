@@ -4,10 +4,15 @@ import "strings"
 
 // AsyncTrackOperationIDs mirrors Front ASYNC_TRACK_OPERATION_IDS (WEB-TECH-017).
 var AsyncTrackOperationIDs = map[string]struct{}{
-	"PostInfraDynamic":                   {},
-	"PostInfraDynamicFromTemplate":       {},
-	"PostK8sClusterDynamic":              {},
-	"PostK8sCluster":                     {},
+	"PostInfraDynamic":             {},
+	"PostInfraDynamicFromTemplate": {},
+	"PostK8sClusterDynamic":        {},
+	"PostK8sCluster":               {},
+	// Expert 모드(WEB-TECH-052) — PostInfra/PostInfraNode는 완전 동기 API라
+	// front의 ASYNC_TRACK_OPERATION_IDS와 동일하게 등록해 async_request_poller가
+	// cb-tumblebug의 reqID 기반 진행상황을 추적하도록 한다.
+	"PostInfra":                          {},
+	"PostInfraNode":                      {},
 	"PostInfraNodeGroupDynamic":          {},
 	"PostInfraNodeGroupScaleOut":         {},
 	"PostK8sNodeGroupDynamic":            {},

@@ -13,6 +13,13 @@ export const ASYNC_TRACK_OPERATION_IDS = Object.freeze([
   'PostInfraDynamicFromTemplate',
   'PostK8sClusterDynamic',
   'PostK8sCluster',
+  // Expert 모드(WEB-TECH-052) — 비-dynamic이지만 동일한 fire-and-forget +
+  // async-requests 폴링 패턴을 쓴다. PostInfra/PostInfraNode는 완전 동기 API라
+  // (노드 생성이 끝날 때까지 응답하지 않음) 응답을 직접 기다리면 브라우저가
+  // navigate와 함께 요청을 끊어버린다 — 허용목록에 넣어 cb-tumblebug 자체의
+  // reqID 기반 진행상황 폴링(api/의 async_request_poller)으로 완료를 추적한다.
+  'PostInfra',
+  'PostInfraNode',
   // Phase 2 — nodegroup / scale
   'PostInfraNodeGroupDynamic',
   'PostInfraNodeGroupScaleOut',

@@ -300,6 +300,58 @@
               </div>
             </div>
           </div>
+          <!--
+            Expert 모드 전용 리소스 직접 선택 (WEB-TECH-052).
+            cb-tumblebug 비-dynamic PostInfra/PostInfraNode(model.CreateNodeGroupReq)는
+            vNetId/subnetId/securityGroupIds/sshKeyId를 정확한 리소스 ID로 요구한다.
+            Spec/Image 선택으로 connection이 정해지기 전까지 비활성 상태를 유지한다.
+            zone은 별도 입력이 아니라 선택한 Subnet(SubnetInfo.zone)으로 결정된다.
+          -->
+          <div class="mb-2" id="ep_expert_resources_section" style="display: none">
+            <hr />
+            <h4 class="text-info">Network &amp; Security (Expert Mode)</h4>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group mb-2">
+                  <label class="form-label required">VNet</label>
+                  <select
+                    class="form-select"
+                    id="ep_expert_vnet"
+                    disabled
+                    onchange="webconsolejs['partials/operation/manage/mcicreate'].onExpertVNetChange()"
+                  >
+                    <option value="">Select Spec/Image first</option>
+                  </select>
+                </div>
+                <div class="form-group mb-2">
+                  <label class="form-label required">Subnet</label>
+                  <select
+                    class="form-select"
+                    id="ep_expert_subnet"
+                    disabled
+                    onchange="webconsolejs['partials/operation/manage/mcicreate'].onExpertSubnetChange()"
+                  >
+                    <option value="">Select a VNet first</option>
+                  </select>
+                  <div class="form-text" id="ep_expert_subnet_zone_hint"></div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group mb-2">
+                  <label class="form-label required">Security Groups</label>
+                  <select class="form-select" id="ep_expert_sg" multiple disabled size="4">
+                  </select>
+                  <div class="form-text">Ctrl/Cmd-click to select multiple.</div>
+                </div>
+                <div class="form-group mb-2">
+                  <label class="form-label required">SSH Key</label>
+                  <select class="form-select" id="ep_expert_sshkey" disabled>
+                    <option value="">Select Spec/Image first</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- template Add NodeGroup carry-through 필드 read-only 표시 — 5필드 항상 렌더, 잠김은 스타일로 구분 -->
           <div class="form-group mb-2 d-none" id="carry_through_section">
             <label class="form-label">Template-defined Fields</label>
@@ -317,174 +369,6 @@
             >
               Done
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- expert form -->
-<div class="container-xl">
-  <div class="row">
-    <div class="col-md-12">
-      <div class="card sub_section" id="expert_server_configuration">
-        <div class="card-header">
-          <h3 class="text-info">Node Configuration</h3>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group mb-2">
-                <label class="form-label required">Node Name</label>
-                <input
-                  class="form-control"
-                  name="expert_server_name"
-                  id="expert_name"
-                  rows="1"
-                  placeholder="Input Name"
-                />
-              </div>
-              <div class="form-group mb-2">
-                <label class="form-label">Description</label>
-                <textarea
-                  class="form-control"
-                  name="expert_server_description"
-                  id="expert_description"
-                  rows="3"
-                  placeholder="type Description"
-                ></textarea>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group mb-2">
-                <label class="form-label">Cloud Provider / Region</label>
-                <div class="row g-2">
-                  <div class="col-6">
-                    <select name="select-provider" class="form-select" id="expert_provider">
-                      <option value="">Select Provider</option>
-                      
-                    </select>
-                  </div>
-                  <div class="col-6">
-                    <select name="select-region" class="form-select" id="expert_region">
-                      <option value="">Select Region</option>
-                      
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div class="form-group mb-2">
-                <label class="form-label required">Cloud Connection</label>
-                <div class="row g-2">
-                  <div class="col">
-                    <select class="form-select" name="select-connection" id="expert_cloudconnection" required>
-                      <option value="">Select Connection</option>
-                      
-                    </select>
-                  </div>
-                  
-                </div>
-              </div>
-              <div class="form-group mb-2">
-                <label class="form-label">Node Quantity</label>
-                <div class="row g-2">
-                  <div class="col-md-6">
-                    <div class="input-number-container">
-                      <button class="input-number-decrement">-</button>
-                      <input
-                        type="number"
-                        class="input-number"
-                        value="1"
-                        min="1"
-                        max="100"
-                        id="expert_vm_add_cnt"
-                      />
-                      <button class="input-number-increment">+</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-md-12">
-              <!-- for tabs -->
-              <div class="card">
-                <div class="card-header">
-                  <ul
-                    class="nav nav-tabs card-header-tabs"
-                    data-bs-toggle="tabs"
-                  >
-                    <li class="nav-item">
-                      <a
-                        href="#tabs-oshw-8"
-                        class="nav-link active"
-                        data-bs-toggle="tab"
-                        >OS/HW</a
-                      >
-                    </li>
-                    <li class="nav-item">
-                      <a
-                        href="#tabs-network-8"
-                        class="nav-link"
-                        data-bs-toggle="tab"
-                        >Network</a
-                      >
-                    </li>
-                    <li class="nav-item">
-                      <a
-                        href="#tabs-security-8"
-                        class="nav-link"
-                        data-bs-toggle="tab"
-                        >Security</a
-                      >
-                    </li>
-                    <li class="nav-item">
-                      <a
-                        href="#tabs-other-8"
-                        class="nav-link"
-                        data-bs-toggle="tab"
-                        >Other</a
-                      >
-                    </li>
-                  </ul>
-                </div>
-                <div class="card-body">
-                  <div class="container">
-                    <div class="tab-content">
-                      <div class="tab-pane fade active show" id="tabs-oshw-8">
-                        {{ partial("partials/operation/manage/oshwtabcard.html") | raw }}
-                      </div>
-                      <div class="tab-pane fade" id="tabs-network-8">
-                        {{ partial("partials/operation/manage/networktabcard.html") | raw }}
-                      </div>
-                      <div class="tab-pane fade" id="tabs-security-8">
-                        {{ partial("partials/operation/manage/securitytabcard.html") | raw }}
-                      </div>
-                      <div class="tab-pane fade" id="tabs-other-8">
-                        {{ partial("partials/operation/manage/othertabcard.html") | raw }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card-footer">
-          <div class="row">
-            <div class="col">
-              <div align="right">
-                <button type="submit" class="btn btn-secondary">Clear</button>
-                <button
-                  type="submit"
-                  class="btn btn-info"
-                  onclick="webconsolejs['partials/operation/manage/mcicreate'].exprertDone_btn()"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -512,3 +396,6 @@
 {{ javascriptTag("partials/operation/manage/mcicreate.js") | raw }} {{ javascriptTag("common/api/services/mci_api.js") | raw }}<!--API 호출-->
 {{ javascriptTag("common/api/services/disk_api.js") | raw }}<!--API 호출-->
 {{ javascriptTag("common/api/services/vmimage_api.js") | raw }}<!--API 호출-->
+{{ javascriptTag("common/api/services/vpc_api.js") | raw }}<!--API 호출: Expert Mode VNet/Subnet 선택-->
+{{ javascriptTag("common/api/services/securitygroup_api.js") | raw }}<!--API 호출: Expert Mode Security Group 선택-->
+{{ javascriptTag("common/api/services/sshkey_api.js") | raw }}<!--API 호출: Expert Mode SSH Key 선택-->
