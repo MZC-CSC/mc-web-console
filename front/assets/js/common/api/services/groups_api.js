@@ -9,6 +9,10 @@ function unwrapResponse(response) {
         err.response = response.response;
         throw err;
     }
+    // 204 No Content: DELETE 등 body 없는 성공 응답 (다른 *_api.js 서비스 파일과 동일 패턴)
+    if (response.status === 204) {
+        return null;
+    }
     if (!response.data) {
         throw new Error('Invalid response from server');
     }
