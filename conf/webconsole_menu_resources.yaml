@@ -268,7 +268,7 @@ menus:
     parentid: workspaces
     displayname: Projects
     restype: menu
-    isaction: false
+    isaction: true
     priority: 2
     menunumber: 1720
 
