@@ -417,6 +417,12 @@ function sortMenusByDependency(menus) {
     return result;
 }
 
+// export-menus-filename 기본값 생성 — 초 단위 타임스탬프로 재export 시 파일명 충돌 방지
+function buildDefaultExportFilename(format) {
+    const stamp = new Date().toISOString().replace(/[:T]/g, '-').split('.')[0];
+    return `menu-export-${stamp}.${format}`;
+}
+
 // Export: 포맷(json/yaml)과 파일명을 받아 다운로드
 window.exportMenus = async function(format, filename) {
     try {
@@ -450,7 +456,7 @@ window.exportMenus = async function(format, filename) {
 // Export 모달 저장 버튼 핸들러
 window.doExportMenus = async function() {
     const format = document.querySelector('input[name="export-format"]:checked').value;
-    const filename = (document.getElementById('export-menus-filename').value || `menu-export.${format}`).trim();
+    const filename = (document.getElementById('export-menus-filename').value || buildDefaultExportFilename(format)).trim();
     bootstrap.Modal.getInstance(document.getElementById('export-menus-modal')).hide();
     await exportMenus(format, filename);
 };
@@ -568,8 +574,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const exportModal = document.getElementById('export-menus-modal');
     if (exportModal) {
         exportModal.addEventListener('show.bs.modal', () => {
-            const date = new Date().toISOString().slice(0, 10);
-            document.getElementById('export-menus-filename').value = `menu-${date}.json`;
+            document.getElementById('export-menus-filename').value = buildDefaultExportFilename('json');
             document.getElementById('export-format-json').checked = true;
         });
     }
