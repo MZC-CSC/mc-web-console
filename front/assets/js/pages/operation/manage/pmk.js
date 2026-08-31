@@ -25,11 +25,17 @@ const PMK_LOADER_CONFIG = {
     clusterDetail: {
       loaderType: 'page'  // 변경: Getk8scluster는 동기적으로 기다려야 함
     },
-    
+
     // 비동기 조회 - Toast Loader (백그라운드 데이터)
     monitoring: {
       loaderType: 'toast',
       progressLabel: 'Loading Monitoring Data...',
+      successMessage: null
+    },
+    // CSP에 따라 실패/미지원일 수 있어 메인 클러스터 정보 로딩을 막지 않는다
+    kubeconfig: {
+      loaderType: 'toast',
+      progressLabel: 'Loading KubeConfig...',
       successMessage: null
     }
   }
@@ -52,7 +58,16 @@ const PmkApiHelper = {
       PMK_LOADER_CONFIG.fetch.clusterDetail
     );
   },
-  
+
+  // CSP-native auth 방식 kubeconfig — CSP에 따라 실패/미지원일 수 있음, 호출부에서 N/A 처리
+  async getClusterKubeconfig(nsId, clusterId) {
+    return await webconsolejs["common/api/services/pmk_api"].getClusterKubeconfig(
+      nsId,
+      clusterId,
+      PMK_LOADER_CONFIG.fetch.kubeconfig
+    );
+  },
+
   // 삭제·변경 작업 / Delete, Update operations
   // 로더 옵션을 넘기지 않는다 — 추적되는 요청이라 api 함수가 loaderType을 'none'으로 강제한다
   async deleteCluster(nsId, clusterId) {
@@ -399,7 +414,15 @@ export async function getSelectedPmkData() {
         var selectedNsId = selectedWorkspaceProject.nsId;
 
         try {
-            var pmkResp = await PmkApiHelper.getClusterDetail(selectedNsId, currentPmkId);
+            var detailPromise = PmkApiHelper.getClusterDetail(selectedNsId, currentPmkId);
+            // KubeConfig는 CSP에 따라 실패/미지원일 수 있어 클러스터 정보 조회와 별개로 병렬 진행 — 실패해도 메인 조회는 막지 않음
+            var kubeconfigPromise = PmkApiHelper.getClusterKubeconfig(selectedNsId, currentPmkId)
+                .catch(function(error) {
+                    console.error('Error fetching kubeconfig:', error);
+                    return null;
+                });
+
+            var pmkResp = await detailPromise;
 
             // Check if pmkResp exists
             if (!pmkResp) {
@@ -437,8 +460,15 @@ export async function getSelectedPmkData() {
                 return;
             }
 
+            // KubeConfig 응답 처리 — CSP 미지원/실패 시 null (setPmkInfoData가 N/A로 표시)
+            var kubeconfigResp = await kubeconfigPromise;
+            var pmkKubeConfigText = (kubeconfigResp && kubeconfigResp.status === 200 &&
+                kubeconfigResp.data && kubeconfigResp.data.responseData)
+                ? (kubeconfigResp.data.responseData.kubeconfig || null)
+                : null;
+
             // SET PMK Info page
-            setPmkInfoData(pmkResp.data);
+            setPmkInfoData(pmkResp.data, pmkKubeConfigText);
 
             // Toggle PMK Info
             var div = document.getElementById("cluster_info");
@@ -1024,7 +1054,7 @@ export async function importNodeGroups(input) {
 }
 
 // 클릭한 pmk의 info값 세팅
-function setPmkInfoData(pmkData) {
+function setPmkInfoData(pmkData, kubeconfigText) {
     // Cluster Info 영역 표시
     $('#cluster_info').show();
     
@@ -1057,7 +1087,18 @@ function setPmkInfoData(pmkData) {
         // 추가정보
         var pmkCloudConnection = clusterData.connectionName
         var pmkEndPoint = clusterDetailData?.AccessInfo?.Endpoint || "N/A"
-        var pmkKubeConfig = clusterDetailData?.AccessInfo?.Kubeconfig || "N/A" // TODO: 너무 길어서 처리 질문
+        // CSP-native auth 방식(GetK8sClusterKubeconfig) — cb-spider는 AWS/GCP 외 CSP에서
+        // native 변환 없이(에러도 없이) 기존 spider-relay 값을 그대로 200으로 돌려주므로
+        // (cb-spider ClusterManager.go convertToNativeKubeConfig의 default 분기),
+        // 응답 성공 여부가 아니라 provider로 직접 게이팅해야 한다.
+        // AccessInfo.Kubeconfig(cb-spider relay)는 spider 프로세스 내부 호출 전용 경로라 외부 클라이언트에서 쓰지 않는다.
+        var pmkKubeConfigNote = {
+            aws: 'Requires AWS CLI credentials and EKS Access Entry registration to use locally.',
+            gcp: 'Requires gcloud CLI (gke-gcloud-auth-plugin) and GKE cluster IAM access to use locally.'
+        };
+        var pmkProviderLower = (clusterProvider || "").toLowerCase();
+        var pmkKubeConfigSupported = pmkKubeConfigNote.hasOwnProperty(pmkProviderLower);
+        var pmkKubeConfig = (pmkKubeConfigSupported && kubeconfigText) ? kubeconfigText : "N/A";
 
         // webconsolejs["common/api/services/pmk_api"].getPmkInfoProviderNames(pmkData); // PMK에 사용된 provider
         // var pmkDescription = clusterData.description;
@@ -1114,8 +1155,15 @@ function setPmkInfoData(pmkData) {
                         setTimeout(() => { btn.textContent = 'Copy KubeConfig'; }, 1500);
                     });
                 });
+                const note = document.createElement('div');
+                // .datagrid-content는 짧은 값 표시를 위해 white-space:nowrap+ellipsis로 잘라내므로
+                // 여러 줄로 감싸야 하는 안내문에는 text-wrap(white-space:normal)으로 되돌린다
+                note.className = 'form-text text-wrap';
+                note.textContent = pmkKubeConfigNote[pmkProviderLower];
+
                 kubeconfigEl.innerHTML = '';
                 kubeconfigEl.appendChild(btn);
+                kubeconfigEl.appendChild(note);
             } else {
                 kubeconfigEl.textContent = "N/A";
             }

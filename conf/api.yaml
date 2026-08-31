@@ -2221,6 +2221,10 @@ serviceActions:
       method: get
       resourcePath: /k8sClusterInfo
       description: Get kubernetes cluster information
+    GetK8sClusterKubeconfig:
+      method: get
+      resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}/kubeconfig
+      description: Get a kubeconfig for the specified K8sCluster using CSP-native auth plugins (e.g., aws-iam-authenticator for EKS, gke-gcloud-auth-plugin for GKE).
     GetK8sClusterToken:
       method: get
       resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}/token

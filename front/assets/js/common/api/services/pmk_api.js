@@ -74,6 +74,39 @@ export async function getCluster(nsId, clusterId, options = {}) {
   }
 }
 
+// CSP-native auth 방식(EKS는 aws-iam-authenticator 등)의 kubeconfig 조회.
+// CSP에 따라 미지원일 수 있으므로 모달 없이 에러를 그대로 반환한다 — 호출부에서 N/A 처리.
+export async function getClusterKubeconfig(nsId, clusterId, options = {}) {
+  if (!nsId || !clusterId) {
+    return { status: 400, error: 'Missing nsId or clusterId' };
+  }
+
+  try {
+    const data = {
+      pathParams: {
+        nsId: nsId,
+        k8sClusterId: clusterId
+      }
+    };
+
+    var controller = "/api/" + "mc-infra-manager/" + "GetK8sClusterKubeconfig";
+    const response = await webconsolejs["common/api/http"].commonAPIPost(
+      controller,
+      data,
+      false,
+      options
+    );
+
+    return response;
+  } catch (error) {
+    console.error('Error in getClusterKubeconfig API call:', error);
+    return {
+      status: 500,
+      error: 'API call failed: ' + (error.message || 'Unknown error')
+    };
+  }
+}
+
 export async function CreateCluster(clusterName, selectedConnection, clusterVersion, selectedVpc, selectedSubnet, selectedSecurityGroup, Create_Cluster_Config_Arr, selectedNsId) {
 
   var obj = {}
