@@ -171,7 +171,9 @@ function initRecommendSpecTable() {
 	];
 
 	//recommendTable = setSpecTabulator("spec-table", tableObjParams, columns);
-	recommendTable = webconsolejs["common/util"].setTabulator("spec-table", tableObjParams, columns);
+	// applySpecInfo()는 항상 recommendSpecs[0]만 사용하므로 단일 선택으로 강제한다.
+	// 다중 선택 상태로 두면 이전에 체크된 행이 재검색/재선택 후에도 남아있어 Apply가 옛 spec을 다시 적용하는 결함이 생긴다(PMK WEB-BUG-073과 동일 원인).
+	recommendTable = webconsolejs["common/util"].setTabulator("spec-table", tableObjParams, columns, false);
 	window.recommendTable = recommendTable; // window 객체에 할당
 
 	recommendTable.on("rowSelectionChanged", function (data, rows) {
