@@ -182,7 +182,9 @@ function initRecommendSpecTablePmk() {
 		return;
 	}
 	
-	recommendTablePmk = webconsolejs["common/util"].setTabulator("spec-table-pmk", tableObjParams, columns);
+	// applySpecInfoPmk()은 항상 recommendSpecsPmk[0]만 사용하므로 단일 선택으로 강제한다.
+	// 다중 선택 상태로 두면 이전에 체크된 행이 재검색/재선택 후에도 남아있어 Apply가 옛 spec을 다시 적용하는 결함이 생긴다.
+	recommendTablePmk = webconsolejs["common/util"].setTabulator("spec-table-pmk", tableObjParams, columns, false);
 
 	recommendTablePmk.on("rowSelectionChanged", function (data, rows) {
 		updateSelectedRowsPmk(data)

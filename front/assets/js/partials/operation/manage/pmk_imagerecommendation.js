@@ -27,6 +27,15 @@ export function initImageModalPmk() {
 	
 	// 초기 테이블 초기화만 수행 (필드 설정은 Apply 시점에 미리 완료됨)
 	initRecommendImageTablePmk();
+
+	// spec을 바꾼 뒤 모달을 다시 열면 이전 spec으로 조회했던 결과가 그대로 남아있던 결함 수정.
+	// 모달이 열릴 때마다 결과 테이블을 비워, 사용자가 다시 Search를 눌러야 현재 spec 기준 결과가 보이게 한다.
+	imageModal.addEventListener('shown.bs.modal', function () {
+		recommendImageListObjPmk = [];
+		if (recommendImageTablePmk && typeof recommendImageTablePmk.setData === 'function') {
+			recommendImageTablePmk.setData([]);
+		}
+	});
 }
 
 
@@ -169,7 +178,9 @@ function initRecommendImageTablePmk() {
 		}
 	];
 
-	recommendImageTablePmk = webconsolejs["common/util"].setTabulator("image-table-pmk", tableObjParams, columns);
+	// applyImageInfoPmk()은 항상 recommendImagesPmk[0]만 사용하므로 단일 선택으로 강제한다.
+	// 다중 선택 상태로 두면 이전에 체크된 행이 재검색/재선택 후에도 남아있어 Apply가 옛 이미지를 다시 적용하는 결함이 생긴다.
+	recommendImageTablePmk = webconsolejs["common/util"].setTabulator("image-table-pmk", tableObjParams, columns, false);
 	
 	recommendImageTablePmk.on("rowSelectionChanged", function (data, rows) {
 		updateSelectedImageRowsPmk(data)
