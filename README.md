@@ -43,7 +43,7 @@ See mc-admin-cli's [README](https://github.com/m-cmp/mc-admin-cli#readme) (Quick
 
 ### Local development (contributors)
 
-mc-web-console runs as **two separate Echo servers**: `api/` (backend API / proxy to mc-iam-manager, mc-infra-manager, and the other microservices, default port 3100) and `front/` (HTML templates + static assets, default port 3001). See [`CLAUDE.md`](CLAUDE.md) for the full dev workflow (hot-reload with `air`/`npm run dev`, worktree setup for parallel branches, etc.); the short version:
+mc-web-console runs as **two separate Echo servers**: `api/` (backend API / proxy to mc-iam-manager, mc-infra-manager, and the other microservices, default port 3000) and `front/` (HTML templates + static assets, default port 3001).
 
 **Prerequisites**
 - Go 1.25+ ([install guide](https://go.dev/doc/install))
@@ -63,13 +63,13 @@ cp conf/.env.sample conf/.env
 ```bash
 # api
 cd api && go build -o ../bin/api ./cmd/main.go && cd ..
-MC_WEB_CONSOLE_API_PORT=3100 ./bin/api
+MC_WEB_CONSOLE_API_PORT=3000 ./bin/api
 
 # front (separate terminal)
 cd front && npm install && npm run build && go build -o ../bin/front ./cmd/app && cd ..
 MC_WEB_CONSOLE_FRONT_PORT=3001 ./bin/front
 ```
-For active development, `CLAUDE.md` documents a faster hot-reload loop (`npm run dev` for webpack watch + `air` for Go auto-restart) instead of rebuilding by hand each time.
+For active `front/` development, `npm run dev` (webpack `--watch`) rebuilds static assets automatically instead of running `npm run build` by hand each time; the Go binaries (`api/`, `front/`) still need a manual rebuild.
 
 **3. Verify**
 ```bash
