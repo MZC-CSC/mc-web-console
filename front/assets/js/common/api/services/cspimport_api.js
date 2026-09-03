@@ -139,7 +139,7 @@ export async function registerCspNativeResources(nsId, filter, resourceTypes) {
  * @param {{ connectionName: string, cspResourceId: string, name: string }[]} vmList
  */
 export async function registerCspVm(nsId, mciName, vmList) {
-  const res = await call('PostRegisterCSPNativeVM', {
+  const res = await call('PostRegisterCSPNativeNode', {
     pathParams: { nsId },
     request: {
       name: mciName,

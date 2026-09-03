@@ -64,7 +64,7 @@ export async function getNLBHealth(nsId, infraId, nlbId) {
 
 /** 기존 NLB 타겟에 노드 추가 (Assign) */
 export async function addNLBNodes(nsId, infraId, nlbId, nodes) {
-  const controller = '/api/mc-infra-manager/AddNLBVMs';
+  const controller = '/api/mc-infra-manager/AddNLBNodes';
   const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
     pathParams: { nsId, infraId, nlbId },
     request: { targetGroup: { nodes } }
@@ -74,7 +74,7 @@ export async function addNLBNodes(nsId, infraId, nlbId, nodes) {
 
 /** NLB 타겟에서 노드 해제 (UnAssign) */
 export async function removeNLBNodes(nsId, infraId, nlbId, nodes) {
-  const controller = '/api/mc-infra-manager/RemoveNLBVMs';
+  const controller = '/api/mc-infra-manager/RemoveNLBNodes';
   const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
     pathParams: { nsId, infraId, nlbId },
     request: { targetGroup: { nodes } }

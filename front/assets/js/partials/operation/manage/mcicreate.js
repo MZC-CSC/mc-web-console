@@ -191,7 +191,7 @@ async function _runDiskAttachJob(job) {
 			if (diskOption.mode === "existing") {
 				await diskApi.attachDataDisk(nsId, infraId, nodeId, diskOption.dataDiskId);
 			} else {
-				await diskApi.postVmDataDisk(nsId, infraId, nodeId, diskOption.body);
+				await diskApi.postNodeDataDisk(nsId, infraId, nodeId, diskOption.body);
 			}
 			webconsolejs["common/utils/toast"].showToast(
 				webconsolejs["common/utils/toast"].TOAST_TYPES.SUCCESS,
