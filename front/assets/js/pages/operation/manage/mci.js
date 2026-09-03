@@ -1552,7 +1552,7 @@ function _diskContext(context) {
 
 let _attachDiskContext = 'default'
 
-// GetVmDataDisk는 명세와 달리 이 노드에 "실제 연결된" 것이 아니라 연결 후보군을
+// GetNodeDataDisk는 명세와 달리 이 노드에 "실제 연결된" 것이 아니라 연결 후보군을
 // 반환한다(다른 provider 디스크까지 포함되는 것을 확인함). Disks 화면과 동일하게
 // associatedObjectList(신뢰 가능한 유일한 소스)로 실제 연결 여부를 판단해
 // 두 화면이 항상 같은 기준으로 일치된 정보를 보여주게 한다.
@@ -1658,7 +1658,7 @@ export async function executeAttachDiskToNode() {
       const body = { name, diskSize }
       if (diskType) body.diskType = diskType
       if (description) body.description = description
-      await diskApi.postVmDataDisk(window.currentNsId, infraId, nodeId, body)
+      await diskApi.postNodeDataDisk(window.currentNsId, infraId, nodeId, body)
     } else {
       const dataDiskId = document.getElementById('node-attach-disk-select').value
       if (!dataDiskId) {

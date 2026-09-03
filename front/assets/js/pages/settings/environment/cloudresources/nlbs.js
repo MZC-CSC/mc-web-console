@@ -452,7 +452,7 @@ export async function executeBulkDelete() {
 
 // ─── Edit (노드 Assign/UnAssign) ─────────────────────────────────────────
 // tumblebug에 NLB update API가 없어(RestPutNLB 미구현) Listener/HealthChecker는 생성 후 변경 불가.
-// 콘솔의 "Edit"는 타겟 노드 추가(AddNLBVMs)/해제(RemoveNLBVMs)만을 의미한다.
+// 콘솔의 "Edit"는 타겟 노드 추가(AddNLBNodes)/해제(RemoveNLBNodes)만을 의미한다.
 // Infra Info NLB 탭(partials/operation/manage/mcinlb.js)의 Assign/UnAssign 로직을 이 화면 컨텍스트
 // (AppState.ns + 선택 행의 _infraId)에 맞춰 단일 Edit 모달로 구성.
 

@@ -1231,10 +1231,10 @@ serviceActions:
       method: post
       resourcePath: /lookupSpecs
       description: "Lookup spec list"
-    AddNLBVMs:
+    AddNLBNodes:
       method: post
       resourcePath: /ns/{nsId}/infra/{infraId}/nlb/{nlbId}/node
-      description: Add VMs to NLB
+      description: Add nodes to NLB
     AnalyzeProvisioningRisk:
       method: get
       resourcePath: /provisioning/risk/{specId}
@@ -1355,10 +1355,10 @@ serviceActions:
       method: get
       resourcePath: /ns/{nsId}/checkResource/{resourceType}/{resourceId}
       description: Check resources' existence
-    ClearAllVmCommandStatus:
+    ClearAllNodeCommandStatus:
       method: delete
       resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/commandStatusAll
-      description: Delete all command status records for a VM
+      description: Delete all command status records for a node
     ComplementSshKeyRemoteCommand:
       method: put
       resourcePath: /ns/{nsId}/resources/sshKey/{sshKeyId}/complement
@@ -1797,18 +1797,18 @@ serviceActions:
       method: delete
       resourcePath: /resources/objectStorage/{objectStorageName}/versions/{objectKey}
       description: (To be deprecated) Delete a specific version of an object in an object storage (bucket)
-    DeleteVmCommandStatus:
+    DeleteNodeCommandStatus:
       method: delete
       resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/commandStatus/{index}
-      description: Delete a specific command status record by index for a VM
-    DeleteVmCommandStatusByCriteria:
+      description: Delete a specific command status record by index for a node
+    DeleteNodeCommandStatusByCriteria:
       method: delete
       resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/commandStatus
-      description: Delete multiple command status records for a VM based on filtering criteria
-    DeleteVmSshHostKey:
+      description: Delete multiple command status records for a node based on filtering criteria
+    DeleteNodeSshHostKey:
       method: delete
       resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/sshHostKey
-      description: Reset the stored SSH host key for a specific VM. This should be used when the VM's host key has legitimately changed (e.g., after VM recreation) and you trust the new key. The next SSH connection will store the new host key (TOFU).
+      description: Reset the stored SSH host key for a specific node. This should be used when the node's host key has legitimately changed (e.g., after node recreation) and you trust the new key. The next SSH connection will store the new host key (TOFU).
     DeregisterCustomImage:
       method: delete
       resourcePath: /ns/{nsId}/deregisterResource/customImage/{customImageId}
@@ -2316,6 +2316,10 @@ serviceActions:
       method: get
       resourcePath: /nlb/support
       description: Get per-CSP support for custom NLB health checker fields
+    GetNodeDataDisk:
+      method: get
+      resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/dataDisk
+      description: Get available dataDisks for a Node
     GetNs:
       method: get
       resourcePath: /ns/{nsId}
@@ -2677,22 +2681,18 @@ serviceActions:
       method: get
       resourcePath: /ns/{nsId}/template/vNet/{templateId}
       description: Retrieve a specific vNet Template by ID.
-    GetVmCommandStatus:
+    GetNodeCommandStatus:
       method: get
       resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/commandStatus/{index}
-      description: Get a specific command status record by index for a VM
-    GetVmDataDisk:
-      method: get
-      resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/dataDisk
-      description: Get available dataDisks for a VM
-    GetVmHandlingCommandCount:
+      description: Get a specific command status record by index for a node
+    GetNodeHandlingCommandCount:
       method: get
       resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/handlingCount
-      description: Get the number of commands currently in 'Handling' status for a specific VM. Optimized for frequent polling.
-    GetVmSshHostKey:
+      description: Get the number of commands currently in 'Handling' status for a specific node. Optimized for frequent polling.
+    GetNodeSshHostKey:
       method: get
       resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/sshHostKey
-      description: Get the stored SSH host key information for a specific VM. This is used for TOFU (Trust On First Use) verification.
+      description: Get the stored SSH host key information for a specific node. This is used for TOFU (Trust On First Use) verification.
     InitAllConfig:
       method: delete
       resourcePath: /config
@@ -2823,10 +2823,10 @@ serviceActions:
         </ListVersionsResult>
 
         ```'
-    ListVmCommandStatus:
+    ListNodeCommandStatus:
       method: get
       resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/commandStatus
-      description: List command status records for a VM with various filtering options
+      description: List command status records for a node with various filtering options
     GetAssetsSummary:
       method: get
       resourcePath: /assetsSummary
@@ -3757,11 +3757,15 @@ serviceActions:
       method: post
       resourcePath: /ns/{nsId}/infra/{infraId}/nlb
       description: Create NLB
+    PostNodeDataDisk:
+      method: post
+      resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/dataDisk
+      description: Provisioning (Create and attach) dataDisk
     PostNs:
       method: post
       resourcePath: /ns
       description: Create namespace
-    PostRegisterCSPNativeVM:
+    PostRegisterCSPNativeNode:
       method: post
       resourcePath: /ns/{nsId}/registerCspNode
       description: 'Import and register pre-existing virtual machines from cloud service providers into CB-Tumblebug management.
@@ -4140,10 +4144,6 @@ serviceActions:
 
 
         Templates can be created manually with desired vNet configurations.'
-    PostVmDataDisk:
-      method: post
-      resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/dataDisk
-      description: Provisioning (Create and attach) dataDisk
     PutChangeK8sNodeGroupAutoscaleSize:
       method: put
       resourcePath: /ns/{nsId}/k8sCluster/{k8sClusterId}/k8sNodeGroup/{k8sNodeGroupName}/autoscaleSize
@@ -4221,6 +4221,10 @@ serviceActions:
       method: put
       resourcePath: /ns/{nsId}/monitoring/status/infra/{infraId}/node/{nodeId}
       description: Set monitoring agent (CB-Dragonfly agent) installation status installed (for Windows VM only)
+    PutNodeDataDisk:
+      method: put
+      resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/dataDisk
+      description: Attach/Detach available dataDisk
     PutNs:
       method: put
       resourcePath: /ns/{nsId}
@@ -4324,10 +4328,6 @@ serviceActions:
       method: put
       resourcePath: /ns/{nsId}/template/vNet/{templateId}
       description: Update an existing vNet Template.
-    PutVmDataDisk:
-      method: put
-      resourcePath: /ns/{nsId}/infra/{infraId}/node/{nodeId}/dataDisk
-      description: Attach/Detach available dataDisk
     RecommendK8sNode:
       method: post
       resourcePath: /k8sClusterRecommendNode
@@ -4457,10 +4457,10 @@ serviceActions:
       method: delete
       resourcePath: /label/{labelType}/{uid}/{key}
       description: Remove a label from a resource identified by its uid
-    RemoveNLBVMs:
+    RemoveNLBNodes:
       method: delete
       resourcePath: /ns/{nsId}/infra/{infraId}/nlb/{nlbId}/node
-      description: Delete VMs from NLB
+      description: Delete nodes from NLB
     RestDeleteObjectStorage:
       method: delete
       resourcePath: /ns/{nsId}/resources/objectStorage/{osId}
