@@ -240,29 +240,21 @@ menus:
     priority: 1
     menunumber: 2102
 
-  - id: members
-    parentid: workspaces
-    displayname: Members
-    restype: menu
-    isaction: true
-    priority: 2
-    menunumber: 2103
-
   - id: roles
     parentid: workspaces
     displayname: Roles
     restype: menu
     isaction: true
-    priority: 3
-    menunumber: 2104
+    priority: 2
+    menunumber: 2103
 
   - id: csproles
     parentid: workspaces
     displayname: CSP Roles
     restype: menu
     isaction: true
-    priority: 4
-    menunumber: 2105
+    priority: 3
+    menunumber: 2104
 
   - id: workloads
     parentid: manage
@@ -270,7 +262,7 @@ menus:
     restype: menu
     isaction: false
     priority: 2
-    menunumber: 2106
+    menunumber: 2105
 
   - id: infraworkloads
     parentid: workloads
@@ -278,7 +270,7 @@ menus:
     restype: menu
     isaction: true
     priority: 1
-    menunumber: 2107
+    menunumber: 2106
 
   - id: k8sworkloads
     parentid: workloads
@@ -286,7 +278,7 @@ menus:
     restype: menu
     isaction: true
     priority: 2
-    menunumber: 2108
+    menunumber: 2107
 
   - id: workflows
     parentid: manage
@@ -294,7 +286,7 @@ menus:
     restype: menu
     isaction: false
     priority: 3
-    menunumber: 2109
+    menunumber: 2108
 
   - id: mcworkflows
     parentid: workflows
@@ -302,7 +294,7 @@ menus:
     restype: menu
     isaction: true
     priority: 1
-    menunumber: 2110
+    menunumber: 2109
     viewtype: iframe
     frameworkservice: mc-workflow-manager-fe
     path: /web/workflow/list
@@ -313,7 +305,7 @@ menus:
     restype: menu
     isaction: true
     priority: 2
-    menunumber: 2111
+    menunumber: 2110
     viewtype: iframe
     frameworkservice: mc-workflow-manager-fe
     path: /web/workflows/eventListener/list
@@ -324,7 +316,7 @@ menus:
     restype: menu
     isaction: false
     priority: 4
-    menunumber: 2112
+    menunumber: 2111
 
   - id: swcatalogs
     parentid: applications
@@ -332,7 +324,7 @@ menus:
     restype: menu
     isaction: true
     priority: 1
-    menunumber: 2113
+    menunumber: 2112
     viewtype: iframe
     frameworkservice: mc-application-manager-fe
     path: /web/applications/swcatalog
@@ -343,7 +335,7 @@ menus:
     restype: menu
     isaction: true
     priority: 2
-    menunumber: 2114
+    menunumber: 2113
     viewtype: iframe
     frameworkservice: mc-application-manager-fe
     path: /web/applications/status
@@ -354,7 +346,7 @@ menus:
     restype: menu
     isaction: true
     priority: 3
-    menunumber: 2115
+    menunumber: 2114
     viewtype: iframe
     frameworkservice: mc-application-manager-fe
     path: /web/applications/repository
@@ -365,7 +357,7 @@ menus:
     restype: menu
     isaction: false
     priority: 5
-    menunumber: 2116
+    menunumber: 2115
 
   - id: mcdatagenerate
     parentid: mcdatamanager
@@ -373,7 +365,7 @@ menus:
     restype: menu
     isaction: true
     priority: 1
-    menunumber: 2117
+    menunumber: 2116
     viewtype: iframe
     frameworkservice: mc-data-manager-fe
     path: /generate/objectstorage
@@ -384,7 +376,7 @@ menus:
     restype: menu
     isaction: true
     priority: 2
-    menunumber: 2118
+    menunumber: 2117
     viewtype: iframe
     frameworkservice: mc-data-manager-fe
     path: /migrate/objectstorage
@@ -395,7 +387,7 @@ menus:
     restype: menu
     isaction: true
     priority: 3
-    menunumber: 2119
+    menunumber: 2118
     viewtype: iframe
     frameworkservice: mc-data-manager-fe
     path: /backup/register
@@ -406,7 +398,7 @@ menus:
     restype: menu
     isaction: true
     priority: 4
-    menunumber: 2120
+    menunumber: 2119
     viewtype: iframe
     frameworkservice: mc-data-manager-fe
     path: /restore/register
@@ -417,7 +409,7 @@ menus:
     restype: menu
     isaction: true
     priority: 5
-    menunumber: 2121
+    menunumber: 2120
     viewtype: iframe
     frameworkservice: mc-data-manager-fe
     path: /log-management
