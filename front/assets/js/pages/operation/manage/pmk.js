@@ -218,10 +218,10 @@ async function initPmk() {
 const PMK_ASYNC_OPERATION_IDS = [
     'PostK8sCluster',
     'PostK8sClusterDynamic',
-    'Postk8snodegroup',
+    'PostK8sNodeGroup',
     'PostK8sNodeGroupDynamic',
     'Deletek8scluster',
-    'Deletek8snodegroup',
+    'DeleteK8sNodeGroup',
     'PutSetK8sNodeGroupAutoscaling',
     'PutChangeK8sNodeGroupAutoscaleSize',
 ];

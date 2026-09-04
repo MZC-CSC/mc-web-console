@@ -54,7 +54,7 @@ export async function getCluster(nsId, clusterId, options = {}) {
       }
     };
 
-    var controller = "/api/" + "mc-infra-manager/" + "Getk8scluster";
+    var controller = "/api/" + "mc-infra-manager/" + "GetK8sCluster";
     const response = await webconsolejs["common/api/http"].commonAPIPost(
       controller,
       data,
@@ -222,7 +222,7 @@ export async function getSubnetList(vNetId, nsId) {
     }
   }
 
-  var controller = "/api/" + "mc-infra-manager/" + "Getvnet"
+  var controller = "/api/" + "mc-infra-manager/" + "GetVNet"
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data
@@ -269,7 +269,7 @@ export async function getSecurityGroupList(vNetId, nsId) {
     }
   }
 
-  var controller = "/api/" + "mc-infra-manager/" + "Getallsecuritygroup";
+  var controller = "/api/" + "mc-infra-manager/" + "GetAllSecurityGroup";
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data
@@ -476,7 +476,7 @@ export async function createNode(k8sClusterId, nsId, Create_Node_Config_Arr, pro
     return;
   }
 
-  var controller = "/api/" + "mc-infra-manager/" + "Postk8snodegroup";
+  var controller = "/api/" + "mc-infra-manager/" + "PostK8sNodeGroup";
 
   // 2. 필수 필드 사전 검증 (min/maxNodeSize는 autoScaling OFF 시 없을 수 있으므로 제외)
   for (var v = 0; v < Create_Node_Config_Arr.length; v++) {
@@ -516,7 +516,7 @@ async function dispatchNodeGroupsConcurrently(controller, k8sClusterId, nsId, co
     var obj = configArr[i];
     var data = buildNodeGroupRequest(k8sClusterId, nsId, obj);
     var tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
-      'Postk8snodegroup',
+      'PostK8sNodeGroup',
       'K8s NG create: ' + obj.name
     );
 
@@ -574,7 +574,7 @@ async function sendNodeGroupsSequentially(controller, k8sClusterId, nsId, config
     var obj = configArr[i];
     var data = buildNodeGroupRequest(k8sClusterId, nsId, obj);
     var tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
-      'Postk8snodegroup',
+      'PostK8sNodeGroup',
       'K8s NG create: ' + obj.name
     );
 
@@ -636,7 +636,7 @@ export async function getSshKey(nsId, providerName) {
     };
   }
 
-  var controller = "/api/" + "mc-infra-manager/" + "Getallsshkey";
+  var controller = "/api/" + "mc-infra-manager/" + "GetAllSshKey";
   const response = webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data
@@ -933,9 +933,9 @@ export function nodeGroupDelete(nsId, k8sClusterId, k8sNodeGroupName, options = 
       k8sNodeGroupName: k8sNodeGroupName
     },
   };
-  let controller = '/api/' + 'mc-infra-manager/' + 'Deletek8snodegroup';
+  let controller = '/api/' + 'mc-infra-manager/' + 'DeleteK8sNodeGroup';
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
-    'Deletek8snodegroup',
+    'DeleteK8sNodeGroup',
     'K8s NG delete: ' + k8sNodeGroupName
   );
   const mergedOptions = Object.assign({}, options || {}, {
@@ -1126,7 +1126,7 @@ export async function checkK8sClusterDynamic(nsId, commonSpec) {
     }
   };
 
-  var controller = "/api/" + "mc-infra-manager/" + "Postk8sclusterdynamiccheckrequest";
+  var controller = "/api/" + "mc-infra-manager/" + "PostK8sClusterDynamicCheckRequest";
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data
@@ -1153,7 +1153,7 @@ export async function createK8sClusterDynamic(nsId, clusterData) {
     Request: clusterData
   };
 
-  var controller = "/api/" + "mc-infra-manager/" + "Postk8sclusterdynamic";
+  var controller = "/api/" + "mc-infra-manager/" + "PostK8sClusterDynamic";
   const clusterName = (clusterData && clusterData.name) ? clusterData.name : 'cluster';
   const tracked = webconsolejs['common/api/requestId'].beginTrackedRequest(
     'PostK8sClusterDynamic',

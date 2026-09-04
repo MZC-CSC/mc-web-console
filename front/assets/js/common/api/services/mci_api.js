@@ -1102,7 +1102,7 @@ export async function createOrUpdateLabel(labelType, uid, labels) {
     }
   };
 
-  const controller = "/api/" + "mc-infra-manager/" + "Createorupdatelabel";
+  const controller = "/api/" + "mc-infra-manager/" + "CreateOrUpdateLabel";
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data
@@ -1125,7 +1125,7 @@ export async function getLabels(labelType, uid) {
     }
   };
 
-  const controller = "/api/" + "mc-infra-manager/" + "Getlabels";
+  const controller = "/api/" + "mc-infra-manager/" + "GetLabels";
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data
@@ -1149,7 +1149,7 @@ export async function removeLabel(labelType, uid, key) {
     }
   };
 
-  const controller = "/api/" + "mc-infra-manager/" + "Removelabel";
+  const controller = "/api/" + "mc-infra-manager/" + "RemoveLabel";
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data
@@ -1169,7 +1169,7 @@ export async function getResourcesByLabelSelector(labelSelector) {
     }
   };
 
-  const controller = "/api/mc-infra-manager/Getresourcesbylabelselector";
+  const controller = "/api/mc-infra-manager/GetResourcesByLabelSelector";
   const response = await webconsolejs["common/api/http"].commonAPIPost(
     controller,
     data

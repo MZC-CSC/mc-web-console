@@ -24,7 +24,7 @@ export const ASYNC_TRACK_OPERATION_IDS = Object.freeze([
   'PostInfraNodeGroupDynamic',
   'PostInfraNodeGroupScaleOut',
   'PostK8sNodeGroupDynamic',
-  'Postk8snodegroup',
+  'PostK8sNodeGroup',
   // Phase 2 — nodegroup autoscaling
   'PutSetK8sNodeGroupAutoscaling',
   'PutChangeK8sNodeGroupAutoscaleSize',
@@ -36,7 +36,7 @@ export const ASYNC_TRACK_OPERATION_IDS = Object.freeze([
   'DelInfra',
   'DelInfraNode',
   'Deletek8scluster',
-  'Deletek8snodegroup',
+  'DeleteK8sNodeGroup',
 ]);
 
 function pad(n, width) {
