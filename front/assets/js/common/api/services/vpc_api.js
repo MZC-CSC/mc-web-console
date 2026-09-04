@@ -27,7 +27,7 @@ export async function getAllVNet(nsId, query = {}) {
 }
 
 export async function create(nsId, body) {
-  const controller = '/api/mc-infra-manager/CreateVNet';
+  const controller = '/api/mc-infra-manager/PostVNet';
   const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
     pathParams: { nsId: nsId },
     request: body
@@ -44,7 +44,7 @@ export async function get(nsId, name) {
 }
 
 export async function del(nsId, name) {
-  const controller = '/api/mc-infra-manager/DeleteVNet';
+  const controller = '/api/mc-infra-manager/DelVNet';
   const response = await webconsolejs['common/api/http'].commonAPIPost(controller, {
     pathParams: { nsId: nsId, vNetId: name }
   });
