@@ -1581,7 +1581,7 @@ export async function createVmDynamic() {
     scheduleDiskAttachForConfigs(selectedNsId, mciId, Express_Server_Config_Arr);
 
     alert("Node creation request completed")
-    window.location = `/webconsole/operations/manage/workloads/mciworkloads`;
+    window.location = `/webconsole/operations/manage/workloads/infraworkloads`;
 }
 
 async function createVmStatic() {
@@ -1594,7 +1594,7 @@ async function createVmStatic() {
     await webconsolejs["common/api/services/mci_api"].vmStatic(mciId, selectedNsId, Express_Server_Config_Arr)
 
     alert("Node creation request completed")
-    window.location = `/webconsole/operations/manage/workloads/mciworkloads`;
+    window.location = `/webconsole/operations/manage/workloads/infraworkloads`;
 }
 
 export function addNewMci() {
@@ -2062,7 +2062,7 @@ export async function deployFromSelectedTemplate() {
 		templateDeploySucceeded = true;
 		bootstrap.Modal.getInstance(document.getElementById("infra-template-select-modal"))?.hide();
 		// Toast가 보이도록 잠시 후 이동 (진행/완료는 asyncRequestTracker)
-		setTimeout(() => { window.location.href = "/webconsole/operations/manage/workloads/mciworkloads"; }, 1500);
+		setTimeout(() => { window.location.href = "/webconsole/operations/manage/workloads/infraworkloads"; }, 1500);
 	} catch (e) {
 		templateDeployInFlight = false;
 		if (deployBtn) deployBtn.disabled = false;

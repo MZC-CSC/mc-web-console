@@ -391,7 +391,7 @@ export async function mciDynamic(mciName, mciDesc, Express_Server_Config_Arr, ns
 
   // 생성요청했으므로 결과를 기다리지 않고 mciList로 보냄 (상태는 tracker toast로 표시)
   // webconsolejs["common/util"].changePage("MciMng", urlParamMap)
-  window.location = "/webconsole/operations/manage/workloads/mciworkloads"
+  window.location = "/webconsole/operations/manage/workloads/infraworkloads"
 }
 
 // Expert 모드 Create Infra — 비-dynamic PostInfra(model.InfraReq). Spec/Image 자동탐색을 하지
@@ -458,7 +458,7 @@ export async function mciStatic(mciName, mciDesc, Express_Server_Config_Arr, nsI
     tracked.httpOptions
   );
 
-  window.location = "/webconsole/operations/manage/workloads/mciworkloads"
+  window.location = "/webconsole/operations/manage/workloads/infraworkloads"
 }
 
 // Add NodeGroup(Extend VM) Done 시점 단건 사전 검증.
