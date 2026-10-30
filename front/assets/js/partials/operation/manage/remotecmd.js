@@ -178,8 +178,16 @@ export async function initTerminal(id, nsId, mciId, targetId, targetType) {
         term.write('\r\n\r\n $ ');
     }
 
-    const ipcmd = "client_ip=$(echo $SSH_CLIENT | awk '{print $1}'); echo SSH Private IP is: $client_ip";
-    await processCommand(nsId, mciId, targetId, [ipcmd], term, () => {
+    // 접속한 노드 자신의 hostname·주 IP 를 보여준다.
+    // ($SSH_CLIENT 는 SSH 접속을 건 쪽 주소라 tumblebug 호스트나 bastion 노드 IP 가 찍힌다)
+    const nodeInfoCmd = [
+        // hostname 에 -I 가 없으면 사용법이 stdout 으로 나오므로 IPv4 형식인 첫 값만 받는다
+        "node_ip=$(hostname -I 2>/dev/null | awk '{for (i = 1; i <= NF; i++) if ($i ~ /^[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+$/) {print $i; exit}}')",
+        "[ -z \"$node_ip\" ] && node_ip=$(ip -4 addr show scope global 2>/dev/null | awk '/inet / && $NF != \"lo\" {split($2, a, \"/\"); print a[1]; exit}')",
+        "[ -z \"$node_ip\" ] && node_ip=unknown",
+        "echo \"Connected to: $(hostname) / Private IP: $node_ip\""
+    ].join('; ');
+    await processCommand(nsId, mciId, targetId, [nodeInfoCmd], term, () => {
         prompt();
     }, targetType);
 
