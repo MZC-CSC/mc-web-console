@@ -941,15 +941,21 @@ async function processCommand(nsid, resourceId, targetId, command, term, callbac
 
         const callErr = toErrorMessage(response.error) || toErrorMessage(response.err);
         const stdout = toOutputChunks(response.stdout);
-        const stderr = toOutputChunks(response.stderr);
+        // tumblebug 은 명령이 0 이 아닌 코드로 끝나면 stderr 앞에 "(Process exited with status N)" / "Stderr: " 를 붙인다
+        const stderr = toOutputChunks(response.stderr).map(stripExitStatusPrefix);
 
-        if (callErr) {
+        // 명령은 실행됐지만 0 이 아닌 코드로 끝난 경우 — 접속 오류가 아니므로 출력은 그대로 보여주고 종료 코드를 덧붙인다
+        const exitStatus = parseExitStatus(callErr);
+        if (callErr && exitStatus === null) {
             writeAutoWrap(term, " > connect Error: \x1b[1m\x1b[31m" + callErr + "\x1b[0m");
             callback({ error: callErr });
             return;
         }
 
-        if (stderr.some(value => value.trim() !== '')) {
+        const hasStderr = stderr.some(value => value.trim() !== '');
+        const hasStdout = stdout.some(value => value.trim() !== '');
+
+        if (hasStderr) {
             term.write('\r\n\x1b[1m\x1b[31mSTDERR RESPONSE:\r\n');
             stderr.forEach(value => {
                 writeAutoWrap(term, value);
@@ -957,12 +963,16 @@ async function processCommand(nsid, resourceId, targetId, command, term, callbac
             term.write("\x1b[0m\r\n");
         }
 
-        if (stdout.some(value => value.trim() !== '')) {
+        if (hasStdout) {
             stdout.forEach(value => {
                 writeAutoWrap(term, value);
             });
-        } else {
+        } else if (!hasStderr) {
             term.write('\r\nSTDOUT RESPONSE: (No output)\r\n');
+        }
+
+        if (exitStatus !== null) {
+            writeAutoWrap(term, " > \x1b[1m\x1b[33mCommand exited with status " + exitStatus + "\x1b[0m");
         }
 
         callback(result);
@@ -972,6 +982,18 @@ async function processCommand(nsid, resourceId, targetId, command, term, callbac
         term.write(`Error: ${error.message}\r\n`);
         callback({ error: error.message });
     }
+}
+
+// "Process exited with status N" → N (명령이 실행된 뒤 0 이 아닌 코드로 끝남). 그 밖의 오류는 null
+function parseExitStatus(message) {
+    const match = /^Process exited with status (\d+)$/.exec((message || '').trim());
+    return match ? match[1] : null;
+}
+
+function stripExitStatusPrefix(value) {
+    return value
+        .replace(/^\(Process exited with status \d+\)\r?\n/, '')
+        .replace(/^Stderr: /, '');
 }
 
 // PostCmdInfra는 실패 사유를 `error`(문자열)로 돌려준다. 이전 응답 형태인 `err`(객체)도 받아준다.
