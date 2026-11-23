@@ -7,6 +7,10 @@ var cspRolePoliciesTable;
 var checked_array = [];
 var currentClickedCspRoleId = "";
 var selectedPolicyId = "";
+var currentRolePolicies = []; // 선택한 CSP Role 에 연결된 정책 (getRolePolicies 응답)
+var availablePolicies = []; // Attach 모달의 정책 목록
+var editingPolicy = null; // 편집기에 연 정책 원본 (바뀐 필드만 보내기 위해 보관)
+var cspAccountsCache = null;
 
 // CSP Roles 목록 조회
 export async function refreshCspRolesList() {
@@ -255,14 +259,148 @@ function getPlatformRoleForCspRole(roleData) {
   return mockPlatformRoles[roleData.id] || 'Not Assigned';
 }
 
+// ===== CSP Policy 표시·오류 헬퍼 =====
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// policy_type → 화면 표시 (inline / AWS managed / Customer managed)
+function policyTypeLabel(policyType) {
+  const labels = { inline: "Inline", managed: "AWS managed", custom: "Customer managed" };
+  return labels[policyType] || policyType || "-";
+}
+
+// IAM 이 관리하는 고객 관리형(mciam-*) 인지 — 생성·문서 수정·삭제는 이것만 가능
+function isIamOwnedCustom(policy) {
+  if (!policy || policy.policy_type !== "custom") return false;
+  const arnName = (policy.policy_arn || "").split("/").pop();
+  if (arnName) return arnName.startsWith("mciam-");
+  return (policy.name || "").startsWith("mciam-");
+}
+
+// 문서 편집 가능: inline, 그리고 mciam-* 인 custom
+function canEditPolicyDocument(policy) {
+  return policy?.policy_type === "inline" || isIamOwnedCustom(policy);
+}
+
+// aws_status 배지 (applied 초록, failed·detach_failed 빨강, 빈 값 회색 "not applied")
+function awsStatusBadgeHtml(status, lastError) {
+  const map = {
+    applied: { cls: "bg-green-lt", text: "applied" },
+    failed: { cls: "bg-red-lt", text: "failed" },
+    detach_failed: { cls: "bg-red-lt", text: "detach_failed" },
+  };
+  const conf = map[status] || { cls: "bg-secondary-lt", text: "not applied" };
+  const title = lastError ? ` title="${escapeHtml(lastError)}" data-bs-toggle="tooltip"` : "";
+  return `<span class="badge ${conf.cls} policy-aws-status" data-status="${escapeHtml(status || "")}"${title}>${conf.text}</span>`;
+}
+
+// API 오류 → 화면 문구 (IAM error + HTTP 상태·errorCode)
+function formatPolicyError(error) {
+  const parts = [];
+  if (error?.status) parts.push("HTTP " + error.status);
+  if (error?.errorCode) parts.push(error.errorCode);
+  const suffix = parts.length ? ` (${parts.join(", ")})` : "";
+  return (error?.message || "Unknown error") + suffix;
+}
+
+// 결과 모달 — items: [{ok: true|false|'warn', label, detail}]
+function showPolicyResult(title, items, summary) {
+  const titleEl = document.getElementById("policyResultTitle");
+  const bodyEl = document.getElementById("policyResultBody");
+  if (!titleEl || !bodyEl) {
+    alert(title + "\n" + (items || []).map(i => `${i.label}: ${i.detail || ""}`).join("\n"));
+    return;
+  }
+  const hasError = (items || []).some(i => i.ok === false);
+  const hasWarn = (items || []).some(i => i.ok === "warn");
+  titleEl.textContent = title;
+  titleEl.className = "modal-title " + (hasError ? "text-danger" : hasWarn ? "text-warning" : "text-success");
+  let html = summary ? `<p class="mb-3">${escapeHtml(summary)}</p>` : "";
+  html += '<ul class="list-group" id="policyResultList">';
+  (items || []).forEach(i => {
+    const badge = i.ok === true
+      ? '<span class="badge bg-green-lt me-2">OK</span>'
+      : i.ok === "warn"
+        ? '<span class="badge bg-yellow-lt me-2">Warning</span>'
+        : '<span class="badge bg-red-lt me-2">Failed</span>';
+    html += `<li class="list-group-item policy-result-item" data-ok="${i.ok}">${badge}<strong>${escapeHtml(i.label)}</strong>`;
+    if (i.detail) html += `<div class="small text-muted mt-1 text-break">${escapeHtml(i.detail)}</div>`;
+    html += "</li>";
+  });
+  html += "</ul>";
+  bodyEl.innerHTML = html;
+  bootstrap.Modal.getOrCreateInstance(document.getElementById("policyResultModal")).show();
+}
+
+// attach·detach 응답 → 결과 항목
+function bindingResultItem(label, result, okValue) {
+  if (!result) return { ok: false, label, detail: "Empty response" };
+  const ok = result.result === okValue;
+  const details = [];
+  if (result.message) details.push(result.message);
+  if (Array.isArray(result.warnings)) result.warnings.forEach(w => { if (w && !details.includes(w)) details.push(w); });
+  if (!ok && result.errorCode) details.push("errorCode: " + result.errorCode);
+  return { ok: ok ? true : false, label: `${label} — ${result.result || "unknown"}`, detail: details.join(" / ") };
+}
+
+// 모달 안 오류 표시 (입력값을 잃지 않도록 모달은 닫지 않는다) — message 가 비면 숨긴다
+function setModalError(elementId, message) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.textContent = message || "";
+  el.style.display = message ? "block" : "none";
+}
+
+function hideModal(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const modal = bootstrap.Modal.getInstance(el);
+  if (modal) modal.hide();
+}
+
+async function loadCspAccounts(force = false) {
+  if (cspAccountsCache && !force) return cspAccountsCache;
+  cspAccountsCache = await window.webconsolejs["common/api/services/csproles_api"].listCspAccounts();
+  return cspAccountsCache;
+}
+
+async function fillAccountSelect(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  select.innerHTML = '<option value="">Loading...</option>';
+  try {
+    const accounts = await loadCspAccounts();
+    if (!accounts.length) {
+      select.innerHTML = '<option value="">No CSP account</option>';
+      return;
+    }
+    select.innerHTML = accounts.map(a =>
+      `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)} (${escapeHtml((a.csp_type || "").toUpperCase())}, ID ${escapeHtml(a.id)})</option>`
+    ).join("");
+  } catch (error) {
+    select.innerHTML = '<option value="">Failed to load accounts</option>';
+    webconsolejs["common/util"].showToast("Failed to load CSP accounts: " + formatPolicyError(error), "error");
+  }
+}
+
 // CSP Role의 정책 정보 로드
 async function loadCspRolePolicies(roleId) {
   try {
     const policies = await window.webconsolejs["common/api/services/csproles_api"].getPoliciesByRoleId(roleId);
+    currentRolePolicies = policies;
     displayCspRolePolicies(policies);
   } catch (error) {
     console.error("Error loading policies:", error);
+    currentRolePolicies = [];
     displayCspRolePolicies([]);
+    webconsolejs["common/util"].showToast("Failed to load policies: " + formatPolicyError(error), "error");
   }
 }
 
@@ -274,6 +412,7 @@ function displayCspRolePolicies(policies) {
   // 기존 테이블이 있으면 제거
   if (cspRolePoliciesTable) {
     cspRolePoliciesTable.destroy();
+    cspRolePoliciesTable = null;
   }
 
   // 빈 데이터 처리
@@ -291,17 +430,17 @@ function displayCspRolePolicies(policies) {
     `;
     return;
   }
+  policiesContainer.innerHTML = "";
 
-  // Tabulator 테이블 초기화 (CSP Roles 목록과 유사한 간단한 구조)
   cspRolePoliciesTable = new Tabulator("#csp_role_policies_list", {
     data: policies,
+    index: "id",
     layout: "fitColumns",
     pagination: "local",
     paginationSize: 10,
     paginationSizeSelector: [5, 10, 20, 50],
     movableColumns: true,
-    resizableRows: true,
-    selectable: true,
+    selectableRows: true,
     columns: [
       {
         formatter: "rowSelection",
@@ -312,45 +451,88 @@ function displayCspRolePolicies(policies) {
         headerSort: false,
         width: 60,
       },
-      {
-        title: "Name",
-        field: "name",
-        vertAlign: "middle",
-        hozAlign: "center",
-        width: 300,
-      },
-      {
-        title: "ID",
-        field: "id",
-        vertAlign: "middle",
-        hozAlign: "center",
-        width: 300,
-      },
+      { title: "Name", field: "name", vertAlign: "middle", hozAlign: "left", minWidth: 200 },
+      { title: "ID", field: "id", vertAlign: "middle", hozAlign: "center", width: 80 },
       {
         title: "Policy Type",
-        field: "provider",
-        formatter: providerFormatter,
+        field: "policy_type",
+        formatter: (cell) => policyTypeLabel(cell.getValue()),
         vertAlign: "middle",
         hozAlign: "center",
-        headerSort: false,
-        width: 120,
+        width: 160,
       },
       {
-        title: "Description",
-        field: "description",
+        title: "AWS Status",
+        field: "aws_status",
+        formatter: (cell) => awsStatusBadgeHtml(cell.getValue(), cell.getData().last_error),
+        tooltip: (e, cell) => cell.getData().last_error || "",
         vertAlign: "middle",
         hozAlign: "center",
-        maxWidth: 500,
+        width: 140,
       },
+      {
+        title: "Action",
+        field: "aws_status",
+        headerSort: false,
+        vertAlign: "middle",
+        hozAlign: "center",
+        width: 150,
+        formatter: (cell) => {
+          const status = cell.getValue();
+          const id = escapeHtml(cell.getData().id);
+          if (status === "detach_failed") {
+            return `<button type="button" class="btn btn-sm btn-outline-danger policy-retry-btn" data-action="detach" data-policy-id="${id}">Retry detach</button>`;
+          }
+          if (status !== "applied") {
+            return `<button type="button" class="btn btn-sm btn-outline-primary policy-retry-btn" data-action="attach" data-policy-id="${id}">Retry apply</button>`;
+          }
+          return "";
+        },
+        cellClick: (e, cell) => {
+          const btn = e.target.closest(".policy-retry-btn");
+          if (!btn) return;
+          e.stopPropagation();
+          retryPolicyBinding(cell.getData(), btn.dataset.action);
+        },
+      },
+      { title: "Description", field: "description", vertAlign: "middle", hozAlign: "left", minWidth: 150 },
     ]
   });
 
-  // 정책 행 클릭 이벤트 추가
+  // 정책 행 클릭 시 상세 패널 (Retry 버튼·체크박스 클릭은 제외)
   cspRolePoliciesTable.on("rowClick", function (e, row) {
-    const policyData = row.getData();
-    showPolicyDetailPanel(policyData);
+    if (e.target.closest(".policy-retry-btn") || e.target.closest(".tabulator-row-handle") || e.target.type === "checkbox") return;
+    showPolicyDetailPanel(row.getData());
   });
+}
 
+// 실패 행 재시도 — attach(failed·빈 값) 또는 detach(detach_failed)
+async function retryPolicyBinding(policy, action) {
+  if (!currentClickedCspRoleId) return;
+  const api = window.webconsolejs["common/api/services/csproles_api"];
+  const label = `${policy.name} (ID ${policy.id})`;
+  try {
+    if (action === "detach") {
+      const result = await api.unbindPolicyFromRole(currentClickedCspRoleId, policy.id);
+      const item = bindingResultItem(label, result, "detached");
+      if (item.ok === true) {
+        webconsolejs["common/util"].showToast(`Policy detached: ${policy.name}`, "success");
+      } else {
+        showPolicyResult("Retry detach failed", [item]);
+      }
+    } else {
+      const result = await api.bindPolicyToRole(currentClickedCspRoleId, policy.id);
+      const item = bindingResultItem(label, result, "applied");
+      if (item.ok === true) {
+        webconsolejs["common/util"].showToast(`Policy applied: ${policy.name}`, "success");
+      } else {
+        showPolicyResult("Retry apply failed", [item]);
+      }
+    }
+  } catch (error) {
+    showPolicyResult(action === "detach" ? "Retry detach failed" : "Retry apply failed", [{ ok: false, label, detail: formatPolicyError(error) }]);
+  }
+  await loadCspRolePolicies(currentClickedCspRoleId);
 }
 
 // Provider별 색상 반환
@@ -365,138 +547,144 @@ function getProviderColor(provider) {
   return colorMap[provider] || 'secondary';
 }
 
-// 정책 추가 모달 표시
-function showAddPolicyModal() {
-  // 모달이 이미 열려있으면 초기화
-  const modal = new bootstrap.Modal(document.getElementById('addPolicyModal'));
-  modal.show();
-
-  // Provider 목록 로드
-  loadPolicyProviders();
-
-  // 검색 이벤트 리스너 추가
-  document.getElementById('addPolicySearch').addEventListener('input', filterAvailablePolicies);
-  document.getElementById('addPolicyProvider').addEventListener('change', loadAvailablePolicies);
-}
-
-// 정책 Provider 목록 로드
-async function loadPolicyProviders() {
-  try {
-    const providers = await window.webconsolejs["common/api/services/csproles_api"].getCspProviders();
-    const select = document.getElementById('addPolicyProvider');
-    select.innerHTML = '<option value="">Select Policy Provider</option>';
-
-    providers.forEach(provider => {
-      const option = document.createElement('option');
-      option.value = provider;
-      option.textContent = provider.toUpperCase();
-      select.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Error loading provider list:", error);
-  }
-}
-
-// 사용 가능한 정책 목록 로드
-async function loadAvailablePolicies() {
-  const provider = document.getElementById('addPolicyProvider').value;
-  const container = document.getElementById('availablePoliciesList');
-
-  if (!provider) {
-    container.innerHTML = '<div class="text-muted text-center py-3">Select a Policy Provider to view available policies</div>';
+// 정책 연결(Attach) 모달 표시 — 등록된 정책 목록에서 골라 선택한 CSP Role 에 연결
+async function showAddPolicyModal() {
+  if (!currentClickedCspRoleId) {
+    webconsolejs["common/util"].showToast("Please select a CSP Role first.", "warning");
     return;
   }
+  const searchEl = document.getElementById('addPolicySearch');
+  const typeEl = document.getElementById('addPolicyType');
+  searchEl.value = "";
+  typeEl.value = "";
+  searchEl.oninput = renderAvailablePolicies;
+  typeEl.onchange = loadAvailablePolicies;
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('addPolicyModal')).show();
+  await loadAvailablePolicies();
+}
 
+// 사용 가능한 정책 목록 로드 (POST /api/csp-policies/list {policy_type?})
+async function loadAvailablePolicies() {
+  const container = document.getElementById('availablePoliciesList');
+  const policyType = document.getElementById('addPolicyType').value;
+  container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm" role="status"></div> Loading policies...</div>';
   try {
-    container.innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm" role="status"></div> Loading policies...</div>';
-
-    const policies = await window.webconsolejs["common/api/services/csproles_api"].getCspPolicyList(provider);
-
-    if (!policies || policies.length === 0) {
-      container.innerHTML = '<div class="text-muted text-center py-3">No policies available for this provider</div>';
-      return;
-    }
-
-    // 정책 목록 표시
-    let html = '<div class="list-group">';
-    policies.forEach(policy => {
-      html += `
-        <div class="list-group-item d-flex justify-content-between align-items-center policy-item" data-policy-id="${policy.id}">
-          <div>
-            <h6 class="mb-1">${policy.name}</h6>
-            <small class="text-muted">ID: ${policy.id}</small>
-            <br>
-            <small class="text-muted">${policy.description || 'No description'}</small>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="selectedPolicy" value="${policy.id}">
-          </div>
-        </div>
-      `;
-    });
-    html += '</div>';
-
-    container.innerHTML = html;
+    availablePolicies = await window.webconsolejs["common/api/services/csproles_api"].getCspPolicyList({ policy_type: policyType });
+    renderAvailablePolicies();
   } catch (error) {
     console.error("Error loading policies:", error);
-    container.innerHTML = '<div class="text-danger text-center py-3">Error loading policies</div>';
+    availablePolicies = [];
+    container.innerHTML = `<div class="text-danger text-center py-3">Error loading policies: ${escapeHtml(formatPolicyError(error))}</div>`;
   }
 }
 
-// 정책 검색 필터
-function filterAvailablePolicies() {
-  const searchTerm = document.getElementById('addPolicySearch').value.toLowerCase();
-  const policyItems = document.querySelectorAll('.policy-item');
-
-  policyItems.forEach(item => {
-    const policyName = item.querySelector('h6').textContent.toLowerCase();
-    const policyId = item.querySelector('small').textContent.toLowerCase();
-
-    if (policyName.includes(searchTerm) || policyId.includes(searchTerm)) {
-      item.style.display = 'block';
-    } else {
-      item.style.display = 'none';
-    }
+// 정책 목록 렌더링 (검색어 필터, 이미 연결된 정책 표시)
+function renderAvailablePolicies() {
+  const container = document.getElementById('availablePoliciesList');
+  const term = (document.getElementById('addPolicySearch').value || "").toLowerCase();
+  const attachedIds = new Set((currentRolePolicies || []).map(p => String(p.id)));
+  const list = (availablePolicies || []).filter(p =>
+    !term || (p.name || "").toLowerCase().includes(term) || (p.policy_arn || "").toLowerCase().includes(term)
+  );
+  if (list.length === 0) {
+    container.innerHTML = '<div class="text-muted text-center py-3">No policies found. Create a policy or import policies from the CSP.</div>';
+    return;
+  }
+  let html = '<div class="list-group">';
+  list.forEach(policy => {
+    const attached = attachedIds.has(String(policy.id));
+    html += `
+      <label class="list-group-item d-flex justify-content-between align-items-center policy-item" data-policy-id="${escapeHtml(policy.id)}" data-policy-name="${escapeHtml(policy.name)}">
+        <div class="me-3">
+          <div class="fw-bold">${escapeHtml(policy.name)}
+            <span class="badge bg-azure-lt ms-1">${escapeHtml(policyTypeLabel(policy.policy_type))}</span>
+            ${attached ? '<span class="badge bg-green-lt ms-1">attached to this role</span>' : ''}
+          </div>
+          <small class="text-muted d-block">ID: ${escapeHtml(policy.id)}${policy.policy_arn ? ' · ' + escapeHtml(policy.policy_arn) : ''}</small>
+          <small class="text-muted d-block">${escapeHtml(policy.description || 'No description')}</small>
+        </div>
+        <input class="form-check-input" type="radio" name="selectedPolicy" value="${escapeHtml(policy.id)}">
+      </label>
+    `;
   });
+  html += '</div>';
+  container.innerHTML = html;
 }
 
-// 선택된 정책 추가
+// 선택된 정책 연결 — result 가 applied 인지로 판정 (AWS 반영 실패도 HTTP 200)
 async function addSelectedPolicy() {
-  const selectedPolicy = document.querySelector('input[name="selectedPolicy"]:checked');
-
-  if (!selectedPolicy) {
-    alert('Please select a policy to add');
+  const selected = document.querySelector('input[name="selectedPolicy"]:checked');
+  if (!selected) {
+    webconsolejs["common/util"].showToast("Please select a policy to attach.", "warning");
     return;
   }
-
   if (!currentClickedCspRoleId) {
-    alert('Please select a CSP Role first');
+    webconsolejs["common/util"].showToast("Please select a CSP Role first.", "warning");
     return;
   }
+  const policy = (availablePolicies || []).find(p => String(p.id) === String(selected.value)) || { id: selected.value, name: selected.value };
+  await attachPolicyAndReport(policy);
+}
 
+// attach 호출 + 결과 표시 + 목록 새로고침
+async function attachPolicyAndReport(policy) {
+  const label = `${policy.name} (ID ${policy.id})`;
   try {
-    const policyId = selectedPolicy.value;
-    const result = await window.webconsolejs["common/api/services/csproles_api"].bindPolicyToRole(currentClickedCspRoleId, policyId);
-
-    if (result.success) {
-      alert('Policy added successfully');
-
-      // 모달 닫기
-      const modal = bootstrap.Modal.getInstance(document.getElementById('addPolicyModal'));
-      modal.hide();
-
-      // 정책 목록 새로고침
-      await loadCspRolePolicies(currentClickedCspRoleId);
+    const result = await window.webconsolejs["common/api/services/csproles_api"].bindPolicyToRole(currentClickedCspRoleId, policy.id);
+    hideModal('addPolicyModal');
+    const item = bindingResultItem(label, result, "applied");
+    if (item.ok === true) {
+      webconsolejs["common/util"].showToast(`Policy attached and applied: ${policy.name}`, "success");
     } else {
-      throw new Error(result.message || 'Failed to add policy');
+      showPolicyResult("Policy saved, but not applied to AWS", [item],
+        "The binding was saved but applying it to the CSP failed. Fix the cause and use Retry apply.");
     }
   } catch (error) {
-    console.error("Error adding policy:", error);
-    alert('Error adding policy: ' + error.message);
+    hideModal('addPolicyModal');
+    let summary = "";
+    if (error.status === 400 && policy.policy_type === "inline") {
+      summary = "An inline policy can be attached to only one CSP Role. Use a customer managed policy to share it across roles.";
+    }
+    showPolicyResult("Failed to attach policy", [{ ok: false, label, detail: formatPolicyError(error) }], summary);
   }
+  await loadCspRolePolicies(currentClickedCspRoleId);
 }
 
-// 정책 언바인딩
+// Attach 모달에서 선택한 정책 편집 (Role 에 연결되지 않은 정책도 이름·ARN·설명·문서를 고칠 수 있게)
+function editSelectedAvailablePolicy() {
+  const selected = document.querySelector('input[name="selectedPolicy"]:checked');
+  if (!selected) {
+    webconsolejs["common/util"].showToast("Please select a policy to edit.", "warning");
+    return;
+  }
+  hideModal('addPolicyModal');
+  showPolicyEditor(selected.value);
+}
+
+// Attach 모달에서 선택한 정책 삭제 (연결이 남아 있으면 IAM 이 409 를 돌려준다)
+async function deleteSelectedAvailablePolicy() {
+  const selected = document.querySelector('input[name="selectedPolicy"]:checked');
+  if (!selected) {
+    webconsolejs["common/util"].showToast("Please select a policy to delete.", "warning");
+    return;
+  }
+  const policy = (availablePolicies || []).find(p => String(p.id) === String(selected.value)) || { id: selected.value, name: selected.value };
+  if (!confirm(`Delete policy "${policy.name}"? A customer managed mciam-* policy is also deleted from AWS.`)) return;
+  await deletePolicyAndReport(policy);
+  await loadAvailablePolicies();
+}
+
+async function deletePolicyAndReport(policy) {
+  const label = `${policy.name} (ID ${policy.id})`;
+  try {
+    await window.webconsolejs["common/api/services/csproles_api"].deleteCspPolicy(policy.id);
+    webconsolejs["common/util"].showToast(`Policy deleted: ${policy.name}`, "success");
+    return true;
+  } catch (error) {
+    showPolicyResult("Failed to delete policy", [{ ok: false, label, detail: formatPolicyError(error) }]);
+    return false;
+  }
+}
 
 // 정책 목록 새로고침
 function refreshPoliciesList() {
@@ -525,31 +713,36 @@ function unselectAllPolicies() {
   cspRolePoliciesTable.deselectRow();
 }
 
-// 정책 언바인딩
-function unbindPolicies() {
+// 정책 언바인딩 — 선택한 행의 정책 ID 마다 detach 를 순서대로 호출하고 항목별 결과를 한 번에 보여 준다
+async function unbindPolicies() {
   if (!cspRolePoliciesTable) {
-    console.warn("Policies table not initialized");
+    webconsolejs["common/util"].showToast("No policies linked to this CSP Role.", "warning");
     return;
   }
 
   const selectedRows = cspRolePoliciesTable.getSelectedRows();
   if (selectedRows.length === 0) {
-    alert("Please select a policy to unbind.");
+    webconsolejs["common/util"].showToast("Please select a policy to unbind.", "warning");
     return;
   }
 
-  const selectedIds = selectedRows.map(row => row.getData().binding_id);
-  if (confirm(`Are you sure you want to remove the selected ${selectedIds.length} policies from the CSP Role?`)) {
+  const targets = selectedRows.map(row => row.getData());
+  if (!confirm(`Are you sure you want to remove the selected ${targets.length} policies from the CSP Role?`)) return;
+
+  const roleId = currentClickedCspRoleId;
+  const items = [];
+  for (const policy of targets) {
+    const label = `${policy.name} (ID ${policy.id})`;
     try {
-      // TODO: 실제 일괄 언바인딩 API 호출
-      alert("The selected policies were successfully removed.");
-      // 정책 목록 새로고침
-      refreshPoliciesList();
+      const result = await window.webconsolejs["common/api/services/csproles_api"].unbindPolicyFromRole(roleId, policy.id);
+      items.push(bindingResultItem(label, result, "detached"));
     } catch (error) {
-      console.error("Error unbinding policies:", error);
-      alert("Error removing policies occurred.");
+      items.push({ ok: false, label, detail: formatPolicyError(error) });
     }
   }
+  const okCount = items.filter(i => i.ok === true).length;
+  showPolicyResult("Unbind Policies", items, `${okCount} of ${items.length} policies detached.`);
+  await loadCspRolePolicies(roleId);
 }
 
 // 정책 가져오기 (Import) - 현재 선택된 정책의 Context JSON에 추가
@@ -651,55 +844,72 @@ function viewPolicy(bindingId) {
 }
 
 // 정책 에디터 모달 표시
-async function showPolicyEditor(bindingId) {
+async function showPolicyEditor(policyId) {
   try {
-    // 정책 상세 정보 로드
-    const policy = await window.webconsolejs["common/api/services/csproles_api"].getCspPolicyById(bindingId);
+    const api = window.webconsolejs["common/api/services/csproles_api"];
+    const policy = await api.getCspPolicyById(policyId);
+    editingPolicy = policy;
+    setModalError('policyEditorError', '');
 
-    // 모달 필드 채우기
+    // 문서: DB 문서(policy_doc) 우선, 없으면 AWS 문서 조회 (managed·IAM 밖 custom)
+    let doc = policy.policy_doc;
+    if (!doc || Object.keys(doc).length === 0) {
+      try {
+        doc = await api.getPolicyDocument(policyId);
+      } catch (docError) {
+        console.warn("Policy document not available:", docError);
+        doc = null;
+      }
+    }
+    editingPolicy._loadedDocText = JSON.stringify(doc || {}, null, 2);
+
     document.getElementById('policyEditorName').value = policy.name || '';
     document.getElementById('policyEditorId').value = policy.id || '';
-    document.getElementById('policyEditorType').value = policy.provider || '';
+    document.getElementById('policyEditorType').value = policyTypeLabel(policy.policy_type);
     document.getElementById('policyEditorDescription').value = policy.description || '';
-    document.getElementById('policyEditorDocument').value = JSON.stringify(policy.document || {}, null, 2);
+    document.getElementById('policyEditorArn').value = policy.policy_arn || '';
+    document.getElementById('policyEditorAccount').value = policy.csp_account_id ?? '';
+    document.getElementById('policyEditorDocument').value = editingPolicy._loadedDocText;
 
-    // JSON 에디터를 바로 편집 모드로 설정
+    // managed·IAM 밖 custom 은 문서를 읽기 전용으로 연다. inline 은 ARN 이 없다
+    const editable = canEditPolicyDocument(policy);
     const documentTextarea = document.getElementById('policyEditorDocument');
-    documentTextarea.readOnly = false;
+    documentTextarea.readOnly = !editable;
+    document.getElementById('policyEditorArn').readOnly = policy.policy_type === "inline" || isIamOwnedCustom(policy);
+    const notice = document.getElementById('policyEditorReadonlyNotice');
+    if (notice) {
+      if (editable) {
+        notice.style.display = 'none';
+        notice.textContent = '';
+      } else {
+        notice.style.display = 'block';
+        notice.textContent = policy.policy_type === "managed"
+          ? "AWS managed policy: the document is read-only. You can change the name, ARN and description."
+          : "Customer managed policy outside IAM (not mciam-*): the document is read-only.";
+      }
+    }
 
-    // JSON 에디터 컨테이너 초기 상태 설정
     const container = document.getElementById('policyDocumentContainer');
     const preview = document.getElementById('policyDocumentPreview');
-
     if (container && preview) {
-      // 기본 상태: JSON 편집모드 표시
       container.style.display = 'block';
       preview.style.display = 'none';
     }
-
-    // 미리보기 업데이트
     updatePolicyDocumentPreview();
 
-    // 모달 표시
-    const modal = new bootstrap.Modal(document.getElementById('policyEditorModal'));
-    modal.show();
-
-    // 모달이 닫힐 때 상세페이지 상태 복원
     const modalElement = document.getElementById('policyEditorModal');
+    bootstrap.Modal.getOrCreateInstance(modalElement).show();
     modalElement.addEventListener('hidden.bs.modal', function () {
-      // 상세페이지가 숨겨져 있다면 다시 표시
       const detailPanel = document.getElementById('policy-detail-panel');
-      if (detailPanel && detailPanel.style.display === 'none') {
+      if (detailPanel && detailPanel.style.display === 'none' && selectedPolicyId) {
         detailPanel.style.display = 'block';
       }
-    });
+    }, { once: true });
 
-    // 이벤트 리스너 추가
     addPolicyDocumentListeners();
-
   } catch (error) {
     console.error("Error loading policy details:", error);
-    alert('Error loading policy details: ' + error.message);
+    showPolicyResult("Failed to load policy", [{ ok: false, label: `Policy ID ${policyId}`, detail: formatPolicyError(error) }]);
   }
 }
 
@@ -786,137 +996,143 @@ async function restoreCspRoleSelection() {
 }
 
 
-// 정책 문서 저장
+// 정책 저장 — 바뀐 필드만 보낸다. HTTP 200 이어도 warnings 가 있으면 Role 반영 실패
 async function savePolicyDocument() {
-  const policyId = document.getElementById('policyEditorId').value;
-  const policyName = document.getElementById('policyEditorName').value;
-  const policyDescription = document.getElementById('policyEditorDescription').value;
+  if (!editingPolicy) return;
+  const policy = editingPolicy;
+  const name = document.getElementById('policyEditorName').value.trim();
+  const description = document.getElementById('policyEditorDescription').value;
+  const arn = document.getElementById('policyEditorArn').value.trim();
   const documentText = document.getElementById('policyEditorDocument').value;
 
-  try {
-    // JSON 유효성 검사
-    JSON.parse(documentText);
-
-    const result = await window.webconsolejs["common/api/services/csproles_api"].updateCspPolicy(policyId, {
-      name: policyName,
-      description: policyDescription,
-      document: JSON.parse(documentText)
-    });
-
-    // API 응답 성공 확인 (다양한 응답 구조 지원)
-    if (result && (
-      (result.success === true) ||
-      (result.status && result.status.code === 200) ||
-      (result.data && result.data.status && result.data.status.code === 200) ||
-      (result.statusCode === 200) ||
-      (result.data && result.data.statusCode === 200)
-    )) {
-      alert('The policy was successfully updated.');
-
-      // 1. 정책 목록 새로고침
-      if (currentCspRoleId) {
-        await loadCspRolePolicies(currentCspRoleId);
-      }
-
-      // 2. 모달 닫기
-      const modal = bootstrap.Modal.getInstance(document.getElementById('policyEditorModal'));
-      if (modal) {
-        modal.hide();
-      }
-
-      // 3. 현재 선택된 CSP Role 상태 복원
-      await restoreCspRoleSelection();
-
-      // 4. 정책 상세 패널 새로고침 (선택된 정책이 있다면)
-      if (selectedPolicyId) {
-        await showPolicyDetailPanel(selectedPolicyId);
-      }
-
-      // 5. 정책 목록 새로고침
-      refreshPoliciesList();
-    } else {
-      throw new Error(result?.message || result?.data?.message || 'Failed to update policy');
+  const changes = {};
+  if (name !== (policy.name || '')) changes.name = name;
+  if (description !== (policy.description || '')) changes.description = description;
+  if (policy.policy_type !== "inline" && arn !== (policy.policy_arn || '')) changes.policy_arn = arn;
+  setModalError('policyEditorError', '');
+  if (canEditPolicyDocument(policy) && documentText.trim() !== (policy._loadedDocText || '').trim()) {
+    try {
+      changes.policy_doc = JSON.parse(documentText);
+    } catch (e) {
+      setModalError('policyEditorError', "Invalid JSON format in Policy Document. Please check your syntax.");
+      return;
     }
-  } catch (error) {
-    console.error("Error updating policy:", error);
-
-    if (error instanceof SyntaxError) {
-      alert('Invalid JSON format. Please check your syntax.');
-    } else if (error.message.includes('Failed to update policy')) {
-      alert('Failed to update policy. Please try again.');
-    } else {
-      alert('Error updating policy: ' + error.message);
-    }
-
-    // 에러 발생 시 모달은 열린 상태로 유지
   }
-}
-
-// 정책 동기화
-async function syncPolicies() {
-  if (!currentClickedCspRoleId) {
-    alert('Please select a CSP Role first');
+  if (Object.keys(changes).length === 0) {
+    webconsolejs["common/util"].showToast("No changes to save.", "info");
     return;
   }
 
-  if (confirm('Are you sure you want to sync the policies?')) {
-    try {
-      const result = await window.webconsolejs["common/api/services/csproles_api"].syncPolicies(currentClickedCspRoleId);
-
-      if (result.success) {
-        alert('The policies were successfully synced.');
-        // 정책 목록 새로고침
-        await loadCspRolePolicies(currentClickedCspRoleId);
-      } else {
-        throw new Error(result.message || 'Failed to sync policies');
-      }
-    } catch (error) {
-      console.error("Error syncing policies:", error);
-      alert('Error syncing policies: ' + error.message);
+  const label = `${name || policy.name} (ID ${policy.id})`;
+  try {
+    const result = await window.webconsolejs["common/api/services/csproles_api"].updateCspPolicy(policy.id, changes);
+    hideModal('policyEditorModal');
+    const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+    const bindingResults = Array.isArray(result?.bindingResults) ? result.bindingResults : [];
+    if (warnings.length > 0) {
+      const items = [{ ok: "warn", label: `${label} — saved`, detail: "Saved, but applying to CSP Roles failed. Retry is required." }];
+      warnings.forEach(w => items.push({ ok: false, label: "Warning", detail: w }));
+      bindingResults.forEach(r => items.push({
+        ok: r.result === "applied" ? true : false,
+        label: `CSP Role ${r.cspRoleId ?? r.csp_role_id ?? ''} — ${r.result || r.awsStatus || ''}`,
+        detail: r.message || '',
+      }));
+      showPolicyResult("Policy saved with warnings", items);
+    } else {
+      webconsolejs["common/util"].showToast(`Policy updated: ${name || policy.name}`, "success");
     }
+    editingPolicy = null;
+    if (currentClickedCspRoleId) {
+      await loadCspRolePolicies(currentClickedCspRoleId);
+      const updated = (currentRolePolicies || []).find(p => String(p.id) === String(policy.id));
+      if (updated) showPolicyDetailPanel(updated);
+    }
+  } catch (error) {
+    // 오류 시 편집기는 열어 두고 편집기 안에 표시한다
+    setModalError('policyEditorError', "Failed to update policy: " + formatPolicyError(error));
+  }
+}
+
+// 정책 가져오기(sync) 모달 — 계정·범위를 고른 뒤 호출
+async function showSyncPoliciesModal() {
+  await fillAccountSelect('syncPoliciesAccount');
+  document.getElementById('syncPoliciesScope').value = 'Local';
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('syncPoliciesModal')).show();
+}
+
+// 정책 가져오기 (POST /api/csp-policies/sync {csp_account_id, policy_scope})
+async function syncPolicies() {
+  const accountId = document.getElementById('syncPoliciesAccount').value;
+  const scope = document.getElementById('syncPoliciesScope').value || 'Local';
+  if (!accountId) {
+    webconsolejs["common/util"].showToast("Please select a CSP account.", "warning");
+    return;
+  }
+  try {
+    const imported = await window.webconsolejs["common/api/services/csproles_api"].syncPolicies(accountId, scope);
+    hideModal('syncPoliciesModal');
+    const items = imported.slice(0, 50).map(p => ({ ok: true, label: `${p.name} (ID ${p.id})`, detail: `${policyTypeLabel(p.policy_type)}${p.policy_arn ? ' · ' + p.policy_arn : ''}` }));
+    if (imported.length > 50) items.push({ ok: true, label: `... and ${imported.length - 50} more`, detail: '' });
+    showPolicyResult("Import Policies", items, `${imported.length} policies imported (scope: ${scope}).`);
+  } catch (error) {
+    showPolicyResult("Failed to import policies", [{ ok: false, label: `Scope ${scope}`, detail: formatPolicyError(error) }]);
   }
 }
 
 // ===== 정책 상세 패널 관리 =====
 
 // 정책 상세 패널 표시
-function showPolicyDetailPanel(policyData) {
+async function showPolicyDetailPanel(policyData) {
   // 이전 패널이 열려있다면 먼저 숨김
   hidePolicyDetailPanel();
 
   selectedPolicyId = policyData.id;
 
-  // 헤더 업데이트
   document.getElementById('policy-detail-header').textContent = `${policyData.name} / (${policyData.id})`;
-
-  // 기본 정보 업데이트
   document.getElementById('policy-detail-name').textContent = policyData.name || '-';
   document.getElementById('policy-detail-id').textContent = policyData.id || '-';
-  document.getElementById('policy-detail-type').textContent = policyData.provider || '-';
+  document.getElementById('policy-detail-type').textContent = policyTypeLabel(policyData.policy_type);
   document.getElementById('policy-detail-description').textContent = policyData.description || '-';
+  const arnEl = document.getElementById('policy-detail-arn');
+  if (arnEl) arnEl.textContent = policyData.policy_arn || '-';
+  const statusEl = document.getElementById('policy-detail-aws-status');
+  if (statusEl) statusEl.innerHTML = awsStatusBadgeHtml(policyData.aws_status, policyData.last_error)
+    + (policyData.applied_at ? ` <small class="text-muted ms-2">applied at ${escapeHtml(policyData.applied_at)}</small>` : '');
+  const errEl = document.getElementById('policy-detail-last-error');
+  if (errEl) errEl.textContent = policyData.last_error || '';
 
-  // Context JSON 업데이트
-  const contextJson = policyData.document || {};
-  document.getElementById('policy-detail-context').value = JSON.stringify(contextJson, null, 2);
+  // Context JSON — DB 문서가 없으면(managed·IAM 밖 custom) AWS 문서를 조회
+  const contextTextarea = document.getElementById('policy-detail-context');
+  contextTextarea.value = JSON.stringify(policyData.policy_doc || {}, null, 2);
   updatePolicyContextPreview();
+  if (!policyData.policy_doc || Object.keys(policyData.policy_doc).length === 0) {
+    window.webconsolejs["common/api/services/csproles_api"].getPolicyDocument(policyData.id).then(doc => {
+      if (String(selectedPolicyId) !== String(policyData.id)) return;
+      contextTextarea.value = JSON.stringify(doc || {}, null, 2);
+      updatePolicyContextPreview();
+    }).catch(err => {
+      if (String(selectedPolicyId) !== String(policyData.id)) return;
+      document.getElementById('policy-context-preview').innerHTML =
+        `<div class="text-muted">Policy document is not available: ${escapeHtml(formatPolicyError(err))}</div>`;
+    });
+  }
 
   // 패널 표시 (애니메이션 효과)
   const panel = document.getElementById('policy-detail-panel');
-  panel.style.display = 'block';
-  panel.style.opacity = '0';
-  panel.style.transform = 'translateY(20px)';
-
-  // 애니메이션 적용
   setTimeout(() => {
-    panel.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-    panel.style.opacity = '1';
-    panel.style.transform = 'translateY(0)';
-  }, 10);
+    panel.style.display = 'block';
+    panel.style.opacity = '0';
+    panel.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      panel.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      panel.style.opacity = '1';
+      panel.style.transform = 'translateY(0)';
+    }, 10);
+  }, 220);
 
-  // Context JSON 이벤트 리스너 추가
-  const contextTextarea = document.getElementById('policy-detail-context');
-  if (contextTextarea) {
+  if (contextTextarea && !contextTextarea.dataset.previewBound) {
     contextTextarea.addEventListener('input', updatePolicyContextPreview);
+    contextTextarea.dataset.previewBound = "1";
   }
 }
 
@@ -1086,34 +1302,18 @@ export async function deleteCspRole() {
   }
 }
 
-// 정책 삭제 (모달에서 호출)
+// 정책 삭제 (모달에서 호출) — 409(연결된 Role 이 있음, IAM 밖 연결이 있음) 메시지를 그대로 보여 준다
 export async function deletePolicy() {
-  try {
-    if (!selectedPolicyId) {
-      alert("Please select a policy to delete.");
-      return;
-    }
-
-    const result = await window.webconsolejs["common/api/services/csproles_api"].deleteCspPolicy(selectedPolicyId);
-
-    if (result.success) {
-
-      // 정책 테이블에서 해당 행 제거
-      if (cspRolePoliciesTable) {
-        cspRolePoliciesTable.deleteRow(selectedPolicyId);
-      }
-
-      // 정책 상세 패널 숨기기
-      hidePolicyDetailPanel();
-      selectedPolicyId = "";
-
-      alert("The policy was successfully deleted.");
-    } else {
-      throw new Error("Failed to delete policy.");
-    }
-  } catch (error) {
-    console.error("Error deleting policy:", error);
-    alert("Error deleting policy occurred.");
+  if (!selectedPolicyId) {
+    webconsolejs["common/util"].showToast("Please select a policy to delete.", "warning");
+    return;
+  }
+  const policy = (currentRolePolicies || []).find(p => String(p.id) === String(selectedPolicyId)) || { id: selectedPolicyId, name: String(selectedPolicyId) };
+  const ok = await deletePolicyAndReport(policy);
+  if (ok) {
+    hidePolicyDetailPanel();
+    selectedPolicyId = "";
+    if (currentClickedCspRoleId) await loadCspRolePolicies(currentClickedCspRoleId);
   }
 }
 
@@ -1272,57 +1472,111 @@ function filterAvailableCspRoles() {
 }
 
 
-// 새 정책 생성
-async function createNewPolicy() {
-  const name = document.getElementById('createPolicyName').value.trim();
-  const description = document.getElementById('createPolicyDescription').value.trim();
-  const provider = document.getElementById('createPolicyProvider').value;
-  const documentText = document.getElementById('createPolicyDocument').value.trim();
+// 정책 생성 모달 표시
+async function showCreatePolicyModal() {
+  document.getElementById('createPolicyForm').reset();
+  setModalError('createPolicyError', '');
+  document.getElementById('createPolicyType').value = 'inline';
+  document.getElementById('createPolicyCustomModeNew').checked = true;
+  const attachAfter = document.getElementById('createPolicyAttachAfter');
+  attachAfter.checked = !!currentClickedCspRoleId;
+  attachAfter.disabled = !currentClickedCspRoleId;
+  onCreatePolicyTypeChange();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('createPolicyModal')).show();
+  await fillAccountSelect('createPolicyAccount');
+}
 
-  // 필수 필드 검증
-  if (!name || !documentText) {
-    alert('Please fill in all required fields (Name and Document)');
+// 정책 타입별 입력 전환 — inline: 이름+문서 / managed: ARN / custom: 새로 만들기(문서) 또는 기존 정책 등록(ARN)
+function onCreatePolicyTypeChange() {
+  const type = document.getElementById('createPolicyType').value;
+  const customMode = document.querySelector('input[name="createPolicyCustomMode"]:checked')?.value || 'new';
+  const useArn = type === 'managed' || (type === 'custom' && customMode === 'arn');
+  document.getElementById('createPolicyCustomModeGroup').style.display = type === 'custom' ? 'block' : 'none';
+  document.getElementById('createPolicyArnGroup').style.display = useArn ? 'block' : 'none';
+  document.getElementById('createPolicyDocumentGroup').style.display = useArn ? 'none' : 'block';
+
+  const nameLabel = document.getElementById('createPolicyNameLabel');
+  const nameHint = document.getElementById('createPolicyNameHint');
+  const arnInput = document.getElementById('createPolicyArn');
+  const arnHint = document.getElementById('createPolicyArnHint');
+  nameLabel.classList.toggle('required', !useArn);
+  if (type === 'custom' && customMode === 'new') {
+    nameHint.textContent = 'IAM creates this policy in AWS. The prefix "mciam-" is added to the name (e.g. mciam-<name>). It can be shared by several CSP Roles.';
+  } else if (type === 'inline') {
+    nameHint.textContent = 'An inline policy is a copy dedicated to one CSP Role.';
+  } else {
+    nameHint.textContent = 'Optional. If empty, the last part of the ARN is used.';
+  }
+  if (type === 'managed') {
+    arnInput.placeholder = 'arn:aws:iam::aws:policy/ReadOnlyAccess';
+    arnHint.textContent = 'AWS managed policy ARN (arn:aws:iam::aws:policy/...). The document cannot be edited.';
+  } else {
+    arnInput.placeholder = 'arn:aws:iam::<account-id>:policy/<policy-name>';
+    arnHint.textContent = 'Existing customer managed policy ARN. Only mciam-* policies can be edited or deleted from IAM.';
+  }
+  const attachLabel = document.getElementById('createPolicyAttachLabel');
+  if (attachLabel) {
+    const roleName = document.getElementById('csp_role_info_name')?.textContent || '';
+    attachLabel.textContent = currentClickedCspRoleId
+      ? `Attach to the selected CSP Role (${roleName}) after creation`
+      : 'Attach to the selected CSP Role after creation (select a CSP Role first)';
+  }
+}
+
+// 새 정책 생성 — {name, csp_account_id, policy_type, policy_arn?, policy_doc?, description}
+async function createNewPolicy() {
+  const accountId = document.getElementById('createPolicyAccount').value;
+  const type = document.getElementById('createPolicyType').value;
+  const customMode = document.querySelector('input[name="createPolicyCustomMode"]:checked')?.value || 'new';
+  const useArn = type === 'managed' || (type === 'custom' && customMode === 'arn');
+  let name = document.getElementById('createPolicyName').value.trim();
+  const arn = document.getElementById('createPolicyArn').value.trim();
+  const description = document.getElementById('createPolicyDescription').value.trim();
+  const documentText = document.getElementById('createPolicyDocument').value.trim();
+  const attachAfter = document.getElementById('createPolicyAttachAfter').checked && !!currentClickedCspRoleId;
+
+  if (!accountId) {
+    webconsolejs["common/util"].showToast("Please select a CSP account.", "warning");
     return;
   }
-
-  try {
-    // Policy Document JSON 파싱 검증
-    let document;
-    try {
-      document = JSON.parse(documentText);
-    } catch (error) {
-      alert('Invalid JSON format in Policy Document. Please check your JSON syntax.');
+  setModalError('createPolicyError', '');
+  const policyData = { csp_account_id: accountId, policy_type: type, description };
+  if (useArn) {
+    if (!arn) {
+      webconsolejs["common/util"].showToast("Policy ARN is required.", "warning");
       return;
     }
-
-    // API 스펙에 맞는 데이터 구조
-    const policyData = {
-      name: name,
-      description: description,
-      provider: provider,
-      document: document
-    };
-
-    const result = await window.webconsolejs["common/api/services/csproles_api"].createCspPolicy(policyData);
-
-    if (result.success) {
-      alert('Policy created successfully');
-
-      // 모달 닫기
-      const modal = bootstrap.Modal.getInstance(document.getElementById('addPolicyModal'));
-      modal.hide();
-
-      // 폼 초기화
-      document.getElementById('addPolicyForm').reset();
-
-      // 정책 목록 새로고침
-      await refreshPoliciesList();
-    } else {
-      throw new Error(result.message || 'Failed to create policy');
+    if (type === 'managed' && !arn.startsWith('arn:aws:iam::aws:policy/')) {
+      webconsolejs["common/util"].showToast("AWS managed policy ARN must start with arn:aws:iam::aws:policy/", "warning");
+      return;
     }
+    policyData.policy_arn = arn;
+    policyData.name = name || arn.split('/').pop();
+  } else {
+    if (!name || !documentText) {
+      webconsolejs["common/util"].showToast("Policy Name and Policy Document are required.", "warning");
+      return;
+    }
+    try {
+      policyData.policy_doc = JSON.parse(documentText);
+    } catch (e) {
+      webconsolejs["common/util"].showToast("Invalid JSON format in Policy Document.", "warning");
+      return;
+    }
+    policyData.name = name;
+  }
+
+  let created;
+  try {
+    created = await window.webconsolejs["common/api/services/csproles_api"].createCspPolicy(policyData);
   } catch (error) {
-    console.error("Error creating policy:", error);
-    alert('Error creating policy: ' + error.message);
+    setModalError('createPolicyError', "Failed to create policy: " + formatPolicyError(error));
+    return;
+  }
+  hideModal('createPolicyModal');
+  webconsolejs["common/util"].showToast(`Policy created: ${created?.name || policyData.name}`, "success");
+  if (attachAfter && created?.id) {
+    await attachPolicyAndReport(created);
   }
 }
 
@@ -1508,5 +1762,10 @@ window.clearPolicyContextJson = clearPolicyContextJson;
 window.updatePolicyContextPreview = updatePolicyContextPreview;
 window.editSelectedPolicy = editSelectedPolicy;
 window.createNewPolicy = createNewPolicy;
+window.showCreatePolicyModal = showCreatePolicyModal;
+window.onCreatePolicyTypeChange = onCreatePolicyTypeChange;
+window.showSyncPoliciesModal = showSyncPoliciesModal;
+window.deleteSelectedAvailablePolicy = deleteSelectedAvailablePolicy;
+window.editSelectedAvailablePolicy = editSelectedAvailablePolicy;
 window.editCSPRole = editCSPRole;
 window.saveEditedCspRole = saveEditedCspRole;
