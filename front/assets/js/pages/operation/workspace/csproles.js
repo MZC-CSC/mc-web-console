@@ -852,16 +852,19 @@ async function showPolicyEditor(policyId) {
     setModalError('policyEditorError', '');
 
     // 문서: DB 문서(policy_doc) 우선, 없으면 AWS 문서 조회 (managed·IAM 밖 custom)
+    // 문서를 못 읽으면 빈 {} 로 덮지 않고 편집기 안에 오류를 보여 준다 (문서 영역은 비우고 읽기 전용)
     let doc = policy.policy_doc;
+    let docLoadError = null;
     if (!doc || Object.keys(doc).length === 0) {
       try {
         doc = await api.getPolicyDocument(policyId);
       } catch (docError) {
         console.warn("Policy document not available:", docError);
+        docLoadError = docError;
         doc = null;
       }
     }
-    editingPolicy._loadedDocText = JSON.stringify(doc || {}, null, 2);
+    editingPolicy._loadedDocText = docLoadError ? '' : JSON.stringify(doc || {}, null, 2);
 
     document.getElementById('policyEditorName').value = policy.name || '';
     document.getElementById('policyEditorId').value = policy.id || '';
@@ -874,7 +877,10 @@ async function showPolicyEditor(policyId) {
     // managed·IAM 밖 custom 은 문서를 읽기 전용으로 연다. inline 은 ARN 이 없다
     const editable = canEditPolicyDocument(policy);
     const documentTextarea = document.getElementById('policyEditorDocument');
-    documentTextarea.readOnly = !editable;
+    documentTextarea.readOnly = !editable || !!docLoadError;
+    if (docLoadError) {
+      setModalError('policyEditorError', "Failed to load policy document: " + formatPolicyError(docLoadError));
+    }
     document.getElementById('policyEditorArn').readOnly = policy.policy_type === "inline" || isIamOwnedCustom(policy);
     const notice = document.getElementById('policyEditorReadonlyNotice');
     if (notice) {
@@ -1010,7 +1016,7 @@ async function savePolicyDocument() {
   if (description !== (policy.description || '')) changes.description = description;
   if (policy.policy_type !== "inline" && arn !== (policy.policy_arn || '')) changes.policy_arn = arn;
   setModalError('policyEditorError', '');
-  if (canEditPolicyDocument(policy) && documentText.trim() !== (policy._loadedDocText || '').trim()) {
+  if (canEditPolicyDocument(policy) && policy._loadedDocText && documentText.trim() !== policy._loadedDocText.trim()) {
     try {
       changes.policy_doc = JSON.parse(documentText);
     } catch (e) {
@@ -1112,8 +1118,9 @@ async function showPolicyDetailPanel(policyData) {
       updatePolicyContextPreview();
     }).catch(err => {
       if (String(selectedPolicyId) !== String(policyData.id)) return;
+      contextTextarea.value = '';
       document.getElementById('policy-context-preview').innerHTML =
-        `<div class="text-muted">Policy document is not available: ${escapeHtml(formatPolicyError(err))}</div>`;
+        `<div class="text-danger policy-doc-error">Document not available: ${escapeHtml(formatPolicyError(err))}</div>`;
     });
   }
 
