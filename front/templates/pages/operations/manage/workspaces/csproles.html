@@ -457,7 +457,7 @@
                         <a
                           href="#"
                           class="btn btn-outline-warning me-2"
-                          onclick="editCSPRole()"
+                          onclick="editCSPRole(); return false;"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -1684,28 +1684,6 @@
   </div>
 </div>
 
-<!-- 정책 작업 결과 모달 (항목별 결과·오류 메시지) -->
-<div
-  class="modal modal-blur fade"
-  id="policyResultModal"
-  tabindex="-1"
-  style="display: none"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="policyResultTitle">Result</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="policyResultBody"></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" id="policyResultCloseBtn" data-bs-dismiss="modal">OK</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- 정책 정보/에디터 모달 -->
 <div
   class="modal modal-blur fade"
@@ -1873,4 +1851,5 @@
 {{ partial("partials/layout/pageloader.html") | raw }}
 
 <!-- javascript -->
+{{ javascriptTag("common/utils/resultModal.js") | raw }}
 {{ javascriptTag("common/api/services/csproles_api.js") | raw }} {{ javascriptTag("pages/operation/workspace/csproles.js") | raw }}

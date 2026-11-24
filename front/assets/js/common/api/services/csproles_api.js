@@ -39,7 +39,6 @@ export async function getCspRoleById(roleId) {
 
 // CSP Role 생성
 export async function createCspRole(roleData) {
-    const controller = "/api/mc-iam-manager/CreateCspRole";
     const data = {
         Request: {
             cspRoleName: roleData.cspRoleName,
@@ -54,19 +53,13 @@ export async function createCspRole(roleData) {
             tags: roleData.tags || []
         }
     };
-    const response = await webconsolejs["common/api/http"].commonAPIPost(controller, data);
-    // commonAPIPost returns axios error object (not throws) on non-2xx responses
-    if (response?.response) {
-        const errData = response.response.data;
-        const errMsg = errData?.responseData?.error || errData?.status?.message || 'Failed to create CSP Role';
-        throw new Error(errMsg);
-    }
-    return normalizeCspRole(response.data.responseData);
+    // 오류는 IAM error 메시지로 throw (toPolicyApiError)
+    const body = await callPolicyApi("CreateCspRole", data, 'Failed to create CSP Role');
+    return normalizeCspRole(body);
 }
 
 // CSP Role 수정
 export async function updateCspRole(roleId, roleData) {
-    const controller = "/api/mc-iam-manager/UpdateCspRole";
     const data = {
         pathParams: {
             roleId: roleId.toString()
@@ -82,25 +75,18 @@ export async function updateCspRole(roleId, roleData) {
             cspIdpConfigId: roleData.cspIdpConfigId,
         }
     };
-    const response = await webconsolejs["common/api/http"].commonAPIPost(controller, data);
-    if (response?.response) {
-        const errData = response.response.data;
-        const errMsg = errData?.responseData?.error || errData?.status?.message || 'Failed to update CSP Role';
-        throw new Error(errMsg);
-    }
-    return normalizeCspRole(response.data.responseData);
+    const body = await callPolicyApi("UpdateCspRole", data, 'Failed to update CSP Role');
+    return normalizeCspRole(body);
 }
 
-// CSP Role 삭제
+// CSP Role 삭제 — 2xx 면 성공(true), 4xx·5xx 는 IAM error 로 throw
 export async function deleteCspRole(roleId) {
-    const controller = "/api/mc-iam-manager/DeleteCspRole";
-    const data = {
+    await callPolicyApi("DeleteCspRole", {
         pathParams: {
             roleId: roleId.toString()
         }
-    };
-    const response = await webconsolejs["common/api/http"].commonAPIPost(controller, data);
-    return response.data.responseData;
+    }, 'Failed to delete CSP Role');
+    return true;
 }
 
 // ===== CSP Policies API Functions =====
@@ -263,11 +249,9 @@ export async function getCspProviders() {
 
 // ===== 동기화 API Functions =====
 
-// CSP Role 동기화 (keycloak sync)
-export async function syncCspRoles(provider = null) {
-    const controller = "/api/mc-iam-manager/Syncrolelistwithkeycloak";
-    const response = await webconsolejs["common/api/http"].commonAPIPost(controller);
-    return response.data.responseData;
+// CSP Role 동기화 (keycloak sync) — 2xx 면 성공, 4xx·5xx 는 IAM error 로 throw
+export async function syncCspRoles() {
+    return callPolicyApi("Syncrolelistwithkeycloak", undefined, 'Failed to sync CSP Roles');
 }
 
 // CSP Policy 가져오기(sync) — {csp_account_id, policy_scope: Local|AWS|All} → CspPolicy[]
