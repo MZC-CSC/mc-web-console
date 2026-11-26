@@ -457,7 +457,7 @@
                         <a
                           href="#"
                           class="btn btn-outline-warning me-2"
-                          onclick="editCSPRole()"
+                          onclick="editCSPRole(); return false;"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -784,30 +784,38 @@
                                         <a
                                           class="dropdown-item"
                                           href="#"
-                                          data-bs-toggle="modal"
-                                          data-bs-target="#addPolicyModal"
+                                          id="policy-action-attach"
+                                          onclick="showAddPolicyModal(); return false;"
                                         >
-                                          <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            class="icon dropdown-item-icon"
-                                            width="24"
-                                            height="24"
-                                            viewBox="0 0 24 24"
-                                            stroke-width="2"
-                                            stroke="currentColor"
-                                            fill="none"
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                          >
-                                            <path
-                                              stroke="none"
-                                              d="M0 0h24v24H0z"
-                                              fill="none"
-                                            ></path>
-                                            <path d="M12 5l0 14"></path>
-                                            <path d="M5 12l14 0"></path>
-                                          </svg>
-                                          Add Policy
+                                          <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M9 15l6 -6"></path><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464"></path><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463"></path></svg>
+                                          Attach Policy
+                                        </a>
+                                        <a
+                                          class="dropdown-item"
+                                          href="#"
+                                          id="policy-action-create"
+                                          onclick="showCreatePolicyModal(); return false;"
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M12 5l0 14"></path><path d="M5 12l14 0"></path></svg>
+                                          Create Policy
+                                        </a>
+                                        <a
+                                          class="dropdown-item"
+                                          href="#"
+                                          id="policy-action-unbind"
+                                          onclick="unbindPolicies(); return false;"
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M17 22v-2"></path><path d="M9 15l6 -6"></path><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464"></path><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463"></path><path d="M20 17h2"></path><path d="M2 7h2"></path><path d="M7 2v2"></path></svg>
+                                          Unbind Selected Policies
+                                        </a>
+                                        <a
+                                          class="dropdown-item"
+                                          href="#"
+                                          id="policy-action-sync"
+                                          onclick="showSyncPoliciesModal(); return false;"
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" class="icon dropdown-item-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"></path><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"></path><path d="M7 11l5 5l5 -5"></path><path d="M12 4l0 12"></path></svg>
+                                          Import Policies from CSP
                                         </a>
                                         <a
                                           class="dropdown-item"
@@ -848,7 +856,7 @@
                                     <a
                                       href="#"
                                       class="btn-action"
-                                      onclick="refreshPoliciesList()"
+                                      onclick="refreshPoliciesList(); return false;"
                                     >
                                       <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -1001,7 +1009,7 @@
                                           <a
                                             href="#"
                                             class="btn btn-outline-warning me-2"
-                                            onclick="editSelectedPolicy()"
+                                            onclick="editSelectedPolicy(); return false;"
                                           >
                                             <svg
                                               xmlns="http://www.w3.org/2000/svg"
@@ -1033,7 +1041,7 @@
                                           <a
                                             href="#"
                                             class="btn btn-outline-info"
-                                            onclick="importPolicy()"
+                                            onclick="importPolicy(); return false;"
                                           >
                                             <svg
                                               xmlns="http://www.w3.org/2000/svg"
@@ -1120,6 +1128,39 @@
                                               >
                                                 -
                                               </div>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div class="row">
+                                          <div class="col-md-6">
+                                            <div class="mb-3">
+                                              <label class="form-label fw-bold"
+                                                >Policy ARN</label
+                                              >
+                                              <div
+                                                class="form-control-plaintext text-break"
+                                                id="policy-detail-arn"
+                                              >
+                                                -
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div class="col-md-6">
+                                            <div class="mb-3">
+                                              <label class="form-label fw-bold"
+                                                >AWS Status</label
+                                              >
+                                              <div
+                                                class="form-control-plaintext"
+                                                id="policy-detail-aws-status"
+                                              >
+                                                -
+                                              </div>
+                                              <div
+                                                class="small text-danger text-break"
+                                                id="policy-detail-last-error"
+                                              ></div>
                                             </div>
                                           </div>
                                         </div>
@@ -1442,7 +1483,7 @@
   </div>
 </div>
 
-<!-- 정책 추가 모달 (기존 정책 바인딩) -->
+<!-- 정책 연결 모달 (기존 정책을 선택한 CSP Role 에 attach) -->
 <div
   class="modal modal-blur fade"
   id="addPolicyModal"
@@ -1453,98 +1494,51 @@
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title text-info">Create New Policy</h5>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="modal"
-          aria-label="Close"
-        ></button>
+        <h5 class="modal-title text-info">Attach Policy to CSP Role</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form id="addPolicyForm">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label class="form-label required">Policy Name</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="createPolicyName"
-                  placeholder="Enter policy name..."
-                  required
-                />
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label class="form-label">Policy Provider</label>
-                <select class="form-select" id="createPolicyProvider">
-                  <option value="aws">AWS</option>
-                  <option value="azure">Azure</option>
-                  <option value="gcp">GCP</option>
-                  <option value="alibaba">Alibaba Cloud</option>
-                  <option value="tencent">Tencent Cloud</option>
-                </select>
-              </div>
-            </div>
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label">Policy Type</label>
+            <select class="form-select" id="addPolicyType">
+              <option value="">All types</option>
+              <option value="inline">Inline</option>
+              <option value="managed">AWS managed</option>
+              <option value="custom">Customer managed</option>
+            </select>
           </div>
-
-          <div class="mb-3">
-            <label class="form-label">Description</label>
-            <textarea
-              class="form-control"
-              id="createPolicyDescription"
-              rows="3"
-              placeholder="Enter policy description..."
-            ></textarea>
+          <div class="col-md-8">
+            <label class="form-label">Search</label>
+            <input type="text" class="form-control" id="addPolicySearch" placeholder="Filter by policy name or ARN" />
           </div>
-
-          <div class="mb-3">
-            <label class="form-label required">Document</label>
-            <div class="border rounded p-3" style="max-height: 400px; overflow-y: auto">
-              <textarea
-                class="form-control"
-                id="createPolicyDocument"
-                rows="15"
-                placeholder='Enter policy document JSON, e.g.:
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "s3:GetObject",
-      "Resource": "*"
-    }
-  ]
-}'
-                style="font-family: monospace; font-size: 12px;"
-                required
-              ></textarea>
-            </div>
-            <div class="form-text">
-              Enter the policy document in JSON format. This will define the permissions and access rules.
-            </div>
-          </div>
-        </form>
+        </div>
+        <div class="form-hint mb-2">
+          An inline policy belongs to a single CSP Role. To share a policy across roles, use a customer managed policy.
+        </div>
+        <div id="availablePoliciesList" style="max-height: 400px; overflow-y: auto">
+          <div class="text-muted text-center py-3">Loading policies...</div>
+        </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick="createNewPolicy()"
-        >
-          Create Policy
+        <div class="me-auto">
+          <button type="button" class="btn btn-outline-warning me-2" id="addPolicyEditBtn" onclick="editSelectedAvailablePolicy()">
+            Edit Selected Policy
+          </button>
+          <button type="button" class="btn btn-outline-danger" id="addPolicyDeleteBtn" onclick="deleteSelectedAvailablePolicy()">
+            Delete Selected Policy
+          </button>
+        </div>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="addPolicyAttachBtn" onclick="addSelectedPolicy()">
+          Attach
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- 정책 생성 모달 (새 정책 생성) -->
+<!-- 정책 생성 모달 -->
 <div
   class="modal modal-blur fade"
   id="createPolicyModal"
@@ -1556,78 +1550,135 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title text-info">Create New Policy</h5>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="modal"
-          aria-label="Close"
-        ></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <form id="createPolicyForm">
-          <!-- 기획서 요구사항: name, description, document만 필요 -->
-          <div class="mb-3">
-            <label class="form-label required">Policy Name</label>
-            <input
-              type="text"
-              class="form-control"
-              id="createPolicyName"
-              placeholder="Enter policy name"
-              required
-            />
+        <div class="alert alert-danger py-2 text-break" id="createPolicyError" role="alert" style="display: none"></div>
+        <form id="createPolicyForm" onsubmit="return false;">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label required">CSP Account</label>
+                <select class="form-select" id="createPolicyAccount" required></select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label required">Policy Type</label>
+                <select class="form-select" id="createPolicyType" onchange="onCreatePolicyTypeChange()">
+                  <option value="inline">Inline (single CSP Role)</option>
+                  <option value="managed">AWS managed</option>
+                  <option value="custom">Customer managed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3" id="createPolicyCustomModeGroup" style="display: none">
+            <label class="form-label">Customer managed policy</label>
+            <div>
+              <label class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="createPolicyCustomMode" id="createPolicyCustomModeNew" value="new" checked onchange="onCreatePolicyTypeChange()" />
+                <span class="form-check-label">Create new (document)</span>
+              </label>
+              <label class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="createPolicyCustomMode" id="createPolicyCustomModeArn" value="arn" onchange="onCreatePolicyTypeChange()" />
+                <span class="form-check-label">Register existing policy (ARN)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="mb-3" id="createPolicyNameGroup">
+            <label class="form-label required" id="createPolicyNameLabel">Policy Name</label>
+            <input type="text" class="form-control" id="createPolicyName" placeholder="Enter policy name" />
+            <div class="form-hint" id="createPolicyNameHint"></div>
+          </div>
+
+          <div class="mb-3" id="createPolicyArnGroup" style="display: none">
+            <label class="form-label required">Policy ARN</label>
+            <input type="text" class="form-control" id="createPolicyArn" placeholder="arn:aws:iam::aws:policy/ReadOnlyAccess" />
+            <div class="form-hint" id="createPolicyArnHint"></div>
           </div>
 
           <div class="mb-3">
-            <label class="form-label required">Description</label>
-            <textarea
-              class="form-control"
-              id="createPolicyDescription"
-              rows="3"
-              placeholder="Enter policy description"
-              required
-            ></textarea>
+            <label class="form-label">Description</label>
+            <textarea class="form-control" id="createPolicyDescription" rows="2" placeholder="Enter policy description"></textarea>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label required">Policy Document</label>
+          <div class="mb-3" id="createPolicyDocumentGroup">
+            <label class="form-label required">Policy Document (JSON)</label>
             <textarea
               class="form-control"
               id="createPolicyDocument"
               rows="12"
-              placeholder='Enter policy document JSON, e.g.:
-{
+              style="font-family: monospace; font-size: 12px"
+              placeholder='{
   "Version": "2012-10-17",
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject"
-      ],
-      "Resource": "arn:aws:s3:::my-bucket/*"
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "*"
     }
   ]
 }'
-              required
             ></textarea>
             <div class="form-hint">
-              Enter a valid JSON policy document. This defines the permissions
-              for this policy.
+              Action "*", "iam:*" and NotAction are not allowed.
             </div>
           </div>
+
+          <label class="form-check" id="createPolicyAttachGroup">
+            <input class="form-check-input" type="checkbox" id="createPolicyAttachAfter" checked />
+            <span class="form-check-label" id="createPolicyAttachLabel">Attach to the selected CSP Role after creation</span>
+          </label>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick="createNewPolicy()"
-        >
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="createPolicySubmitBtn" onclick="createNewPolicy()">
           Create Policy
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 정책 가져오기(sync) 모달 -->
+<div
+  class="modal modal-blur fade"
+  id="syncPoliciesModal"
+  tabindex="-1"
+  style="display: none"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-info">Import Policies from CSP</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label required">CSP Account</label>
+          <select class="form-select" id="syncPoliciesAccount"></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label required">Scope</label>
+          <select class="form-select" id="syncPoliciesScope">
+            <option value="Local">Local (customer managed mciam-* only)</option>
+            <option value="AWS">AWS (AWS managed policies)</option>
+            <option value="All">All</option>
+          </select>
+          <div class="form-hint">
+            Local imports only customer managed policies whose name starts with mciam-.
+            AWS and All import AWS managed policies as well, which can take a while.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="syncPoliciesSubmitBtn" onclick="syncPolicies()">Import</button>
       </div>
     </div>
   </div>
@@ -1653,6 +1704,7 @@
         ></button>
       </div>
       <div class="modal-body">
+        <div class="alert alert-danger py-2 text-break" id="policyEditorError" role="alert" style="display: none"></div>
         <form id="policyEditorForm">
           <div class="row mb-3">
             <div class="col-md-6">
@@ -1689,6 +1741,18 @@
               />
             </div>
           </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Policy ARN</label>
+              <input type="text" class="form-control" id="policyEditorArn" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">CSP Account ID</label>
+              <input type="text" class="form-control" id="policyEditorAccount" readonly />
+            </div>
+          </div>
+          <div class="alert alert-info py-2" id="policyEditorReadonlyNotice" style="display: none"></div>
 
           <div class="mb-3">
             <label class="form-label">Policy Document (JSON)</label>
@@ -1787,4 +1851,5 @@
 {{ partial("partials/layout/pageloader.html") | raw }}
 
 <!-- javascript -->
+{{ javascriptTag("common/utils/resultModal.js") | raw }}
 {{ javascriptTag("common/api/services/csproles_api.js") | raw }} {{ javascriptTag("pages/operation/workspace/csproles.js") | raw }}

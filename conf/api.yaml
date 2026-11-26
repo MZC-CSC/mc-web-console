@@ -753,6 +753,10 @@ serviceActions:
       method: delete
       resourcePath: /api/csp-policies/id/{policyId}
       description: "CSP Policy 삭제"
+    getPolicyDocument:
+      method: get
+      resourcePath: /api/csp-policies/id/{policyId}/document
+      description: "CSP Policy 문서 조회 (DB 문서, 없으면 AWS 문서)"
     GetPoliciesByRoleId:
       method: get
       resourcePath: /api/csp-policies/role/{roleId}

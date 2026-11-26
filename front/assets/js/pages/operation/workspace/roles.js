@@ -247,8 +247,9 @@ const CONFIG = {
 // 유틸리티 함수들
 const Utils = {
   // 알림 표시
-  showAlert(message, type = 'info') {
-    alert(message);
+  // 공통 결과 표시(common/utils/resultModal.js notify → common/utils/toast.js). type: success | warning | error
+  showAlert(message, type = 'warning') {
+    window.webconsolejs["common/utils/resultModal"].notify(type, message);
   },
 
   // 폼 검증
@@ -298,7 +299,7 @@ const Utils = {
 const ErrorHandler = {
   handle(error, context) {
     console.error(`Error in ${context}:`, error);
-    Utils.showAlert(`Error occurred: ${context}`);
+    Utils.showAlert(`Error occurred: ${context}` + (error && error.message ? ` (${error.message})` : ''), 'error');
   },
 
   async wrapAsync(fn, context) {
@@ -330,7 +331,7 @@ const RoleManager = {
       async () => {
         const response = await webconsolejs["common/api/services/roles_api"].createRole(roleData);
         if (response) {
-          Utils.showAlert('role created successfully' + formatCspRoleSaveResults(response));
+          showRoleSaveResult('role created successfully', response);
           return response;
         } else {
           throw new Error('failed to create role');
@@ -346,7 +347,7 @@ const RoleManager = {
       async () => {
         const response = await webconsolejs["common/api/services/roles_api"].updateRole(roleId, roleData);
         if (response) {
-          Utils.showAlert('role updated successfully' + formatCspRoleSaveResults(response));
+          showRoleSaveResult('role updated successfully', response);
           return response;
         } else {
           throw new Error('failed to update role');
@@ -360,13 +361,9 @@ const RoleManager = {
   async deleteRole(roleId) {
     return await ErrorHandler.wrapAsync(
       async () => {
-        const response = await webconsolejs["common/api/services/roles_api"].deleteRole(roleId);
-        if (response) {
-          Utils.showAlert('role deleted successfully');
-          return response;
-        } else {
-          throw new Error('failed to delete role');
-        }
+        // 판정은 HTTP 상태 기준: commonAPIPost 가 4xx·5xx 에서 throw 하므로 여기까지 오면 성공(204 면 본문이 비어 있다)
+        await webconsolejs["common/api/services/roles_api"].deleteRole(roleId);
+        return true;
       },
       'delete role'
     );
@@ -1602,7 +1599,7 @@ async function initPlatformMenuTree() {
     }
   } catch (error) {
     console.error("failed to initialize platform menu tree:", error);
-    alert("failed to load platform menu tree");
+    Utils.showAlert("failed to load platform menu tree", "error");
   }
 }
 
@@ -1673,7 +1670,7 @@ async function initPlatformMenuCreateTree() {
     }
   } catch (error) {
     console.error("failed to initialize create platform menu tree:", error);
-    alert("failed to load platform menu tree");
+    Utils.showAlert("failed to load platform menu tree", "error");
   }
 }
 
@@ -1756,7 +1753,7 @@ async function initPlatformMenuEditTree() {
     }
   } catch (error) {
     console.error("failed to initialize edit platform menu tree:", error);
-    alert("failed to load platform menu tree");
+    Utils.showAlert("failed to load platform menu tree", "error");
   }
 }
 
@@ -2017,7 +2014,7 @@ async function updateMenuPermissions(roleId) {
     if (statusElement) {
       statusElement.style.display = 'none';
     }
-    alert("failed to load menu permissions");
+    Utils.showAlert("failed to load menu permissions", "error");
   }
 }
 
@@ -2071,7 +2068,7 @@ async function updateEditMenuPermissions(roleId) {
 
   } catch (error) {
     console.error("failed to update edit mode menu permissions:", error);
-    alert("failed to load edit mode menu permissions");
+    Utils.showAlert("failed to load edit mode menu permissions", "error");
   }
 }
 
@@ -2523,21 +2520,25 @@ const CSP_ROLE_RESULT_LABELS = {
   failed: 'NOT mapped'
 };
 
-// 저장 응답의 cspRoleResults·warnings 를 알림 문구로 만든다. 실패 항목은 매핑만 빠지고 역할은 저장된 상태다.
-function formatCspRoleSaveResults(response) {
+// 저장 응답의 cspRoleResults·warnings 를 공통 결과 모달 항목으로 보여 준다. 실패 항목은 매핑만 빠지고 역할은 저장된 상태다.
+// CSP 결과가 없으면 성공 토스트만 띄운다.
+function showRoleSaveResult(successMessage, response) {
   const results = Array.isArray(response && response.cspRoleResults) ? response.cspRoleResults : [];
   const warnings = Array.isArray(response && response.warnings) ? response.warnings : [];
-  if (results.length === 0 && warnings.length === 0) return '';
-  const lines = results.map(r => {
-    const label = CSP_ROLE_RESULT_LABELS[r.result] || r.result;
-    const detail = r.result === 'failed' && r.error ? ` (${r.error})` : '';
-    return `- [${(r.cspType || '').toUpperCase()}] ${r.cspRoleName}: ${label}${detail}`;
-  });
-  let text = '\n\nCSP roles:\n' + lines.join('\n');
-  if (warnings.length > 0) {
-    text += '\n\nWarnings: the role was saved, but the items above marked NOT mapped were skipped. Fix them (for example create the role in the CSP console) and save again.';
+  if (results.length === 0 && warnings.length === 0) {
+    Utils.showAlert(successMessage, 'success');
+    return;
   }
-  return text;
+  const items = results.map(r => ({
+    ok: r.result === 'failed' ? false : true,
+    label: `[${(r.cspType || '').toUpperCase()}] ${r.cspRoleName}: ${CSP_ROLE_RESULT_LABELS[r.result] || r.result}`,
+    detail: r.result === 'failed' && r.error ? r.error : '',
+  }));
+  warnings.forEach(w => items.push({ ok: 'warn', label: 'Warning', detail: w }));
+  const summary = warnings.length > 0
+    ? `${successMessage}. The items marked NOT mapped were skipped. Fix them (for example create the role in the CSP console) and save again.`
+    : `${successMessage}.`;
+  window.webconsolejs["common/utils/resultModal"].showResultModal('CSP Role mapping result', items, summary);
 }
 
 // 화면 행 → IAM cspRoles 요청 항목. cspRoleName 으로 보낸다 (WEB-BUG-129: 예전에는 roleName 으로 보내 IAM 이 무시했다)
@@ -3368,11 +3369,11 @@ export async function deleteRole() {
       // 페이지를 맨 위로 스크롤
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      Utils.showAlert(`role "${roleName}" deleted successfully`);
+      Utils.showAlert(`role "${roleName}" deleted successfully`, 'success');
     }
   } catch (error) {
     console.error('failed to delete role:', error);
-    Utils.showAlert('failed to delete role');
+    Utils.showAlert('failed to delete role', 'error');
   }
 }
 
@@ -3557,7 +3558,7 @@ function assignUser() {
   
   const selectedRows = assignUserModalTable.getSelectedRows();
   if (!selectedRows || selectedRows.length === 0) {
-    alert('please select users to assign');
+    Utils.showAlert('please select users to assign', 'warning');
     return;
   }
   
@@ -3582,7 +3583,7 @@ async function assignUsersToRole(roleId, userIds) {
     await Promise.all(promises);
     
     // 성공 메시지 표시
-    alert('users assigned successfully');
+    Utils.showAlert('users assigned successfully', 'success');
     
     // 모달 닫기
     const modal = bootstrap.Modal.getInstance(document.getElementById('assign-user-modal'));
@@ -3595,7 +3596,7 @@ async function assignUsersToRole(roleId, userIds) {
     
   } catch (error) {
     console.error('failed to assign users:', error);
-    alert('failed to assign users: ' + error.message);
+    Utils.showAlert('failed to assign users: ' + error.message, 'error');
   }
 }
 
@@ -3605,7 +3606,7 @@ window.openAssignUserModal = function() {
   const selectedRole = AppState.roles.selectedRole;
   
   if (!selectedRole) {
-    alert('please select role first');
+    Utils.showAlert('please select role first', 'warning');
     return;
   }
   
@@ -3653,7 +3654,7 @@ async function viewCreateCspRolePolicies(roleId, cspType, roleName) {
     
   } catch (error) {
     console.error('failed to load CSP Role Policy list:', error);
-    alert('failed to load Policy list: ' + error.message);
+    Utils.showAlert('failed to load Policy list: ' + error.message, 'error');
   }
 }
 
@@ -3684,7 +3685,7 @@ async function viewEditCspRolePolicies(roleId, cspType, roleName) {
     
   } catch (error) {
     console.error('failed to load CSP Role Policy list:', error);
-    alert('failed to load Policy list: ' + error.message);
+    Utils.showAlert('failed to load Policy list: ' + error.message, 'error');
   }
 }
 
@@ -3832,7 +3833,7 @@ async function viewPolicyDetails(policyId, policyName) {
     
   } catch (error) {
     console.error('failed to load Policy details:', error);
-    alert('failed to load Policy details: ' + error.message);
+    Utils.showAlert('failed to load Policy details: ' + error.message, 'error');
   }
 }
 
